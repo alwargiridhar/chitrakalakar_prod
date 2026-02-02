@@ -2,13 +2,20 @@ import os
 from supabase import create_client, Client
 
 SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://lurvhgzauuzwftfymjym.supabase.co')
-SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY', '')  # Service role key for admin operations
+SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY', '')
 
-# Create Supabase client
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_KEY else None
+# Lazy initialization
+_supabase_client: Client = None
 
 def get_supabase_client() -> Client:
-    """Get Supabase client instance"""
-    if not supabase:
-        raise Exception("Supabase client not initialized. Set SUPABASE_SERVICE_KEY environment variable.")
-    return supabase
+    """Get Supabase client instance with lazy initialization"""
+    global _supabase_client
+    
+    if _supabase_client is None:
+        key = os.environ.get('SUPABASE_SERVICE_KEY', '')
+        if not key:
+            raise Exception("Supabase client not initialized. Set SUPABASE_SERVICE_KEY environment variable.")
+        
+        _supabase_client = create_client(SUPABASE_URL, key)
+    
+    return _supabase_client
