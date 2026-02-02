@@ -708,9 +708,15 @@ const handleSaveProfile = async () => {
                   <ImageUpload
                     bucket={BUCKETS.ARTWORKS}
                     folder="artworks"
-                    onUpload={(url) => setNewArtwork({ ...newArtwork, image: url })}
+                    onUpload={(url) => {
+                      console.log('Image uploaded, URL:', url);
+                      setNewArtwork({ ...newArtwork, image: url });
+                    }}
                     label="Upload Artwork Image"
                   />
+                  {newArtwork.image && (
+                    <p className="text-xs text-green-600 mt-2">✓ Image uploaded successfully</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
