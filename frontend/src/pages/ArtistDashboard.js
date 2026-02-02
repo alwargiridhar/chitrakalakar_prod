@@ -342,11 +342,19 @@ const handleSaveProfile = async () => {
                             src={artwork.image}
                             alt={artwork.title}
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              console.error('Image load error for:', artwork.image);
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
                           />
-                        ) : (
-
-                          <div className="w-full h-full flex items-center justify-center text-4xl">🎨</div>
-                        )}
+                        ) : null}
+                        <div 
+                          className="w-full h-full flex items-center justify-center text-4xl"
+                          style={{ display: artwork.image ? 'none' : 'flex' }}
+                        >
+                          🎨
+                        </div>
                         {!artwork.is_approved && (
                           <div className="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs">
                             Pending Approval
