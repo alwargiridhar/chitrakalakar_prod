@@ -734,11 +734,13 @@ async def update_profile(
 @app.get("/api/artist/artworks")
 async def get_artist_artworks(artist: dict = Depends(require_artist)):
     """Get artist's artworks"""
-    supabase = get_supabase_client()
-    
-    artworks = supabase.table('artworks').select('*').eq('artist_id', artist['id']).execute()
-    
-    return {"artworks": artworks.data or []}
+    try:
+        supabase = get_supabase_client()
+        artworks = supabase.table('artworks').select('*').eq('artist_id', artist['id']).execute()
+        return {"artworks": artworks.data or []}
+    except Exception as e:
+        print(f"Error fetching artworks: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/artist/portfolio")
 @app.post("/api/artist/artworks")
