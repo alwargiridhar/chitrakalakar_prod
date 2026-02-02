@@ -189,7 +189,13 @@ const handleSaveProfile = async () => {
       teaches_offline: profileForm.teaches_offline,
     };
 
-    await authAPI.updateProfile(payload);
+    console.log('Saving profile with payload:', payload);
+    
+    const result = await authAPI.updateProfile(payload);
+    console.log('Profile update result:', result);
+    
+    alert('Profile updated successfully!');
+    setShowEditProfile(false);
     
     // Refresh profile in context by triggering re-fetch
     window.location.reload();
