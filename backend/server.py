@@ -711,25 +711,29 @@ async def update_profile(
     updates: ProfileUpdateRequest,
     user: dict = Depends(require_user)
 ):
-    supabase = get_supabase_client()
+    try:
+        supabase = get_supabase_client()
 
-    update_data = updates.model_dump(exclude_unset=True)
+        update_data = updates.model_dump(exclude_unset=True)
 
-    if not update_data:
-        return {"success": True}
+        if not update_data:
+            return {"success": True}
 
-    supabase.table('profiles') \
-        .update(update_data) \
-        .eq('id', user['id']) \
-        .execute()
+        supabase.table('profiles') \
+            .update(update_data) \
+            .eq('id', user['id']) \
+            .execute()
 
-    updated_user = supabase.table('profiles') \
-        .select('*') \
-        .eq('id', user['id']) \
-        .single() \
-        .execute()
+        updated_user = supabase.table('profiles') \
+            .select('*') \
+            .eq('id', user['id']) \
+            .single() \
+            .execute()
 
-    return {"success": True, "user": updated_user.data}
+        return {"success": True, "user": updated_user.data}
+    except Exception as e:
+        print(f"Error updating profile: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/artist/artworks")
 async def get_artist_artworks(artist: dict = Depends(require_artist)):
