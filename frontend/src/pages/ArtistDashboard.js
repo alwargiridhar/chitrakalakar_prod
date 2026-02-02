@@ -120,10 +120,18 @@ const handleAddArtwork = async (e) => {
     return;
   }
 
+  // Debug: Log the artwork data being sent
+  console.log('Submitting artwork:', newArtwork);
+  
+  if (!newArtwork.image) {
+    alert("Please upload an image before adding artwork");
+    return;
+  }
+
   try {
     await artistAPI.addArtwork({
       ...newArtwork,
-      price: priceValue, // ✅ numeric
+      price: priceValue,
     });
 
     setShowAddArtwork(false);
@@ -135,7 +143,7 @@ const handleAddArtwork = async (e) => {
       description: '',
     });
 
-    fetchData(); // refresh portfolio
+    fetchData();
   } catch (error) {
     console.error('Error adding artwork:', error);
     alert(error.message || 'Failed to add artwork');
