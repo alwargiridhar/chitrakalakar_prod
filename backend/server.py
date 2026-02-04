@@ -550,7 +550,7 @@ async def approve_exhibition(request: ExhibitionApprovalRequest, admin: dict = D
     
     return {"success": True, "message": f"Exhibition {'approved' if request.approved else 'rejected'}"}
 
-@app.get("/api/admin/users")
+@app.get("/api/admin/all-users")
 async def get_all_users(admin: dict = Depends(require_admin)):
     """Get all users"""
     supabase = get_supabase_client()
