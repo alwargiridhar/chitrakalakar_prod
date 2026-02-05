@@ -135,8 +135,8 @@ const handleAddArtwork = async (e) => {
   // Debug: Log the artwork data being sent
   console.log('Submitting artwork:', newArtwork);
   
-  if (!newArtwork.image) {
-    alert("Please upload an image before adding artwork");
+  if (newArtwork.images.length === 0) {
+    alert("Please upload at least one image before adding artwork");
     return;
   }
 
@@ -151,7 +151,7 @@ const handleAddArtwork = async (e) => {
       title: '',
       category: '',
       price: '',
-      image: '',
+      images: [],
       description: '',
     });
 
@@ -159,6 +159,83 @@ const handleAddArtwork = async (e) => {
   } catch (error) {
     console.error('Error adding artwork:', error);
     alert(error.message || 'Failed to add artwork');
+  }
+};
+
+const handleImageUpload = (url) => {
+  if (newArtwork.images.length < 5) {
+    setNewArtwork({ ...newArtwork, images: [...newArtwork.images, url] });
+  }
+};
+
+const handleRemoveImage = (index) => {
+  setNewArtwork({
+    ...newArtwork,
+    images: newArtwork.images.filter((_, i) => i !== index)
+  });
+};
+
+const handlePushToMarketplace = async () => {
+  if (selectedArtworks.length === 0) {
+    alert('Please select artworks to push to marketplace');
+    return;
+  }
+  
+  if (!membershipStatus?.is_member) {
+    setShowMembershipModal(true);
+    return;
+  }
+  
+  try {
+    await artistAPI.pushToMarketplace(selectedArtworks);
+    alert('Artworks pushed to marketplace successfully!');
+    setSelectedArtworks([]);
+    fetchData();
+  } catch (error) {
+    console.error('Error pushing to marketplace:', error);
+    alert(error.message || 'Failed to push to marketplace');
+  }
+};
+
+const handleMembershipPayment = async (planType) => {
+  try {
+    const orderResponse = await membershipAPI.createOrder(planType);
+    
+    const options = {
+      key: process.env.REACT_APP_RAZORPAY_KEY_ID,
+      amount: orderResponse.amount,
+      currency: orderResponse.currency,
+      order_id: orderResponse.order_id,
+      name: 'ChitraKalakar',
+      description: `${planType === 'annual' ? 'Annual' : 'Monthly'} Membership`,
+      handler: async (response) => {
+        try {
+          await membershipAPI.verifyPayment(
+            response.razorpay_order_id,
+            response.razorpay_payment_id,
+            response.razorpay_signature
+          );
+          alert('Membership activated successfully!');
+          setShowMembershipModal(false);
+          fetchData();
+        } catch (error) {
+          alert('Payment verification failed. Please contact support.');
+        }
+      },
+      prefill: {
+        name: profiles?.full_name,
+        email: profiles?.email
+      },
+      theme: {
+        color: '#f97316'
+      }
+    };
+    
+    const razorpay = new window.Razorpay(options);
+    razorpay.open();
+  } catch (error) {
+    console.error('Error creating order:', error);
+    alert(error.message || 'Failed to create payment order');
   }
 };
 
