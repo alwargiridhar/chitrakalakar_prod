@@ -144,6 +144,56 @@ function HomePage() {
         </div>
       </section>
 
+      {/* Join the Community Section */}
+      <section className="py-20 bg-gradient-to-br from-purple-50 to-orange-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Join the Community</h2>
+            <p className="text-xl text-gray-600">Connect with fellow artists from different locations and art styles</p>
+          </div>
+          
+          {communities.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {communities.slice(0, 6).map((community) => (
+                <div key={community.id} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-lg transition-shadow" data-testid={`community-card-${community.id}`}>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-orange-500 rounded-full flex items-center justify-center text-white text-xl">
+                      🎨
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-900">{community.name}</h3>
+                      {community.location && (
+                        <p className="text-sm text-gray-500">📍 {community.location}</p>
+                      )}
+                    </div>
+                  </div>
+                  {community.description && (
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">{community.description}</p>
+                  )}
+                  <button
+                    onClick={() => handleJoinCommunity(community.id)}
+                    className="w-full py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                  >
+                    Join Community
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-xl">
+              <span className="text-5xl mb-4 block">🤝</span>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Communities Coming Soon</h3>
+              <p className="text-gray-500 mb-4">Artists can create and join communities to connect and collaborate</p>
+              {isAuthenticated && (
+                <Link to="/dashboard" className="inline-block px-6 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">
+                  Create a Community
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Featured Artists - Only show if there are approved artists */}
       {featuredArtists.length > 0 && (
         <section className="py-20 bg-gradient-to-b from-gray-100 to-white">
