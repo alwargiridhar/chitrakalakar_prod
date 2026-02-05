@@ -102,6 +102,20 @@ export function AuthProvider({ children }) {
     if (error) throw error;
   };
 
+  const loginWithGoogle = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase not configured. Please add your credentials.');
+    }
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + '/login'
+      }
+    });
+    if (error) throw error;
+  };
+
   const logout = async () => {
     if (supabase) {
       await supabase.auth.signOut();
