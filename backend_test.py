@@ -9,8 +9,8 @@ import json
 import sys
 from typing import Dict, Any
 
-# Backend URL from the review request
-BACKEND_URL = "https://artist-showcase-66.preview.emergentagent.com"
+# Backend URL - Using localhost as external URL appears to have routing issues
+BACKEND_URL = "http://localhost:8001"
 
 class APITester:
     def __init__(self, base_url: str):
