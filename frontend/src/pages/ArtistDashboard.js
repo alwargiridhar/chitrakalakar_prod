@@ -555,22 +555,108 @@ const handleSaveProfile = async () => {
                           <h3 className="font-semibold text-gray-900">{order.order_number}</h3>
                           <p className="text-sm text-gray-500">{order.artwork_title}</p>
                           <p className="text-sm text-gray-500">Customer: {order.customer_name}</p>
+                          {order.awb_number && (
+                            <p className="text-sm text-blue-600 mt-1">AWB: {order.awb_number}</p>
+                          )}
                         </div>
                         <div className="text-right">
                           <p className="text-lg font-bold text-orange-500">₹{order.artist_receives?.toLocaleString()}</p>
                           <span className={`px-2 py-1 text-xs font-semibold rounded ${
                             order.status === 'completed' ? 'bg-green-100 text-green-700' :
-                            order.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                            order.status === 'shipped' ? 'bg-blue-100 text-blue-700' :
+                            order.status === 'in_progress' ? 'bg-yellow-100 text-yellow-700' :
                             'bg-gray-100 text-gray-700'
                           }`}>
                             {order.status}
                           </span>
                         </div>
                       </div>
+                      {order.status === 'pending' && (
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                          <AWBUpdateForm orderId={order.id} onUpdate={fetchData} />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Membership Tab */}
+        {activeTab === 'membership' && (
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">Membership</h2>
+            </div>
+            <div className="p-6">
+              {membershipStatus?.is_member ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-3xl">⭐</span>
+                    <div>
+                      <h3 className="text-xl font-bold text-green-800">Active Membership</h3>
+                      <p className="text-green-600">
+                        {membershipStatus.membership_type === 'annual' ? 'Annual' : 'Monthly'} Plan
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-green-700">
+                    Expires: {new Date(membershipStatus.membership_expiry).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  </p>
+                  <p className="text-sm text-green-600 mt-2">
+                    You can push approved artworks to the marketplace!
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-6 mb-6">
+                  <h3 className="text-xl font-bold text-orange-800 mb-2">Why Become a Member?</h3>
+                  <ul className="list-disc list-inside text-orange-700 space-y-1">
+                    <li>Push your approved artworks to the marketplace</li>
+                    <li>Get featured visibility across the platform</li>
+                    <li>Access exclusive exhibitions</li>
+                    <li>Connect with art collectors directly</li>
+                  </ul>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className={`border-2 rounded-xl p-6 ${membershipStatus?.membership_type === 'monthly' ? 'border-orange-500 bg-orange-50' : 'border-gray-200'}`}>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Monthly Plan</h3>
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold text-gray-900">₹99</span>
+                    <span className="text-gray-500">/month</span>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-4">+ 18% GST = ₹116.82/month</p>
+                  <button
+                    onClick={() => handleMembershipPayment('monthly')}
+                    disabled={membershipStatus?.is_member}
+                    className="w-full py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {membershipStatus?.is_member ? 'Current Plan' : 'Choose Monthly'}
+                  </button>
+                </div>
+                
+                <div className={`border-2 rounded-xl p-6 relative ${membershipStatus?.membership_type === 'annual' ? 'border-orange-500 bg-orange-50' : 'border-gray-200'}`}>
+                  <div className="absolute -top-3 right-4 bg-green-500 text-white text-xs px-3 py-1 rounded-full">
+                    Save 20%
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Annual Plan</h3>
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold text-gray-900">₹999</span>
+                    <span className="text-gray-500">/year</span>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-4">+ 18% GST = ₹1,178.82/year</p>
+                  <button
+                    onClick={() => handleMembershipPayment('annual')}
+                    disabled={membershipStatus?.is_member}
+                    className="w-full py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {membershipStatus?.is_member ? 'Current Plan' : 'Choose Annual'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
