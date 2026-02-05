@@ -307,6 +307,30 @@ class APITester:
         except Exception as e:
             self.log_test("/api/public/communities", "ERROR", f"Request failed: {str(e)}")
             return False
+    
+    def test_upload_url_without_auth(self):
+        """Test POST /api/upload-url without authentication"""
+        try:
+            payload = {
+                "filename": "test.jpg",
+                "content_type": "image/jpeg", 
+                "folder": "avatars"
+            }
+            response = self.session.post(f"{self.base_url}/api/upload-url", json=payload, timeout=10)
+            
+            if response.status_code == 401 or response.status_code == 403:
+                self.log_test("/api/upload-url", "PASS", "Correctly requires authentication (401/403)")
+                return True
+            elif response.status_code == 422:
+                self.log_test("/api/upload-url", "PASS", "Correctly requires authentication (422 - missing auth header)")
+                return True
+            else:
+                self.log_test("/api/upload-url", "FAIL", f"Should require auth but got HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("/api/upload-url", "ERROR", f"Request failed: {str(e)}")
+            return False
         """Test POST /api/upload-url without authentication"""
         try:
             payload = {
