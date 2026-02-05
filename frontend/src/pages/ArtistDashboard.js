@@ -416,16 +416,38 @@ const handleSaveProfile = async () => {
         {/* Portfolio Tab */}
         {activeTab === 'portfolio' && (
           <div className="bg-white rounded-xl shadow-sm">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+            <div className="p-6 border-b border-gray-200 flex flex-wrap justify-between items-center gap-4">
               <h2 className="text-xl font-bold text-gray-900">My Portfolio</h2>
-              <button
-                onClick={() => setShowAddArtwork(true)}
-                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
-              >
-                + Add Artwork
-              </button>
+              <div className="flex gap-2">
+                {selectedArtworks.length > 0 && (
+                  <button
+                    onClick={handlePushToMarketplace}
+                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                    data-testid="push-to-marketplace-btn"
+                  >
+                    Push to Marketplace ({selectedArtworks.length})
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowAddArtwork(true)}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                  data-testid="add-artwork-btn"
+                >
+                  + Add Artwork
+                </button>
+              </div>
             </div>
             <div className="p-6">
+              {!membershipStatus?.is_member && (
+                <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-yellow-800">
+                    <strong>Note:</strong> You need an active membership to push artworks to the marketplace.{' '}
+                    <button onClick={() => setActiveTab('membership')} className="underline font-medium">
+                      Get membership
+                    </button>
+                  </p>
+                </div>
+              )}
               {artworks.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-gray-500 mb-4">No artworks yet. Add your first artwork.</p>
@@ -441,11 +463,27 @@ const handleSaveProfile = async () => {
                   {artworks.map((artwork) => (
                     <div key={artwork.id} className="border border-gray-200 rounded-lg overflow-hidden">
                       <div className="h-48 bg-gray-100 relative">
-                        {artwork.image ? (
+                        {artwork.is_approved && (
+                          <div className="absolute top-2 left-2 z-10">
+                            <input
+                              type="checkbox"
+                              checked={selectedArtworks.includes(artwork.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedArtworks([...selectedArtworks, artwork.id]);
+                                } else {
+                                  setSelectedArtworks(selectedArtworks.filter(id => id !== artwork.id));
+                                }
+                              }}
+                              className="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                            />
+                          </div>
+                        )}
+                        {(artwork.images?.[0] || artwork.image) ? (
                           <img
-                            src={artwork.image}
+                            src={artwork.images?.[0] || artwork.image}
                             alt={artwork.title}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain bg-gray-50"
                             onError={(e) => {
                               console.error('Image load error for:', artwork.image);
                               e.target.style.display = 'none';
@@ -455,13 +493,23 @@ const handleSaveProfile = async () => {
                         ) : null}
                         <div 
                           className="w-full h-full flex items-center justify-center text-4xl"
-                          style={{ display: artwork.image ? 'none' : 'flex' }}
+                          style={{ display: (artwork.images?.[0] || artwork.image) ? 'none' : 'flex' }}
                         >
                           🎨
                         </div>
                         {!artwork.is_approved && (
                           <div className="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs">
                             Pending Approval
+                          </div>
+                        )}
+                        {artwork.in_marketplace && (
+                          <div className="absolute bottom-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs">
+                            In Marketplace
+                          </div>
+                        )}
+                        {artwork.images && artwork.images.length > 1 && (
+                          <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded text-xs">
+                            +{artwork.images.length - 1} more
                           </div>
                         )}
                       </div>
