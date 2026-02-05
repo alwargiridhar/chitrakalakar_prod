@@ -70,7 +70,7 @@ function NotificationPopup() {
             )}
             {notification.artwork_title && (
               <p className="text-xs text-gray-500 truncate mt-1">
-                "{notification.artwork_title}"
+                &ldquo;{notification.artwork_title}&rdquo;
               </p>
             )}
           </div>
@@ -85,7 +85,7 @@ function NotificationPopup() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes slide-in {
           from {
             transform: translateX(100%);
