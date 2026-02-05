@@ -515,21 +515,29 @@ async def get_community_detail(community_id: str):
         community = supabase.table('communities').select('*').eq('id', community_id).eq('is_approved', True).single().execute()
         
         if not community.data:
-        raise HTTPException(status_code=404, detail="Community not found")
-    
-    # Get members
-    members = supabase.table('community_members').select('*, profiles!user_id(id, full_name, avatar, location)').eq('community_id', community_id).execute()
-    
-    return {
-        "community": community.data,
-        "members": members.data or [],
-        "member_count": len(members.data or [])
-    }
+            raise HTTPException(status_code=404, detail="Community not found")
+        
+        # Get members
+        members = supabase.table('community_members').select('*, profiles!user_id(id, full_name, avatar, location)').eq('community_id', community_id).execute()
+        
+        return {
+            "community": community.data,
+            "members": members.data or [],
+            "member_count": len(members.data or [])
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Community detail error: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching community")
 
 @app.post("/api/communities")
 async def create_community(data: CommunityCreate, user: dict = Depends(require_artist)):
     """Create a new community (requires artist role)"""
     supabase = get_supabase_client()
+    
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
     
     community_data = {
         "name": data.name,
