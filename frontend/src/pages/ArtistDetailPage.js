@@ -150,7 +150,7 @@ function ArtistDetailPage() {
             Want to commission artwork from {artist.full_name}?
           </h3>
           <p className="text-gray-600 mb-4">
-            Submit a commission enquiry and we'll help connect you with the artist.
+            Submit a commission enquiry and we&apos;ll help connect you with the artist.
           </p>
           <Link 
             to="/contact"
