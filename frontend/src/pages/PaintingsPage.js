@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { publicAPI } from '../services/api';
+import { publicAPI, cartAPI } from '../services/api';
 import { ART_CATEGORIES } from '../utils/branding';
+import { useAuth } from '../contexts/AuthContext';
 
 function PaintingsPage() {
+  const { isAuthenticated } = useAuth();
   const [paintings, setPaintings] = useState([]);
   const [filteredPaintings, setFilteredPaintings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +69,24 @@ function PaintingsPage() {
     filterAndSortPaintings();
   }, [filterAndSortPaintings]);
 
+  const handleAddToCart = async (e, paintingId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isAuthenticated) {
+      alert('Please login to add items to cart');
+      return;
+    }
+    
+    try {
+      await cartAPI.add(paintingId);
+      alert('Added to cart!');
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      alert(error.message || 'Failed to add to cart');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -98,6 +118,7 @@ function PaintingsPage() {
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                data-testid="category-filter"
               >
                 <option value="all">All Categories</option>
                 {ART_CATEGORIES.map(cat => (
@@ -113,6 +134,7 @@ function PaintingsPage() {
                 value={priceRange}
                 onChange={(e) => setPriceRange(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                data-testid="price-filter"
               >
                 <option value="all">All Prices</option>
                 <option value="under-5000">Under ₹5,000</option>
@@ -129,6 +151,7 @@ function PaintingsPage() {
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                data-testid="sort-filter"
               >
                 <option value="latest">Latest First</option>
                 <option value="popular">Most Popular</option>
@@ -158,13 +181,14 @@ function PaintingsPage() {
                 key={painting.id} 
                 to={`/painting/${painting.id}`}
                 className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-shadow group"
+                data-testid={`painting-card-${painting.id}`}
               >
                 <div className="aspect-square bg-gray-100 relative overflow-hidden">
-                  {painting.image ? (
+                  {(painting.images?.[0] || painting.image) ? (
                     <img 
-                      src={painting.image} 
+                      src={painting.images?.[0] || painting.image} 
                       alt={painting.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-contain bg-gray-50 group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-6xl text-gray-300">
@@ -174,13 +198,18 @@ function PaintingsPage() {
                   <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-sm font-medium text-orange-600">
                     {painting.category}
                   </div>
+                  {painting.images && painting.images.length > 1 && (
+                    <div className="absolute bottom-3 left-3 bg-black/50 text-white px-2 py-1 rounded text-xs">
+                      +{painting.images.length - 1} more
+                    </div>
+                  )}
                 </div>
                 <div className="p-4">
                   <h3 className="font-semibold text-gray-900 mb-1 truncate">{painting.title}</h3>
                   <p className="text-sm text-gray-500 mb-2">
-                    by {painting.users?.name || 'Unknown Artist'}
+                    by {painting.profiles?.full_name || 'Unknown Artist'}
                   </p>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-3">
                     <span className="text-lg font-bold text-orange-600">
                       ₹{painting.price?.toLocaleString('en-IN')}
                     </span>
@@ -190,6 +219,13 @@ function PaintingsPage() {
                       </span>
                     )}
                   </div>
+                  <button
+                    onClick={(e) => handleAddToCart(e, painting.id)}
+                    className="w-full py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium"
+                    data-testid={`add-to-cart-${painting.id}`}
+                  >
+                    Add to Cart
+                  </button>
                 </div>
               </Link>
             ))}
@@ -202,9 +238,7 @@ function PaintingsPage() {
             Interested in a painting?
           </h3>
           <p className="text-orange-700">
-            To purchase or enquire about a painting, please use our{' '}
-            <Link to="/contact" className="underline font-medium">Commission Artwork</Link>{' '}
-            service or submit an enquiry through the artist's profile.
+            Click on any painting to see details, request a video screening, or add to cart for purchase.
           </p>
         </div>
       </div>
