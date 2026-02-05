@@ -19,7 +19,7 @@ function ArtistDetailPage() {
       setArtworks(response.artworks || []);
     } catch (err) {
       setError('Artist not found');
-      console.error('Error fetching artist:', error);
+      console.error('Error fetching artist:', err);
     } finally {
       setLoading(false);
     }
