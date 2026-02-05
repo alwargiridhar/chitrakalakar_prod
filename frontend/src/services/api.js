@@ -32,7 +32,10 @@ const apiCall = async (endpoint, options = {}) => {
   if (hasJson) {
     try {
       data = await response.json();
-    } catch (_) {}
+    } catch (e) {
+      // JSON parse error - ignore
+      console.debug('JSON parse error', e);
+    }
   }
 
   if (!response.ok) {
