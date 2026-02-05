@@ -12,6 +12,7 @@ import NotificationPopup from './components/NotificationPopup';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import AdminDashboard from './pages/AdminDashboard';
 import ArtistDashboard from './pages/ArtistDashboard';
 import UserDashboard from './pages/UserDashboard';
@@ -41,6 +42,7 @@ function App() {
           <Route path="/" element={<Layout><HomePage /></Layout>} />
           <Route path="/login" element={<Layout><LoginPage /></Layout>} />
           <Route path="/signup" element={<Layout><SignupPage /></Layout>} />
+          <Route path="/forgot-password" element={<Layout><ForgotPasswordPage /></Layout>} />
           <Route path="/about" element={<Layout><AboutPage /></Layout>} />
           <Route path="/artists" element={<Layout><ArtistsPage /></Layout>} />
           <Route path="/artist/:id" element={<Layout><ArtistDetailPage /></Layout>} />
