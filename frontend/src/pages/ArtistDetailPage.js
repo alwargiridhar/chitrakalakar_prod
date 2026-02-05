@@ -25,6 +25,10 @@ function ArtistDetailPage() {
     }
   }, [id]);
 
+  useEffect(() => {
+    fetchArtist();
+  }, [fetchArtist]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
