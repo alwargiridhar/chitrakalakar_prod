@@ -988,6 +988,7 @@ const handleSaveProfile = async () => {
                   <button
                     type="submit"
                     className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                    data-testid="submit-artwork-btn"
                   >
                     Add Artwork
                   </button>
@@ -997,6 +998,90 @@ const handleSaveProfile = async () => {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// AWB Update Form Component
+function AWBUpdateForm({ orderId, onUpdate }) {
+  const [awbNumber, setAwbNumber] = useState('');
+  const [courierPartner, setCourierPartner] = useState('');
+  const [trackingUrl, setTrackingUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const courierOptions = [
+    'Delhivery',
+    'BlueDart',
+    'DTDC',
+    'FedEx',
+    'India Post',
+    'Ecom Express',
+    'Xpressbees',
+    'Other'
+  ];
+
+  const handleSubmit = async () => {
+    if (!awbNumber || !courierPartner) {
+      alert('Please enter AWB number and select courier partner');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      await artistAPI.updateAWB(orderId, {
+        order_id: orderId,
+        awb_number: awbNumber,
+        courier_partner: courierPartner,
+        tracking_url: courierPartner === 'Other' ? trackingUrl : null
+      });
+      alert('AWB updated successfully!');
+      onUpdate();
+    } catch (error) {
+      console.error('Error updating AWB:', error);
+      alert(error.message || 'Failed to update AWB');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <h4 className="font-medium text-gray-700">Update Shipping Details</h4>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <select
+          value={courierPartner}
+          onChange={(e) => setCourierPartner(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+        >
+          <option value="">Select Courier</option>
+          {courierOptions.map(option => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </select>
+        <input
+          type="text"
+          value={awbNumber}
+          onChange={(e) => setAwbNumber(e.target.value)}
+          placeholder="AWB Number"
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+        />
+      </div>
+      {courierPartner === 'Other' && (
+        <input
+          type="url"
+          value={trackingUrl}
+          onChange={(e) => setTrackingUrl(e.target.value)}
+          placeholder="Tracking URL (if courier is not listed)"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+        />
+      )}
+      <button
+        onClick={handleSubmit}
+        disabled={loading}
+        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+      >
+        {loading ? 'Updating...' : 'Update AWB'}
+      </button>
     </div>
   );
 }
