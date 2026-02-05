@@ -5,6 +5,8 @@ import { AuthProvider } from './contexts/AuthContext';
 // Components
 import NavBar from './components/NavBar';
 import Layout from './components/Layout';
+import Chatbot from './components/Chatbot';
+import NotificationPopup from './components/NotificationPopup';
 
 // Pages
 import HomePage from './pages/HomePage';
