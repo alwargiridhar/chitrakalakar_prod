@@ -1,12 +1,21 @@
 import { supabase } from '../lib/supabase';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+// Use environment variable or fallback to localhost for development
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL && 
+  process.env.REACT_APP_BACKEND_URL !== 'your_render_backend_url_here'
+    ? process.env.REACT_APP_BACKEND_URL 
+    : 'http://localhost:8001';
 const API = `${BACKEND_URL}/api`;
 
 // Get auth token from Supabase session
 const getToken = async () => {
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.access_token;
+  if (!supabase) return null;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token;
+  } catch {
+    return null;
+  }
 };
 
 // Helper for API calls (SAFE VERSION)
