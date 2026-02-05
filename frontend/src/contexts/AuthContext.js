@@ -151,6 +151,7 @@ export function AuthProvider({ children }) {
         isLoading,
         signup,
         login,
+        loginWithGoogle,
         logout,
         updateProfile,
         isAuthenticated: !!profiles,
