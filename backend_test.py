@@ -360,6 +360,10 @@ class APITester:
         
         tests = [
             ("Health Check", self.test_health_check),
+            ("Public Stats API", self.test_public_stats),
+            ("Location Search API", self.test_location_search),
+            ("Membership Plans API", self.test_membership_plans),
+            ("Public Communities API", self.test_public_communities),
             ("Public Paintings API", self.test_public_paintings),
             ("Public Artists API", self.test_public_artists),
             ("Public Featured Artists API", self.test_featured_artists),
