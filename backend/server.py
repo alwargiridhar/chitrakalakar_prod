@@ -201,7 +201,9 @@ class CartItemRequest(BaseModel):
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "healthy", "database": "supabase"}
+    supabase = get_supabase_client()
+    db_status = "connected" if supabase else "not_configured"
+    return {"status": "healthy", "database": db_status}
 
 # ============ LOCATION SERVICES ============
 
@@ -257,27 +259,58 @@ async def get_public_stats():
     """Get platform statistics"""
     supabase = get_supabase_client()
     
-    # Get counts
-    artists_response = supabase.table('profiles').select('id', count='exact').eq('role', 'artist').eq('is_approved', True).execute()
-    artworks_response = supabase.table('artworks').select('id', count='exact').eq('is_approved', True).execute()
-    exhibitions_response = supabase.table('exhibitions').select('id', count='exact').eq('is_approved', True).execute()
+    if not supabase:
+        # Return demo data when Supabase is not configured
+        return {
+            "total_artists": 0,
+            "total_artworks": 0,
+            "active_exhibitions": 0,
+            "satisfaction_rate": 98
+        }
     
-    return {
-        "total_artists": artists_response.count or 0,
-        "total_artworks": artworks_response.count or 0,
-        "active_exhibitions": exhibitions_response.count or 0,
-        "satisfaction_rate": 98
-    }
+    try:
+        # Get counts
+        artists_response = supabase.table('profiles').select('id', count='exact').eq('role', 'artist').eq('is_approved', True).execute()
+        artworks_response = supabase.table('artworks').select('id', count='exact').eq('is_approved', True).execute()
+        exhibitions_response = supabase.table('exhibitions').select('id', count='exact').eq('is_approved', True).execute()
+        
+        return {
+            "total_artists": artists_response.count or 0,
+            "total_artworks": artworks_response.count or 0,
+            "active_exhibitions": exhibitions_response.count or 0,
+            "satisfaction_rate": 98
+        }
+    except Exception as e:
+        print(f"Stats error: {e}")
+        return {
+            "total_artists": 0,
+            "total_artworks": 0,
+            "active_exhibitions": 0,
+            "satisfaction_rate": 98
+        }
 
 @app.get("/api/public/featured-artists")
 async def get_featured_artists():
     """Get featured artists (contemporary and registered)"""
     supabase = get_supabase_client()
     
-    # Get contemporary featured artists
-    contemporary = supabase.table('featured_artists').select('*').eq('type', 'contemporary').eq('is_featured', True).execute()
+    if not supabase:
+        return {"contemporary": [], "registered": []}
     
-    # Get registered featured artists
+    try:
+        # Get contemporary featured artists
+        contemporary = supabase.table('featured_artists').select('*').eq('type', 'contemporary').eq('is_featured', True).execute()
+        
+        # Get registered featured artists
+        registered = supabase.table('featured_artists').select('*').eq('type', 'registered').eq('is_featured', True).execute()
+        
+        return {
+            "contemporary": contemporary.data or [],
+            "registered": registered.data or []
+        }
+    except Exception as e:
+        print(f"Featured artists error: {e}")
+        return {"contemporary": [], "registered": []}
     registered = supabase.table('featured_artists').select('*').eq('type', 'registered').eq('is_featured', True).execute()
     
     return {
