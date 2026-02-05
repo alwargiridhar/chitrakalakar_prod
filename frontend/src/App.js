@@ -60,6 +60,8 @@ function App() {
           <Route path="/kalakar" element={<><NavBar /><KalakarDashboard /></>} />
           <Route path="*" element={<Layout><NotFoundPage /></Layout>} />
         </Routes>
+        <Chatbot />
+        <NotificationPopup />
       </BrowserRouter>
     </AuthProvider>
   );
