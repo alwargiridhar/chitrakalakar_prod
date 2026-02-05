@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { publicAPI } from '../services/api';
 
@@ -12,17 +12,12 @@ function ArtistDetailPage() {
   const artistName = artist?.full_name || artist?.name || 'Artist';
   const categories = Array.isArray(artist?.categories) ? artist.categories : [];
 
-
-  useEffect(() => {
-    fetchArtist();
-  }, [fetchArtist]);
-
   const fetchArtist = useCallback(async () => {
     try {
       const response = await publicAPI.getArtistDetail(id);
       setArtist(response.artist);
       setArtworks(response.artworks || []);
-    } catch (error) {
+    } catch (err) {
       setError('Artist not found');
       console.error('Error fetching artist:', error);
     } finally {
