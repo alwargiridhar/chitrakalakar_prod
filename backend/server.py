@@ -1,5 +1,5 @@
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field, ConfigDict
@@ -11,6 +11,10 @@ import boto3
 from dotenv import load_dotenv
 import uuid
 from botocore.config import Config
+import json
+import asyncio
+import hashlib
+import hmac
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
@@ -31,6 +35,23 @@ def get_s3_client():
             config=Config(signature_version="s3v4"),
         )
     return _s3_client
+
+# Razorpay Configuration - lazy initialization
+_razorpay_client = None
+
+def get_razorpay_client():
+    """Lazy initialization of Razorpay client"""
+    global _razorpay_client
+    if _razorpay_client is None:
+        try:
+            import razorpay
+            key_id = os.environ.get("RAZORPAY_KEY_ID")
+            key_secret = os.environ.get("RAZORPAY_KEY_SECRET")
+            if key_id and key_secret:
+                _razorpay_client = razorpay.Client(auth=(key_id, key_secret))
+        except Exception as e:
+            print(f"Razorpay init error: {e}")
+    return _razorpay_client
 
 # Import Supabase authentication
 from auth_utils import (
@@ -68,6 +89,7 @@ class ProfileUpdateRequest(BaseModel):
     teaching_rate: Optional[float] = None
     teaches_online: Optional[bool] = None
     teaches_offline: Optional[bool] = None
+    country: Optional[str] = None
 
 class UploadUrlRequest(BaseModel):
     filename: str
@@ -78,7 +100,8 @@ class ArtworkCreate(BaseModel):
     title: str
     category: str
     price: float
-    image: Optional[str] = None
+    images: Optional[List[str]] = None  # Support multiple images (up to 5)
+    image: Optional[str] = None  # Legacy single image support
     description: Optional[str] = None
 
 class ArtworkApprovalRequest(BaseModel):
@@ -129,11 +152,103 @@ class CreateSubAdminRequest(BaseModel):
     role: str
     location: Optional[str] = None
 
+# New Models for added features
+class MembershipPlanRequest(BaseModel):
+    plan_type: str  # 'monthly' or 'annual'
+
+class ChatMessageRequest(BaseModel):
+    message: str
+    session_id: Optional[str] = None
+
+class OrderCreate(BaseModel):
+    artwork_id: str
+    shipping_address: str
+    phone: str
+
+class AWBUpdateRequest(BaseModel):
+    order_id: str
+    awb_number: str
+    courier_partner: str
+    tracking_url: Optional[str] = None
+
+class CommunityCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    location: Optional[str] = None
+
+class VideoScreeningRequest(BaseModel):
+    painting_id: str
+    preferred_date: Optional[str] = None
+    message: Optional[str] = None
+
+class ProfileModificationRequest(BaseModel):
+    full_name: Optional[str] = None
+    bio: Optional[str] = None
+    location: Optional[str] = None
+    categories: Optional[List[str]] = None
+    avatar: Optional[str] = None
+    phone: Optional[str] = None
+    country: Optional[str] = None
+
+class PushToMarketplaceRequest(BaseModel):
+    artwork_ids: List[str]
+
+class CartItemRequest(BaseModel):
+    artwork_id: str
+    quantity: int = 1
+
 # ============ HEALTH CHECK ============
 
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "database": "supabase"}
+
+# ============ LOCATION SERVICES ============
+
+@app.get("/api/locations/search")
+async def search_locations(q: str, country: Optional[str] = None):
+    """Search locations using OpenStreetMap Nominatim API"""
+    import httpx
+    
+    if len(q) < 2:
+        return {"locations": []}
+    
+    try:
+        params = {
+            "q": q,
+            "format": "json",
+            "addressdetails": 1,
+            "limit": 10
+        }
+        
+        if country:
+            params["countrycodes"] = country.lower()
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://nominatim.openstreetmap.org/search",
+                params=params,
+                headers={"User-Agent": "ChitraKalakar/1.0"}
+            )
+            data = response.json()
+        
+        locations = []
+        for item in data:
+            address = item.get("address", {})
+            locations.append({
+                "display_name": item.get("display_name"),
+                "city": address.get("city") or address.get("town") or address.get("village"),
+                "state": address.get("state"),
+                "country": address.get("country"),
+                "country_code": address.get("country_code", "").upper(),
+                "lat": item.get("lat"),
+                "lon": item.get("lon")
+            })
+        
+        return {"locations": locations}
+    except Exception as e:
+        print(f"Location search error: {e}")
+        return {"locations": []}
 
 # ============ PUBLIC ROUTES ============
 
@@ -202,14 +317,14 @@ async def get_public_artist_detail(artist_id: str):
     
     # Get artist without contact info
     artist = supabase.table('profiles').select(
-        'id, full_name, bio, categories, location, created_at'
+        'id, full_name, bio, categories, location, avatar, created_at'
     ).eq('id', artist_id).eq('role', 'artist').eq('is_approved', True).single().execute()
     
     if not artist.data:
         raise HTTPException(status_code=404, detail="Artist not found")
     
     # Get artist's approved artworks
-    artworks = supabase.table('artworks').select('*').eq('artist_id', artist_id).eq('is_approved', True).order('created_at', desc=True).execute()
+    artworks = supabase.table('artworks').select('*').eq('artist_id', artist_id).eq('is_approved', True).eq('in_marketplace', True).order('created_at', desc=True).execute()
     
     return {
         "artist": artist.data,
@@ -221,10 +336,10 @@ async def get_public_paintings():
     """Get all approved artworks for marketplace (without artist contact info)"""
     supabase = get_supabase_client()
     
-    # Get all approved artworks with artist name (but no contact info)
+    # Get all approved artworks that are in marketplace with artist name (but no contact info)
     artworks = supabase.table('artworks').select(
-        '*, profiles.inner(id, full_name, avatar, location)'
-    ).eq('is_approved', True).order('created_at', desc=True).execute()
+        '*, profiles!inner(id, full_name, avatar, location)'
+    ).eq('is_approved', True).eq('in_marketplace', True).eq('is_available', True).order('created_at', desc=True).execute()
     
     return {"paintings": artworks.data or []}
 
@@ -234,8 +349,8 @@ async def get_painting_detail(painting_id: str):
     supabase = get_supabase_client()
     
     painting = supabase.table('artworks').select(
-        '*, profiles.inner(id, full_name, avatar, location, bio, categories)'
-    ).eq('id', painting_id).eq('is_approved', True).single().execute()
+        '*, profiles!inner(id, full_name, avatar, location, bio, categories)'
+    ).eq('id', painting_id).single().execute()
     
     if not painting.data:
         raise HTTPException(status_code=404, detail="Painting not found")
@@ -263,7 +378,7 @@ async def get_public_exhibitions():
     """Get all approved exhibitions"""
     supabase = get_supabase_client()
     
-    exhibitions = supabase.table('exhibitions').select('*, users(name)').eq('is_approved', True).order('created_at', desc=True).execute()
+    exhibitions = supabase.table('exhibitions').select('*').eq('is_approved', True).order('created_at', desc=True).execute()
     
     return {"exhibitions": exhibitions.data or []}
 
@@ -272,7 +387,7 @@ async def get_active_exhibitions():
     """Get active exhibitions"""
     supabase = get_supabase_client()
     
-    exhibitions = supabase.table('exhibitions').select('*, users(name)').eq('is_approved', True).eq('status', 'active').execute()
+    exhibitions = supabase.table('exhibitions').select('*').eq('is_approved', True).eq('status', 'active').execute()
     
     return {"exhibitions": exhibitions.data or []}
 
@@ -281,9 +396,583 @@ async def get_archived_exhibitions():
     """Get archived exhibitions"""
     supabase = get_supabase_client()
     
-    exhibitions = supabase.table('exhibitions').select('*, users(name)').eq('is_approved', True).eq('status', 'archived').execute()
+    exhibitions = supabase.table('exhibitions').select('*').eq('is_approved', True).eq('status', 'archived').execute()
     
     return {"exhibitions": exhibitions.data or []}
+
+# ============ COMMUNITIES ============
+
+@app.get("/api/public/communities")
+async def get_public_communities():
+    """Get all approved communities"""
+    supabase = get_supabase_client()
+    
+    communities = supabase.table('communities').select('*, profiles!creator_id(full_name, avatar)').eq('is_approved', True).order('created_at', desc=True).execute()
+    
+    return {"communities": communities.data or []}
+
+@app.get("/api/public/community/{community_id}")
+async def get_community_detail(community_id: str):
+    """Get community details with members"""
+    supabase = get_supabase_client()
+    
+    community = supabase.table('communities').select('*').eq('id', community_id).eq('is_approved', True).single().execute()
+    
+    if not community.data:
+        raise HTTPException(status_code=404, detail="Community not found")
+    
+    # Get members
+    members = supabase.table('community_members').select('*, profiles!user_id(id, full_name, avatar, location)').eq('community_id', community_id).execute()
+    
+    return {
+        "community": community.data,
+        "members": members.data or [],
+        "member_count": len(members.data or [])
+    }
+
+@app.post("/api/communities")
+async def create_community(data: CommunityCreate, user: dict = Depends(require_artist)):
+    """Create a new community (requires artist role)"""
+    supabase = get_supabase_client()
+    
+    community_data = {
+        "name": data.name,
+        "description": data.description,
+        "location": data.location,
+        "creator_id": user['id'],
+        "is_approved": False,  # Requires admin approval
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table('communities').insert(community_data).execute()
+    
+    return {"success": True, "community": result.data[0], "message": "Community created and pending admin approval"}
+
+@app.post("/api/communities/{community_id}/join")
+async def join_community(community_id: str, user: dict = Depends(require_user)):
+    """Join a community"""
+    supabase = get_supabase_client()
+    
+    # Check if community exists and is approved
+    community = supabase.table('communities').select('id').eq('id', community_id).eq('is_approved', True).single().execute()
+    if not community.data:
+        raise HTTPException(status_code=404, detail="Community not found")
+    
+    # Check if already a member
+    existing = supabase.table('community_members').select('id').eq('community_id', community_id).eq('user_id', user['id']).execute()
+    if existing.data:
+        raise HTTPException(status_code=400, detail="Already a member of this community")
+    
+    # Join community
+    member_data = {
+        "community_id": community_id,
+        "user_id": user['id'],
+        "joined_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table('community_members').insert(member_data).execute()
+    
+    return {"success": True, "message": "Joined community successfully"}
+
+@app.post("/api/communities/{community_id}/leave")
+async def leave_community(community_id: str, user: dict = Depends(require_user)):
+    """Leave a community"""
+    supabase = get_supabase_client()
+    
+    result = supabase.table('community_members').delete().eq('community_id', community_id).eq('user_id', user['id']).execute()
+    
+    return {"success": True, "message": "Left community successfully"}
+
+# ============ CHATBOT (CHITRAKAR) ============
+
+@app.post("/api/chat/message")
+async def chat_with_chitrakar(data: ChatMessageRequest, user: dict = Depends(require_user)):
+    """Send message to Chitrakar chatbot"""
+    supabase = get_supabase_client()
+    
+    session_id = data.session_id or f"chat_{user['id']}_{int(time.time())}"
+    
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        # Initialize chat with system message
+        chat = LlmChat(
+            api_key=os.environ.get("EMERGENT_LLM_KEY"),
+            session_id=session_id,
+            system_message="""You are Chitrakar, a helpful assistant for ChitraKalakar - an Indian art marketplace platform.
+            You help users with:
+            - Finding artists and artworks
+            - Understanding art categories and styles
+            - Explaining the platform features
+            - Answering questions about art classes
+            - Guiding users through purchases and orders
+            - Explaining membership benefits for artists
+            
+            Be friendly, helpful, and knowledgeable about Indian art. If you don't know something specific about a user's order or account, 
+            politely let them know that an admin will respond within 24 hours. Keep responses concise but helpful."""
+        )
+        
+        chat.with_model("openai", "gpt-4o-mini")
+        
+        # Create message
+        user_message = UserMessage(text=data.message)
+        
+        # Get response
+        response = await chat.send_message(user_message)
+        
+        # Store in database for admin review
+        chat_data = {
+            "session_id": session_id,
+            "user_id": user['id'],
+            "user_message": data.message,
+            "bot_response": response,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "needs_admin_review": False
+        }
+        
+        # Check if bot couldn't answer - mark for admin review
+        if any(phrase in response.lower() for phrase in ["i don't know", "admin will", "cannot help", "contact support"]):
+            chat_data["needs_admin_review"] = True
+        
+        supabase.table('chat_messages').insert(chat_data).execute()
+        
+        return {
+            "success": True,
+            "response": response,
+            "session_id": session_id
+        }
+        
+    except Exception as e:
+        print(f"Chat error: {e}")
+        # Fallback response and store for admin
+        fallback_response = "Thank you for your message! Our team will review and respond within 24 hours. In the meantime, feel free to browse our artists and artworks."
+        
+        chat_data = {
+            "session_id": session_id,
+            "user_id": user['id'],
+            "user_message": data.message,
+            "bot_response": fallback_response,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "needs_admin_review": True
+        }
+        
+        try:
+            supabase.table('chat_messages').insert(chat_data).execute()
+        except:
+            pass
+        
+        return {
+            "success": True,
+            "response": fallback_response,
+            "session_id": session_id
+        }
+
+@app.get("/api/chat/history")
+async def get_chat_history(user: dict = Depends(require_user)):
+    """Get user's chat history"""
+    supabase = get_supabase_client()
+    
+    messages = supabase.table('chat_messages').select('*').eq('user_id', user['id']).order('created_at', desc=True).limit(50).execute()
+    
+    return {"messages": messages.data or []}
+
+# ============ MEMBERSHIP/SUBSCRIPTION ============
+
+MEMBERSHIP_PLANS = {
+    "monthly": {
+        "name": "Monthly Membership",
+        "base_price": 99,
+        "gst_rate": 0.18,
+        "duration_days": 30
+    },
+    "annual": {
+        "name": "Annual Membership",
+        "base_price": 999,
+        "gst_rate": 0.18,
+        "duration_days": 365
+    }
+}
+
+@app.get("/api/membership/plans")
+async def get_membership_plans():
+    """Get available membership plans"""
+    plans = []
+    for plan_id, plan in MEMBERSHIP_PLANS.items():
+        gst_amount = plan["base_price"] * plan["gst_rate"]
+        total_price = plan["base_price"] + gst_amount
+        plans.append({
+            "id": plan_id,
+            "name": plan["name"],
+            "base_price": plan["base_price"],
+            "gst_rate": plan["gst_rate"] * 100,
+            "gst_amount": round(gst_amount, 2),
+            "total_price": round(total_price, 2),
+            "duration_days": plan["duration_days"]
+        })
+    return {"plans": plans}
+
+@app.post("/api/membership/create-order")
+async def create_membership_order(data: MembershipPlanRequest, user: dict = Depends(require_artist)):
+    """Create Razorpay order for membership"""
+    
+    if data.plan_type not in MEMBERSHIP_PLANS:
+        raise HTTPException(status_code=400, detail="Invalid plan type")
+    
+    plan = MEMBERSHIP_PLANS[data.plan_type]
+    gst_amount = plan["base_price"] * plan["gst_rate"]
+    total_price = plan["base_price"] + gst_amount
+    amount_in_paise = int(total_price * 100)
+    
+    razorpay_client = get_razorpay_client()
+    
+    if not razorpay_client:
+        raise HTTPException(status_code=500, detail="Payment gateway not configured")
+    
+    try:
+        order = razorpay_client.order.create({
+            "amount": amount_in_paise,
+            "currency": "INR",
+            "payment_capture": 1,
+            "notes": {
+                "user_id": user['id'],
+                "plan_type": data.plan_type
+            }
+        })
+        
+        # Store order in database
+        supabase = get_supabase_client()
+        order_data = {
+            "razorpay_order_id": order['id'],
+            "user_id": user['id'],
+            "plan_type": data.plan_type,
+            "amount": total_price,
+            "status": "created",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        supabase.table('membership_orders').insert(order_data).execute()
+        
+        return {
+            "success": True,
+            "order_id": order['id'],
+            "amount": amount_in_paise,
+            "currency": "INR",
+            "key_id": os.environ.get("RAZORPAY_KEY_ID")
+        }
+    except Exception as e:
+        print(f"Razorpay order error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create payment order")
+
+@app.post("/api/membership/verify-payment")
+async def verify_membership_payment(
+    razorpay_order_id: str,
+    razorpay_payment_id: str,
+    razorpay_signature: str,
+    user: dict = Depends(require_artist)
+):
+    """Verify Razorpay payment and activate membership"""
+    
+    razorpay_client = get_razorpay_client()
+    if not razorpay_client:
+        raise HTTPException(status_code=500, detail="Payment gateway not configured")
+    
+    try:
+        # Verify signature
+        razorpay_client.utility.verify_payment_signature({
+            'razorpay_order_id': razorpay_order_id,
+            'razorpay_payment_id': razorpay_payment_id,
+            'razorpay_signature': razorpay_signature
+        })
+        
+        # Get order details
+        supabase = get_supabase_client()
+        order = supabase.table('membership_orders').select('*').eq('razorpay_order_id', razorpay_order_id).eq('user_id', user['id']).single().execute()
+        
+        if not order.data:
+            raise HTTPException(status_code=404, detail="Order not found")
+        
+        plan = MEMBERSHIP_PLANS[order.data['plan_type']]
+        expiry_date = datetime.now(timezone.utc) + timedelta(days=plan['duration_days'])
+        
+        # Update order status
+        supabase.table('membership_orders').update({
+            "status": "completed",
+            "razorpay_payment_id": razorpay_payment_id,
+            "completed_at": datetime.now(timezone.utc).isoformat()
+        }).eq('razorpay_order_id', razorpay_order_id).execute()
+        
+        # Activate membership
+        supabase.table('profiles').update({
+            "is_member": True,
+            "membership_type": order.data['plan_type'],
+            "membership_expiry": expiry_date.isoformat()
+        }).eq('id', user['id']).execute()
+        
+        return {
+            "success": True,
+            "message": "Membership activated successfully",
+            "expiry_date": expiry_date.isoformat()
+        }
+        
+    except Exception as e:
+        print(f"Payment verification error: {e}")
+        raise HTTPException(status_code=400, detail="Payment verification failed")
+
+@app.get("/api/membership/status")
+async def get_membership_status(user: dict = Depends(require_artist)):
+    """Get current membership status"""
+    supabase = get_supabase_client()
+    
+    profile = supabase.table('profiles').select('is_member, membership_type, membership_expiry').eq('id', user['id']).single().execute()
+    
+    if not profile.data:
+        return {"is_member": False}
+    
+    is_active = False
+    if profile.data.get('membership_expiry'):
+        expiry = datetime.fromisoformat(profile.data['membership_expiry'].replace('Z', '+00:00'))
+        is_active = expiry > datetime.now(timezone.utc)
+    
+    return {
+        "is_member": profile.data.get('is_member', False) and is_active,
+        "membership_type": profile.data.get('membership_type'),
+        "membership_expiry": profile.data.get('membership_expiry'),
+        "is_active": is_active
+    }
+
+# ============ VIDEO SCREENING ============
+
+@app.post("/api/video-screening/request")
+async def request_video_screening(data: VideoScreeningRequest, user: dict = Depends(require_user)):
+    """Request video screening for a painting"""
+    supabase = get_supabase_client()
+    
+    # Check if painting exists
+    painting = supabase.table('artworks').select('id, title, artist_id').eq('id', data.painting_id).single().execute()
+    if not painting.data:
+        raise HTTPException(status_code=404, detail="Painting not found")
+    
+    screening_data = {
+        "painting_id": data.painting_id,
+        "user_id": user['id'],
+        "artist_id": painting.data['artist_id'],
+        "preferred_date": data.preferred_date,
+        "message": data.message,
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table('video_screenings').insert(screening_data).execute()
+    
+    return {"success": True, "screening_id": result.data[0]['id'], "message": "Video screening request submitted. Admin will accommodate your request."}
+
+@app.get("/api/video-screening/my-requests")
+async def get_my_video_screenings(user: dict = Depends(require_user)):
+    """Get user's video screening requests"""
+    supabase = get_supabase_client()
+    
+    screenings = supabase.table('video_screenings').select('*, artworks!painting_id(title, image, images)').eq('user_id', user['id']).order('created_at', desc=True).execute()
+    
+    return {"screenings": screenings.data or []}
+
+# ============ ORDERS & CART ============
+
+@app.post("/api/cart/add")
+async def add_to_cart(data: CartItemRequest, user: dict = Depends(require_user)):
+    """Add item to cart"""
+    supabase = get_supabase_client()
+    
+    # Check if artwork exists and is available
+    artwork = supabase.table('artworks').select('*').eq('id', data.artwork_id).eq('is_available', True).single().execute()
+    if not artwork.data:
+        raise HTTPException(status_code=404, detail="Artwork not found or not available")
+    
+    # Check if already in cart
+    existing = supabase.table('cart_items').select('id, quantity').eq('user_id', user['id']).eq('artwork_id', data.artwork_id).execute()
+    
+    if existing.data:
+        # Update quantity
+        new_quantity = existing.data[0]['quantity'] + data.quantity
+        supabase.table('cart_items').update({"quantity": new_quantity}).eq('id', existing.data[0]['id']).execute()
+    else:
+        # Add new item
+        cart_data = {
+            "user_id": user['id'],
+            "artwork_id": data.artwork_id,
+            "quantity": data.quantity,
+            "added_at": datetime.now(timezone.utc).isoformat()
+        }
+        supabase.table('cart_items').insert(cart_data).execute()
+    
+    return {"success": True, "message": "Added to cart"}
+
+@app.get("/api/cart")
+async def get_cart(user: dict = Depends(require_user)):
+    """Get user's cart"""
+    supabase = get_supabase_client()
+    
+    cart_items = supabase.table('cart_items').select('*, artworks!artwork_id(*)').eq('user_id', user['id']).execute()
+    
+    total = sum(item['artworks']['price'] * item['quantity'] for item in (cart_items.data or []) if item.get('artworks'))
+    
+    return {
+        "items": cart_items.data or [],
+        "total": total,
+        "item_count": len(cart_items.data or [])
+    }
+
+@app.delete("/api/cart/{item_id}")
+async def remove_from_cart(item_id: str, user: dict = Depends(require_user)):
+    """Remove item from cart"""
+    supabase = get_supabase_client()
+    
+    supabase.table('cart_items').delete().eq('id', item_id).eq('user_id', user['id']).execute()
+    
+    return {"success": True, "message": "Removed from cart"}
+
+@app.post("/api/orders/create")
+async def create_order(data: OrderCreate, user: dict = Depends(require_user)):
+    """Create an order for an artwork"""
+    supabase = get_supabase_client()
+    
+    # Get artwork details
+    artwork = supabase.table('artworks').select('*, profiles!artist_id(id, full_name)').eq('id', data.artwork_id).eq('is_available', True).single().execute()
+    
+    if not artwork.data:
+        raise HTTPException(status_code=404, detail="Artwork not found or not available")
+    
+    # Get user profile
+    user_profile = supabase.table('profiles').select('full_name, email').eq('id', user['id']).single().execute()
+    
+    order_number = f"ORD-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:8].upper()}"
+    
+    order_data = {
+        "order_number": order_number,
+        "artwork_id": data.artwork_id,
+        "artwork_title": artwork.data['title'],
+        "user_id": user['id'],
+        "customer_name": user_profile.data.get('full_name', ''),
+        "customer_email": user_profile.data.get('email', ''),
+        "artist_id": artwork.data['artist_id'],
+        "artist_name": artwork.data['profiles']['full_name'],
+        "price": artwork.data['price'],
+        "shipping_address": data.shipping_address,
+        "phone": data.phone,
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table('orders').insert(order_data).execute()
+    
+    # Create notification for real-time display
+    notification_data = {
+        "type": "purchase",
+        "user_name": user_profile.data.get('full_name', 'Someone'),
+        "artist_name": artwork.data['profiles']['full_name'],
+        "artwork_title": artwork.data['title'],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    supabase.table('notifications').insert(notification_data).execute()
+    
+    return {"success": True, "order": result.data[0], "order_number": order_number}
+
+@app.get("/api/orders/my-orders")
+async def get_my_orders(user: dict = Depends(require_user)):
+    """Get user's orders"""
+    supabase = get_supabase_client()
+    
+    orders = supabase.table('orders').select('*').eq('user_id', user['id']).order('created_at', desc=True).execute()
+    
+    return {"orders": orders.data or []}
+
+# ============ NOTIFICATIONS ============
+
+@app.get("/api/notifications/recent")
+async def get_recent_notifications():
+    """Get recent purchase/order notifications for display"""
+    supabase = get_supabase_client()
+    
+    # Get notifications from last 24 hours
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    
+    notifications = supabase.table('notifications').select('*').gte('created_at', cutoff).order('created_at', desc=True).limit(20).execute()
+    
+    # Format time ago
+    result = []
+    for notif in (notifications.data or []):
+        created = datetime.fromisoformat(notif['created_at'].replace('Z', '+00:00'))
+        diff = datetime.now(timezone.utc) - created
+        
+        if diff.total_seconds() < 60:
+            time_ago = "just now"
+        elif diff.total_seconds() < 3600:
+            time_ago = f"{int(diff.total_seconds() / 60)} min ago"
+        elif diff.total_seconds() < 86400:
+            time_ago = f"{int(diff.total_seconds() / 3600)} hours ago"
+        else:
+            time_ago = "within 24 hours"
+        
+        result.append({
+            **notif,
+            "time_ago": time_ago
+        })
+    
+    return {"notifications": result}
+
+# ============ COURIER TRACKING ============
+
+COURIER_TRACKING_URLS = {
+    "delhivery": "https://www.delhivery.com/track/package/",
+    "bluedart": "https://www.bluedart.com/tracking/",
+    "dtdc": "https://www.dtdc.in/tracking/",
+    "fedex": "https://www.fedex.com/fedextrack/?trknbr=",
+    "india_post": "https://www.indiapost.gov.in/_layouts/15/DOP.Portal.Tracking/TrackConsignment.aspx?ConsignmentNo=",
+    "ecom_express": "https://ecomexpress.in/tracking/?awb_field=",
+    "xpressbees": "https://www.xpressbees.com/track?awb="
+}
+
+@app.post("/api/orders/{order_id}/update-awb")
+async def update_awb(order_id: str, data: AWBUpdateRequest, artist: dict = Depends(require_artist)):
+    """Update AWB tracking for an order"""
+    supabase = get_supabase_client()
+    
+    # Verify artist owns this order
+    order = supabase.table('orders').select('*').eq('id', order_id).eq('artist_id', artist['id']).single().execute()
+    
+    if not order.data:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Build tracking URL
+    courier_lower = data.courier_partner.lower().replace(" ", "_")
+    if courier_lower in COURIER_TRACKING_URLS:
+        tracking_url = COURIER_TRACKING_URLS[courier_lower] + data.awb_number
+    elif data.tracking_url:
+        tracking_url = data.tracking_url
+    else:
+        tracking_url = None
+    
+    update_data = {
+        "awb_number": data.awb_number,
+        "courier_partner": data.courier_partner,
+        "tracking_url": tracking_url,
+        "status": "shipped",
+        "shipped_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    supabase.table('orders').update(update_data).eq('id', order_id).execute()
+    
+    return {"success": True, "tracking_url": tracking_url}
+
+@app.get("/api/orders/{order_id}/track")
+async def track_order(order_id: str, user: dict = Depends(require_user)):
+    """Get tracking info for an order"""
+    supabase = get_supabase_client()
+    
+    order = supabase.table('orders').select('awb_number, courier_partner, tracking_url, status, shipped_at').eq('id', order_id).single().execute()
+    
+    if not order.data:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    return {"tracking": order.data}
 
 # ============ ART CLASS ENQUIRY ROUTES ============
 
@@ -313,7 +1002,6 @@ async def create_art_class_enquiry(enquiry_data: ArtClassEnquiryCreate, user: di
     
     # Filter by budget range - different options for online vs offline
     if enquiry_data.class_type == "online":
-        # Online classes: only 250-350 and 350-500 (no 500-1000)
         budget_ranges = {
             "250-350": (250, 350),
             "350-500": (350, 500)
@@ -322,7 +1010,6 @@ async def create_art_class_enquiry(enquiry_data: ArtClassEnquiryCreate, user: di
             min_rate, max_rate = budget_ranges[enquiry_data.budget_range]
             query = query.gte('teaching_rate', min_rate).lte('teaching_rate', max_rate)
     elif enquiry_data.class_type == "offline":
-        # Offline/In-person classes: all three budget ranges
         budget_ranges = {
             "250-350": (250, 350),
             "350-500": (350, 500),
@@ -345,7 +1032,7 @@ async def create_art_class_enquiry(enquiry_data: ArtClassEnquiryCreate, user: di
     # Create enquiry
     enquiry = {
         "user_id": user['id'],
-        "user_name": user_profile.data.get('name', ''),
+        "user_name": user_profile.data.get('full_name', ''),
         "user_email": user_profile.data.get('email', ''),
         "user_location": enquiry_data.user_location or user_profile.data.get('location', ''),
         "art_type": enquiry_data.art_type,
@@ -378,10 +1065,11 @@ async def get_art_class_matches(enquiry_id: str, user: dict = Depends(require_us
         raise HTTPException(status_code=404, detail="Enquiry not found")
     
     # Check if expired
-    expires_at = datetime.fromisoformat(enquiry.data['expires_at'])
-    if datetime.now(timezone.utc) > expires_at:
-        supabase.table('art_class_enquiries').update({"status": "expired"}).eq('id', enquiry_id).execute()
-        raise HTTPException(status_code=400, detail="This enquiry has expired")
+    if enquiry.data.get('expires_at'):
+        expires_at = datetime.fromisoformat(enquiry.data['expires_at'].replace('Z', '+00:00'))
+        if datetime.now(timezone.utc) > expires_at:
+            supabase.table('art_class_enquiries').update({"status": "expired"}).eq('id', enquiry_id).execute()
+            raise HTTPException(status_code=400, detail="This enquiry has expired")
     
     # Get matched artists
     matched_artists = []
@@ -437,7 +1125,7 @@ async def reveal_artist_contact(request: RevealContactRequest, user: dict = Depe
     supabase.table('art_class_enquiries').update({"contacts_revealed": contacts_revealed}).eq('id', request.enquiry_id).execute()
     
     # Get artist contact
-    artist = supabase.table('profiles').select('phone, email, name').eq('id', request.artist_id).single().execute()
+    artist = supabase.table('profiles').select('phone, email, full_name').eq('id', request.artist_id).single().execute()
     
     return {
         "success": True,
@@ -468,6 +1156,33 @@ async def get_user_profile(user: dict = Depends(require_user)):
     
     return {"profile": profile.data}
 
+# ============ PROFILE MODIFICATION WITH APPROVAL ============
+
+@app.post("/api/profile/request-modification")
+async def request_profile_modification(data: ProfileModificationRequest, user: dict = Depends(require_user)):
+    """Request profile modification - requires admin approval"""
+    supabase = get_supabase_client()
+    
+    modification_data = {
+        "user_id": user['id'],
+        "requested_changes": data.model_dump(exclude_unset=True),
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table('profile_modifications').insert(modification_data).execute()
+    
+    return {"success": True, "modification_id": result.data[0]['id'], "message": "Profile modification request submitted for admin approval"}
+
+@app.get("/api/profile/pending-modifications")
+async def get_pending_modifications(user: dict = Depends(require_user)):
+    """Get user's pending profile modifications"""
+    supabase = get_supabase_client()
+    
+    modifications = supabase.table('profile_modifications').select('*').eq('user_id', user['id']).order('created_at', desc=True).execute()
+    
+    return {"modifications": modifications.data or []}
+
 # ============ ADMIN ROUTES ============
 
 @app.get("/api/admin/dashboard")
@@ -479,12 +1194,18 @@ async def get_admin_dashboard(admin: dict = Depends(require_admin)):
     pending_artworks = supabase.table('artworks').select('id', count='exact').eq('is_approved', False).execute()
     pending_exhibitions = supabase.table('exhibitions').select('id', count='exact').eq('is_approved', False).execute()
     total_users = supabase.table('profiles').select('id', count='exact').execute()
+    pending_communities = supabase.table('communities').select('id', count='exact').eq('is_approved', False).execute()
+    pending_modifications = supabase.table('profile_modifications').select('id', count='exact').eq('status', 'pending').execute()
+    pending_screenings = supabase.table('video_screenings').select('id', count='exact').eq('status', 'pending').execute()
     
     return {
         "pending_artists": pending_artists.count or 0,
         "pending_artworks": pending_artworks.count or 0,
         "pending_exhibitions": pending_exhibitions.count or 0,
-        "total_users": total_users.count or 0
+        "total_users": total_users.count or 0,
+        "pending_communities": pending_communities.count or 0,
+        "pending_modifications": pending_modifications.count or 0,
+        "pending_screenings": pending_screenings.count or 0
     }
 
 @app.get("/api/admin/pending-artists")
@@ -513,9 +1234,18 @@ async def get_pending_artworks(admin: dict = Depends(require_admin)):
     """Get artworks awaiting approval"""
     supabase = get_supabase_client()
     
-    artworks = supabase.table('artworks').select('*, users(name)').eq('is_approved', False).execute()
+    artworks = supabase.table('artworks').select('*, profiles!artist_id(full_name, email)').eq('is_approved', False).execute()
     
-    return {"artworks": artworks.data or []}
+    # Transform for frontend
+    result = []
+    for artwork in (artworks.data or []):
+        result.append({
+            **artwork,
+            "artist_name": artwork.get('profiles', {}).get('full_name', 'Unknown'),
+            "artist_email": artwork.get('profiles', {}).get('email', '')
+        })
+    
+    return {"artworks": result}
 
 @app.post("/api/admin/approve-artwork")
 async def approve_artwork(request: ArtworkApprovalRequest, admin: dict = Depends(require_admin)):
@@ -534,7 +1264,7 @@ async def get_pending_exhibitions(admin: dict = Depends(require_admin)):
     """Get exhibitions awaiting approval"""
     supabase = get_supabase_client()
     
-    exhibitions = supabase.table('exhibitions').select('*, users(name)').eq('is_approved', False).execute()
+    exhibitions = supabase.table('exhibitions').select('*, profiles!artist_id(full_name)').eq('is_approved', False).execute()
     
     return {"exhibitions": exhibitions.data or []}
 
@@ -568,13 +1298,26 @@ async def get_approved_artists(admin: dict = Depends(require_admin)):
     
     return {"artists": artists.data or []}
 
+@app.get("/api/admin/featured-artists")
+async def get_admin_featured_artists(admin: dict = Depends(require_admin)):
+    """Get all featured artists for admin"""
+    supabase = get_supabase_client()
+    
+    contemporary = supabase.table('featured_artists').select('*').eq('type', 'contemporary').execute()
+    registered = supabase.table('featured_artists').select('*').eq('type', 'registered').execute()
+    
+    return {
+        "contemporary": contemporary.data or [],
+        "registered": registered.data or []
+    }
+
 @app.post("/api/admin/feature-contemporary-artist")
 async def feature_contemporary_artist(artist_data: FeaturedArtistCreate, admin: dict = Depends(require_admin)):
     """Add a contemporary featured artist"""
     supabase = get_supabase_client()
     
     featured_artist = {
-        "name": artist_data.full_name,
+        "name": artist_data.name,
         "bio": artist_data.bio,
         "avatar": artist_data.avatar,
         "categories": artist_data.categories,
@@ -589,6 +1332,7 @@ async def feature_contemporary_artist(artist_data: FeaturedArtistCreate, admin: 
     return {"success": True, "artist": result.data[0]}
 
 @app.delete("/api/admin/feature-contemporary-artist/{artist_id}")
+@app.delete("/api/admin/featured-artist/{artist_id}")
 async def delete_contemporary_artist(artist_id: str, admin: dict = Depends(require_admin)):
     """Remove a contemporary featured artist"""
     supabase = get_supabase_client()
@@ -614,7 +1358,7 @@ async def feature_registered_artist(request: FeatureRegisteredArtistRequest, adm
         
         # Create featured entry
         featured_artist = {
-            "full_name": artist.data['full_name'],
+            "name": artist.data['full_name'],
             "bio": artist.data.get('bio', ''),
             "avatar": artist.data.get('avatar'),
             "categories": artist.data.get('categories', []),
@@ -635,9 +1379,31 @@ async def feature_registered_artist(request: FeatureRegisteredArtistRequest, adm
 @app.post("/api/admin/create-sub-admin")
 async def create_sub_admin(request: CreateSubAdminRequest, admin: dict = Depends(require_admin)):
     """Admin can create sub-admin users"""
-    # Note: This would need to create a Supabase Auth user
-    # For now, return instruction to create via Supabase dashboard
-    raise HTTPException(status_code=501, detail="Please create sub-admin users via Supabase Auth dashboard and update their role in the users table")
+    supabase = get_supabase_client()
+    
+    try:
+        # Create user in Supabase Auth
+        auth_response = supabase.auth.admin.create_user({
+            "email": request.email,
+            "password": request.password,
+            "email_confirm": True,
+            "user_metadata": {"role": request.role}
+        })
+        
+        if auth_response.user:
+            # Update profile
+            supabase.table('profiles').update({
+                "full_name": request.name,
+                "role": request.role,
+                "location": request.location,
+                "is_approved": True,
+                "is_active": True
+            }).eq('id', auth_response.user.id).execute()
+            
+            return {"success": True, "message": f"Sub-admin {request.name} created successfully"}
+    except Exception as e:
+        print(f"Sub-admin creation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create sub-admin: {str(e)}")
 
 @app.get("/api/admin/sub-admins")
 async def get_sub_admins(admin: dict = Depends(require_admin)):
@@ -647,6 +1413,103 @@ async def get_sub_admins(admin: dict = Depends(require_admin)):
     sub_admins = supabase.table('profiles').select('*').in_('role', ['lead_chitrakar', 'kalakar']).execute()
     
     return {"sub_admins": sub_admins.data or []}
+
+# Admin Community Management
+@app.get("/api/admin/pending-communities")
+async def get_pending_communities(admin: dict = Depends(require_admin)):
+    """Get pending communities for approval"""
+    supabase = get_supabase_client()
+    
+    communities = supabase.table('communities').select('*, profiles!creator_id(full_name)').eq('is_approved', False).execute()
+    
+    return {"communities": communities.data or []}
+
+@app.post("/api/admin/approve-community")
+async def approve_community(community_id: str, approved: bool, admin: dict = Depends(require_admin)):
+    """Approve or reject a community"""
+    supabase = get_supabase_client()
+    
+    if approved:
+        supabase.table('communities').update({"is_approved": True}).eq('id', community_id).execute()
+    else:
+        supabase.table('communities').delete().eq('id', community_id).execute()
+    
+    return {"success": True, "message": f"Community {'approved' if approved else 'rejected'}"}
+
+# Admin Profile Modifications
+@app.get("/api/admin/pending-profile-modifications")
+async def get_pending_profile_modifications(admin: dict = Depends(require_admin)):
+    """Get pending profile modification requests"""
+    supabase = get_supabase_client()
+    
+    modifications = supabase.table('profile_modifications').select('*, profiles!user_id(full_name, email, phone)').eq('status', 'pending').execute()
+    
+    return {"modifications": modifications.data or []}
+
+@app.post("/api/admin/approve-profile-modification")
+async def approve_profile_modification(modification_id: str, approved: bool, admin: dict = Depends(require_admin)):
+    """Approve or reject profile modification"""
+    supabase = get_supabase_client()
+    
+    modification = supabase.table('profile_modifications').select('*').eq('id', modification_id).single().execute()
+    
+    if not modification.data:
+        raise HTTPException(status_code=404, detail="Modification not found")
+    
+    if approved:
+        # Apply changes to profile
+        supabase.table('profiles').update(modification.data['requested_changes']).eq('id', modification.data['user_id']).execute()
+        supabase.table('profile_modifications').update({"status": "approved", "processed_at": datetime.now(timezone.utc).isoformat()}).eq('id', modification_id).execute()
+    else:
+        supabase.table('profile_modifications').update({"status": "rejected", "processed_at": datetime.now(timezone.utc).isoformat()}).eq('id', modification_id).execute()
+    
+    return {"success": True, "message": f"Profile modification {'approved' if approved else 'rejected'}"}
+
+# Admin Video Screenings
+@app.get("/api/admin/pending-video-screenings")
+async def get_pending_video_screenings(admin: dict = Depends(require_admin)):
+    """Get pending video screening requests"""
+    supabase = get_supabase_client()
+    
+    screenings = supabase.table('video_screenings').select('*, artworks!painting_id(title), profiles!user_id(full_name, email)').eq('status', 'pending').execute()
+    
+    return {"screenings": screenings.data or []}
+
+@app.post("/api/admin/accommodate-video-screening")
+async def accommodate_video_screening(screening_id: str, scheduled_date: str, admin: dict = Depends(require_admin)):
+    """Accommodate a video screening request"""
+    supabase = get_supabase_client()
+    
+    supabase.table('video_screenings').update({
+        "status": "scheduled",
+        "scheduled_date": scheduled_date,
+        "processed_at": datetime.now(timezone.utc).isoformat()
+    }).eq('id', screening_id).execute()
+    
+    return {"success": True, "message": "Video screening scheduled"}
+
+# Admin Chat Messages
+@app.get("/api/admin/chat-messages")
+async def get_admin_chat_messages(admin: dict = Depends(require_admin)):
+    """Get chat messages needing admin response"""
+    supabase = get_supabase_client()
+    
+    messages = supabase.table('chat_messages').select('*, profiles!user_id(full_name, email)').eq('needs_admin_review', True).order('created_at', desc=True).execute()
+    
+    return {"messages": messages.data or []}
+
+@app.post("/api/admin/respond-to-chat")
+async def respond_to_chat(message_id: str, response: str, admin: dict = Depends(require_admin)):
+    """Admin responds to a chat message"""
+    supabase = get_supabase_client()
+    
+    supabase.table('chat_messages').update({
+        "admin_response": response,
+        "needs_admin_review": False,
+        "responded_at": datetime.now(timezone.utc).isoformat()
+    }).eq('id', message_id).execute()
+    
+    return {"success": True, "message": "Response sent"}
 
 # ============ LEAD CHITRAKAR ROUTES ============
 
@@ -691,7 +1554,7 @@ async def kalakar_payment_records(user: dict = Depends(require_kalakar)):
     """Kalakar can view payment records"""
     supabase = get_supabase_client()
     
-    exhibitions = supabase.table('exhibitions').select('*, users(name)').eq('is_approved', True).order('created_at', desc=True).execute()
+    exhibitions = supabase.table('exhibitions').select('*').eq('is_approved', True).order('created_at', desc=True).execute()
     
     return {"payment_records": exhibitions.data or []}
 
@@ -740,7 +1603,7 @@ async def get_artist_artworks(artist: dict = Depends(require_artist)):
     """Get artist's artworks"""
     try:
         supabase = get_supabase_client()
-        artworks = supabase.table('artworks').select('*').eq('artist_id', artist['id']).execute()
+        artworks = supabase.table('artworks').select('*').eq('artist_id', artist['id']).order('created_at', desc=True).execute()
         return {"artworks": artworks.data or []}
     except Exception as e:
         print(f"Error fetching artworks: {e}")
@@ -758,7 +1621,15 @@ async def create_artwork(
         if not artist or "id" not in artist:
             raise HTTPException(status_code=401, detail="Invalid artist")
 
-        print("ARTWORK PAYLOAD:", artwork.dict())
+        print("ARTWORK PAYLOAD:", artwork.model_dump())
+        
+        # Handle both single image and multiple images
+        images = artwork.images or []
+        if artwork.image and not images:
+            images = [artwork.image]
+        
+        # Limit to 5 images
+        images = images[:5]
         
         artwork_data = {
              "artist_id": artist["id"],
@@ -766,9 +1637,11 @@ async def create_artwork(
              "description": artwork.description or "",
              "category": artwork.category,
              "price": float(artwork.price),
-             "image": artwork.image if artwork.image else None,
+             "image": images[0] if images else None,  # Primary image for backwards compatibility
+             "images": images,  # All images
              "is_approved": False,
              "is_available": True,
+             "in_marketplace": False,  # Not in marketplace until pushed
              "views": 0,
         } 
 
@@ -784,6 +1657,34 @@ async def create_artwork(
     except Exception as e:
         print("CREATE ARTWORK ERROR:", e)
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/artist/push-to-marketplace")
+async def push_to_marketplace(data: PushToMarketplaceRequest, artist: dict = Depends(require_artist)):
+    """Push approved artworks to marketplace (requires membership)"""
+    supabase = get_supabase_client()
+    
+    # Check membership status
+    profile = supabase.table('profiles').select('is_member, membership_expiry').eq('id', artist['id']).single().execute()
+    
+    if not profile.data:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    is_active_member = False
+    if profile.data.get('is_member') and profile.data.get('membership_expiry'):
+        expiry = datetime.fromisoformat(profile.data['membership_expiry'].replace('Z', '+00:00'))
+        is_active_member = expiry > datetime.now(timezone.utc)
+    
+    if not is_active_member:
+        raise HTTPException(status_code=403, detail="Active membership required to push to marketplace")
+    
+    # Update artworks
+    for artwork_id in data.artwork_ids:
+        # Verify ownership and approval
+        artwork = supabase.table('artworks').select('id').eq('id', artwork_id).eq('artist_id', artist['id']).eq('is_approved', True).single().execute()
+        if artwork.data:
+            supabase.table('artworks').update({"in_marketplace": True}).eq('id', artwork_id).execute()
+    
+    return {"success": True, "message": f"Pushed {len(data.artwork_ids)} artworks to marketplace"}
 
 @app.get("/api/artist/dashboard")
 async def get_artist_dashboard(artist: dict = Depends(require_artist)):
