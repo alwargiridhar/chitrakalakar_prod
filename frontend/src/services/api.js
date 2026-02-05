@@ -31,7 +31,7 @@ const apiCall = async (endpoint, options = {}) => {
 
   if (hasJson) {
     try {
-      data = await response.json(); // ✅ read ONCE
+      data = await response.json();
     } catch (_) {}
   }
 
@@ -48,6 +48,15 @@ export const authAPI = {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
+};
+
+// Location APIs
+export const locationAPI = {
+  search: (query, country = null) => {
+    const params = new URLSearchParams({ q: query });
+    if (country) params.append('country', country);
+    return apiCall(`/locations/search?${params.toString()}`);
+  },
 };
 
 // Public APIs
@@ -73,6 +82,100 @@ export const publicAPI = {
     method: 'POST',
     body: JSON.stringify({ enquiry_id: enquiryId, artist_id: artistId }),
   }),
+  
+  // Communities
+  getCommunities: () => apiCall('/public/communities'),
+  getCommunityDetail: (communityId) => apiCall(`/public/community/${communityId}`),
+};
+
+// Community APIs
+export const communityAPI = {
+  create: (data) => apiCall('/communities', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  join: (communityId) => apiCall(`/communities/${communityId}/join`, {
+    method: 'POST',
+  }),
+  leave: (communityId) => apiCall(`/communities/${communityId}/leave`, {
+    method: 'POST',
+  }),
+};
+
+// Chat APIs (Chitrakar)
+export const chatAPI = {
+  sendMessage: (message, sessionId = null) => apiCall('/chat/message', {
+    method: 'POST',
+    body: JSON.stringify({ message, session_id: sessionId }),
+  }),
+  getHistory: () => apiCall('/chat/history'),
+};
+
+// Membership APIs
+export const membershipAPI = {
+  getPlans: () => apiCall('/membership/plans'),
+  createOrder: (planType) => apiCall('/membership/create-order', {
+    method: 'POST',
+    body: JSON.stringify({ plan_type: planType }),
+  }),
+  verifyPayment: (orderId, paymentId, signature) => apiCall('/membership/verify-payment', {
+    method: 'POST',
+    body: JSON.stringify({
+      razorpay_order_id: orderId,
+      razorpay_payment_id: paymentId,
+      razorpay_signature: signature,
+    }),
+  }),
+  getStatus: () => apiCall('/membership/status'),
+};
+
+// Video Screening APIs
+export const videoScreeningAPI = {
+  request: (data) => apiCall('/video-screening/request', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  getMyRequests: () => apiCall('/video-screening/my-requests'),
+};
+
+// Cart APIs
+export const cartAPI = {
+  add: (artworkId, quantity = 1) => apiCall('/cart/add', {
+    method: 'POST',
+    body: JSON.stringify({ artwork_id: artworkId, quantity }),
+  }),
+  get: () => apiCall('/cart'),
+  remove: (itemId) => apiCall(`/cart/${itemId}`, {
+    method: 'DELETE',
+  }),
+};
+
+// Order APIs
+export const orderAPI = {
+  create: (data) => apiCall('/orders/create', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  getMyOrders: () => apiCall('/orders/my-orders'),
+  track: (orderId) => apiCall(`/orders/${orderId}/track`),
+  updateAWB: (orderId, data) => apiCall(`/orders/${orderId}/update-awb`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+};
+
+// Notifications API
+export const notificationAPI = {
+  getRecent: () => apiCall('/notifications/recent'),
+};
+
+// Profile Modification API
+export const profileModificationAPI = {
+  request: (data) => apiCall('/profile/request-modification', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  getPending: () => apiCall('/profile/pending-modifications'),
 };
 
 // User APIs
@@ -85,9 +188,8 @@ export const userAPI = {
 export const adminAPI = {
   getDashboard: () => apiCall('/admin/dashboard'),
   getPendingArtists: () => apiCall('/admin/pending-artists'),
-  approveArtist: (artistId, approved) => apiCall('/admin/approve-artist', {
+  approveArtist: (artistId, approved) => apiCall(`/admin/approve-artist?artist_id=${artistId}&approved=${approved}`, {
     method: 'POST',
-    body: JSON.stringify({ artist_id: artistId, approved }),
   }),
   getPendingArtworks: () => apiCall('/admin/pending-artworks'),
   approveArtwork: (artworkId, approved) => apiCall('/admin/approve-artwork', {
@@ -148,15 +250,37 @@ export const adminAPI = {
   // Kalakar
   kalakarGetExhibitionAnalytics: () => apiCall('/admin/kalakar/exhibitions-analytics'),
   kalakarGetPaymentRecords: () => apiCall('/admin/kalakar/payment-records'),
+  
+  // Communities
+  getPendingCommunities: () => apiCall('/admin/pending-communities'),
+  approveCommunity: (communityId, approved) => apiCall(`/admin/approve-community?community_id=${communityId}&approved=${approved}`, {
+    method: 'POST',
+  }),
+  
+  // Profile Modifications
+  getPendingProfileModifications: () => apiCall('/admin/pending-profile-modifications'),
+  approveProfileModification: (modificationId, approved) => apiCall(`/admin/approve-profile-modification?modification_id=${modificationId}&approved=${approved}`, {
+    method: 'POST',
+  }),
+  
+  // Video Screenings
+  getPendingVideoScreenings: () => apiCall('/admin/pending-video-screenings'),
+  accommodateVideoScreening: (screeningId, scheduledDate) => apiCall(`/admin/accommodate-video-screening?screening_id=${screeningId}&scheduled_date=${scheduledDate}`, {
+    method: 'POST',
+  }),
+  
+  // Chat Messages
+  getChatMessages: () => apiCall('/admin/chat-messages'),
+  respondToChat: (messageId, response) => apiCall(`/admin/respond-to-chat?message_id=${messageId}&response=${encodeURIComponent(response)}`, {
+    method: 'POST',
+  }),
 };
 
 // Artist APIs
 export const artistAPI = {
   getDashboard: () => apiCall('/artist/dashboard'),
-
-  // ✅ FIXED
   getPortfolio: () => apiCall('/artist/artworks'),
-
+  
   addArtwork: (artwork) => apiCall('/artist/artworks', {
     method: 'POST',
     body: JSON.stringify(artwork),
@@ -185,6 +309,18 @@ export const artistAPI = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+  
+  // Push to Marketplace
+  pushToMarketplace: (artworkIds) => apiCall('/artist/push-to-marketplace', {
+    method: 'POST',
+    body: JSON.stringify({ artwork_ids: artworkIds }),
+  }),
+  
+  // AWB Update
+  updateAWB: (orderId, data) => apiCall(`/orders/${orderId}/update-awb`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
 };
 
 export async function getImageUrl(key, token) {
@@ -201,4 +337,3 @@ export async function getImageUrl(key, token) {
 
   return res.json();
 }
-
