@@ -1,25 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { publicAPI } from '../services/api';
+import { publicAPI, communityAPI } from '../services/api';
 import { BRAND_NAME, BRAND_TAGLINE, ART_CATEGORIES } from '../utils/branding';
+import { useAuth } from '../contexts/AuthContext';
 
 function HomePage() {
+  const { isAuthenticated } = useAuth();
   const [stats, setStats] = useState({ total_artists: 0, completed_projects: 0, satisfaction_rate: 0 });
   const [featuredArtists, setFeaturedArtists] = useState([]);
   const [exhibitions, setExhibitions] = useState([]);
+  const [communities, setCommunities] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsData, artistsData, exhibitionsData] = await Promise.all([
+        const [statsData, artistsData, exhibitionsData, communitiesData] = await Promise.all([
           publicAPI.getStats().catch(() => ({ total_artists: 0, completed_projects: 0, satisfaction_rate: 0 })),
           publicAPI.getFeaturedArtists().catch(() => ({ artists: [] })),
           publicAPI.getExhibitions().catch(() => ({ exhibitions: [] })),
+          publicAPI.getCommunities().catch(() => ({ communities: [] })),
         ]);
         setStats(statsData);
         setFeaturedArtists(artistsData.artists || []);
         setExhibitions(exhibitionsData.exhibitions || []);
+        setCommunities(communitiesData.communities || []);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -28,6 +33,19 @@ function HomePage() {
     };
     fetchData();
   }, []);
+
+  const handleJoinCommunity = async (communityId) => {
+    if (!isAuthenticated) {
+      alert('Please login to join a community');
+      return;
+    }
+    try {
+      await communityAPI.join(communityId);
+      alert('Successfully joined the community!');
+    } catch (error) {
+      alert(error.message || 'Failed to join community');
+    }
+  };
 
   const howItWorks = [
     { step: 1, title: 'Find Your Artist', description: 'Browse our community of talented artisans', icon: '👥' },
