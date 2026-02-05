@@ -311,88 +311,114 @@ async def get_featured_artists():
     except Exception as e:
         print(f"Featured artists error: {e}")
         return {"contemporary": [], "registered": []}
-    registered = supabase.table('featured_artists').select('*').eq('type', 'registered').eq('is_featured', True).execute()
-    
-    return {
-        "contemporary": contemporary.data or [],
-        "registered": registered.data or []
-    }
 
 @app.get("/api/public/artists")
 async def get_public_artists():
     """Get all approved artists (without contact info for public view)"""
     supabase = get_supabase_client()
     
-    # Get all approved and active artists (including avatar)
-    artists = supabase.table('profiles').select(
-        'id, full_name, bio, categories, location, avatar, created_at'
-    ).eq('role', 'artist').eq('is_approved', True).eq('is_active', True).execute()
+    if not supabase:
+        return {"artists": []}
     
-    # Transform full_name to name for frontend compatibility
-    artist_list = []
-    for artist in (artists.data or []):
-        artist_list.append({
-            "id": artist.get("id"),
-            "name": artist.get("full_name"),
-            "bio": artist.get("bio"),
-            "categories": artist.get("categories"),
-            "location": artist.get("location"),
-            "avatar": artist.get("avatar"),
-            "created_at": artist.get("created_at")
-        })
-    
-    return {"artists": artist_list}
+    try:
+        # Get all approved and active artists (including avatar)
+        artists = supabase.table('profiles').select(
+            'id, full_name, bio, categories, location, avatar, created_at'
+        ).eq('role', 'artist').eq('is_approved', True).eq('is_active', True).execute()
+        
+        # Transform full_name to name for frontend compatibility
+        artist_list = []
+        for artist in (artists.data or []):
+            artist_list.append({
+                "id": artist.get("id"),
+                "name": artist.get("full_name"),
+                "bio": artist.get("bio"),
+                "categories": artist.get("categories"),
+                "location": artist.get("location"),
+                "avatar": artist.get("avatar"),
+                "created_at": artist.get("created_at")
+            })
+        
+        return {"artists": artist_list}
+    except Exception as e:
+        print(f"Artists error: {e}")
+        return {"artists": []}
 
 @app.get("/api/public/artist/{artist_id}")
 async def get_public_artist_detail(artist_id: str):
     """Get artist detail with artworks (without contact info)"""
     supabase = get_supabase_client()
     
-    # Get artist without contact info
-    artist = supabase.table('profiles').select(
-        'id, full_name, bio, categories, location, avatar, created_at'
-    ).eq('id', artist_id).eq('role', 'artist').eq('is_approved', True).single().execute()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
     
-    if not artist.data:
-        raise HTTPException(status_code=404, detail="Artist not found")
-    
-    # Get artist's approved artworks
-    artworks = supabase.table('artworks').select('*').eq('artist_id', artist_id).eq('is_approved', True).eq('in_marketplace', True).order('created_at', desc=True).execute()
-    
-    return {
-        "artist": artist.data,
-        "artworks": artworks.data or []
-    }
+    try:
+        # Get artist without contact info
+        artist = supabase.table('profiles').select(
+            'id, full_name, bio, categories, location, avatar, created_at'
+        ).eq('id', artist_id).eq('role', 'artist').eq('is_approved', True).single().execute()
+        
+        if not artist.data:
+            raise HTTPException(status_code=404, detail="Artist not found")
+        
+        # Get artist's approved artworks
+        artworks = supabase.table('artworks').select('*').eq('artist_id', artist_id).eq('is_approved', True).eq('in_marketplace', True).order('created_at', desc=True).execute()
+        
+        return {
+            "artist": artist.data,
+            "artworks": artworks.data or []
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Artist detail error: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching artist")
 
 @app.get("/api/public/paintings")
 async def get_public_paintings():
     """Get all approved artworks for marketplace (without artist contact info)"""
     supabase = get_supabase_client()
     
-    # Get all approved artworks that are in marketplace with artist name (but no contact info)
-    artworks = supabase.table('artworks').select(
-        '*, profiles!inner(id, full_name, avatar, location)'
-    ).eq('is_approved', True).eq('in_marketplace', True).eq('is_available', True).order('created_at', desc=True).execute()
+    if not supabase:
+        return {"paintings": []}
     
-    return {"paintings": artworks.data or []}
+    try:
+        # Get all approved artworks that are in marketplace with artist name (but no contact info)
+        artworks = supabase.table('artworks').select(
+            '*, profiles!inner(id, full_name, avatar, location)'
+        ).eq('is_approved', True).eq('in_marketplace', True).eq('is_available', True).order('created_at', desc=True).execute()
+        
+        return {"paintings": artworks.data or []}
+    except Exception as e:
+        print(f"Paintings error: {e}")
+        return {"paintings": []}
 
 @app.get("/api/public/painting/{painting_id}")
 async def get_painting_detail(painting_id: str):
     """Get painting detail with artist info (without contact)"""
     supabase = get_supabase_client()
     
-    painting = supabase.table('artworks').select(
-        '*, profiles!inner(id, full_name, avatar, location, bio, categories)'
-    ).eq('id', painting_id).single().execute()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
     
-    if not painting.data:
-        raise HTTPException(status_code=404, detail="Painting not found")
-    
-    # Increment views
-    current_views = painting.data.get('views', 0)
-    supabase.table('artworks').update({'views': current_views + 1}).eq('id', painting_id).execute()
-    
-    return {"painting": painting.data}
+    try:
+        painting = supabase.table('artworks').select(
+            '*, profiles!inner(id, full_name, avatar, location, bio, categories)'
+        ).eq('id', painting_id).single().execute()
+        
+        if not painting.data:
+            raise HTTPException(status_code=404, detail="Painting not found")
+        
+        # Increment views
+        current_views = painting.data.get('views', 0)
+        supabase.table('artworks').update({'views': current_views + 1}).eq('id', painting_id).execute()
+        
+        return {"painting": painting.data}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Painting detail error: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching painting")
 
 @app.get("/api/public/featured-artist/{artist_id}")
 async def get_featured_artist_detail(artist_id: str):
