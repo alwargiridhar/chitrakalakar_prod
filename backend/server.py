@@ -425,39 +425,66 @@ async def get_featured_artist_detail(artist_id: str):
     """Get detailed info about a featured artist"""
     supabase = get_supabase_client()
     
-    artist = supabase.table('featured_artists').select('*').eq('id', artist_id).single().execute()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
     
-    if not artist.data:
-        raise HTTPException(status_code=404, detail="Artist not found")
-    
-    return {"artist": artist.data}
+    try:
+        artist = supabase.table('featured_artists').select('*').eq('id', artist_id).single().execute()
+        
+        if not artist.data:
+            raise HTTPException(status_code=404, detail="Artist not found")
+        
+        return {"artist": artist.data}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Featured artist detail error: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching artist")
 
 @app.get("/api/public/exhibitions")
 async def get_public_exhibitions():
     """Get all approved exhibitions"""
     supabase = get_supabase_client()
     
-    exhibitions = supabase.table('exhibitions').select('*').eq('is_approved', True).order('created_at', desc=True).execute()
+    if not supabase:
+        return {"exhibitions": []}
     
-    return {"exhibitions": exhibitions.data or []}
+    try:
+        exhibitions = supabase.table('exhibitions').select('*').eq('is_approved', True).order('created_at', desc=True).execute()
+        return {"exhibitions": exhibitions.data or []}
+    except Exception as e:
+        print(f"Exhibitions error: {e}")
+        return {"exhibitions": []}
 
 @app.get("/api/public/exhibitions/active")
 async def get_active_exhibitions():
     """Get active exhibitions"""
     supabase = get_supabase_client()
     
-    exhibitions = supabase.table('exhibitions').select('*').eq('is_approved', True).eq('status', 'active').execute()
+    if not supabase:
+        return {"exhibitions": []}
     
-    return {"exhibitions": exhibitions.data or []}
+    try:
+        exhibitions = supabase.table('exhibitions').select('*').eq('is_approved', True).eq('status', 'active').execute()
+        return {"exhibitions": exhibitions.data or []}
+    except Exception as e:
+        print(f"Active exhibitions error: {e}")
+        return {"exhibitions": []}
 
 @app.get("/api/public/exhibitions/archived")
 async def get_archived_exhibitions():
     """Get archived exhibitions"""
     supabase = get_supabase_client()
     
-    exhibitions = supabase.table('exhibitions').select('*').eq('is_approved', True).eq('status', 'archived').execute()
+    if not supabase:
+        return {"exhibitions": []}
     
-    return {"exhibitions": exhibitions.data or []}
+    try:
+        exhibitions = supabase.table('exhibitions').select('*').eq('is_approved', True).eq('status', 'archived').execute()
+        return {"exhibitions": exhibitions.data or []}
+    except Exception as e:
+        print(f"Archived exhibitions error: {e}")
+        return {"exhibitions": []}
 
 # ============ COMMUNITIES ============
 
@@ -466,18 +493,28 @@ async def get_public_communities():
     """Get all approved communities"""
     supabase = get_supabase_client()
     
-    communities = supabase.table('communities').select('*, profiles!creator_id(full_name, avatar)').eq('is_approved', True).order('created_at', desc=True).execute()
+    if not supabase:
+        return {"communities": []}
     
-    return {"communities": communities.data or []}
+    try:
+        communities = supabase.table('communities').select('*, profiles!creator_id(full_name, avatar)').eq('is_approved', True).order('created_at', desc=True).execute()
+        return {"communities": communities.data or []}
+    except Exception as e:
+        print(f"Communities error: {e}")
+        return {"communities": []}
 
 @app.get("/api/public/community/{community_id}")
 async def get_community_detail(community_id: str):
     """Get community details with members"""
     supabase = get_supabase_client()
     
-    community = supabase.table('communities').select('*').eq('id', community_id).eq('is_approved', True).single().execute()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
     
-    if not community.data:
+    try:
+        community = supabase.table('communities').select('*').eq('id', community_id).eq('is_approved', True).single().execute()
+        
+        if not community.data:
         raise HTTPException(status_code=404, detail="Community not found")
     
     # Get members
