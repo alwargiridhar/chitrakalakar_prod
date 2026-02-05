@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { artistAPI, authAPI } from '../services/api';
+import { artistAPI, authAPI, membershipAPI } from '../services/api';
 import { ART_CATEGORIES } from '../utils/branding';
 import ImageUpload from '../components/ImageUpload';
+import LocationAutocomplete from '../components/LocationAutocomplete';
 import { BUCKETS } from '../lib/supabase';
 
 function ArtistDashboard() {
@@ -16,7 +17,7 @@ function ArtistDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [showAddArtwork, setShowAddArtwork] = useState(false);
-  const [newArtwork, setNewArtwork] = useState({ title: '', category: '', price: '', image: '', description: '' });
+  const [newArtwork, setNewArtwork] = useState({ title: '', category: '', price: '', images: [], description: '' });
   
   // Profile editing
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -32,6 +33,12 @@ function ArtistDashboard() {
     teaches_offline: false
   });
   const [profileSaving, setProfileSaving] = useState(false);
+  
+  // Membership
+  const [membershipStatus, setMembershipStatus] = useState(null);
+  const [showMembershipModal, setShowMembershipModal] = useState(false);
+  const [membershipPlans, setMembershipPlans] = useState([]);
+  const [selectedArtworks, setSelectedArtworks] = useState([]);
 
 const fetchData = useCallback(async () => {
   try {
@@ -39,6 +46,7 @@ const fetchData = useCallback(async () => {
       artistAPI.getDashboard(),
       artistAPI.getPortfolio(),
       artistAPI.getOrders(),
+      membershipAPI.getStatus(),
     ]);
 
     const dashboard =
@@ -48,6 +56,9 @@ const fetchData = useCallback(async () => {
       results[1].status === 'fulfilled' && results[1].value
         ? results[1].value
         : { artworks: [] };
+    
+    const membership =
+      results[3].status === 'fulfilled' ? results[3].value : null;
 
     const ordersData =
       results[2].status === 'fulfilled' && results[2].value
