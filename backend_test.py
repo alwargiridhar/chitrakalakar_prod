@@ -208,7 +208,105 @@ class APITester:
             self.log_test("/api/public/featured-artists", "ERROR", f"Request failed: {str(e)}")
             return False
     
-    def test_upload_url_without_auth(self):
+    def test_location_search(self):
+        """Test GET /api/locations/search"""
+        try:
+            # Test with a valid query
+            response = self.session.get(f"{self.base_url}/api/locations/search?q=Mumbai", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "locations" in data and isinstance(data["locations"], list):
+                    self.log_test("/api/locations/search", "PASS", f"Location search working - found {len(data['locations'])} results", {"count": len(data["locations"])})
+                    return True
+                else:
+                    self.log_test("/api/locations/search", "FAIL", f"Invalid response structure: {data}")
+                    return False
+            else:
+                self.log_test("/api/locations/search", "FAIL", f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("/api/locations/search", "ERROR", f"Request failed: {str(e)}")
+            return False
+    
+    def test_membership_plans(self):
+        """Test GET /api/membership/plans"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/membership/plans", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "plans" in data and isinstance(data["plans"], list):
+                    # Check for expected membership plan structure
+                    monthly_found = False
+                    annual_found = False
+                    for plan in data["plans"]:
+                        if plan.get("id") == "monthly" and plan.get("base_price") == 99:
+                            monthly_found = True
+                        if plan.get("id") == "annual" and plan.get("base_price") == 999:
+                            annual_found = True
+                    
+                    if monthly_found and annual_found:
+                        self.log_test("/api/membership/plans", "PASS", f"Membership plans correct - Monthly ₹99, Annual ₹999 with 18% GST", data)
+                        return True
+                    else:
+                        self.log_test("/api/membership/plans", "FAIL", f"Incorrect membership pricing: {data}")
+                        return False
+                else:
+                    self.log_test("/api/membership/plans", "FAIL", f"Invalid response structure: {data}")
+                    return False
+            else:
+                self.log_test("/api/membership/plans", "FAIL", f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("/api/membership/plans", "ERROR", f"Request failed: {str(e)}")
+            return False
+    
+    def test_public_stats(self):
+        """Test GET /api/public/stats"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/public/stats", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                expected_fields = ["total_artists", "total_artworks", "active_exhibitions", "satisfaction_rate"]
+                
+                if all(field in data for field in expected_fields):
+                    self.log_test("/api/public/stats", "PASS", f"Public stats API working - Artists: {data.get('total_artists')}, Artworks: {data.get('total_artworks')}, Exhibitions: {data.get('active_exhibitions')}, Satisfaction: {data.get('satisfaction_rate')}%", data)
+                    return True
+                else:
+                    self.log_test("/api/public/stats", "FAIL", f"Missing required fields in stats: {data}")
+                    return False
+            else:
+                self.log_test("/api/public/stats", "FAIL", f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("/api/public/stats", "ERROR", f"Request failed: {str(e)}")
+            return False
+    
+    def test_public_communities(self):
+        """Test GET /api/public/communities"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/public/communities", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "communities" in data and isinstance(data["communities"], list):
+                    self.log_test("/api/public/communities", "PASS", f"Communities API working - found {len(data['communities'])} communities", {"count": len(data["communities"])})
+                    return True
+                else:
+                    self.log_test("/api/public/communities", "FAIL", f"Invalid response structure: {data}")
+                    return False
+            else:
+                self.log_test("/api/public/communities", "FAIL", f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("/api/public/communities", "ERROR", f"Request failed: {str(e)}")
+            return False
         """Test POST /api/upload-url without authentication"""
         try:
             payload = {
