@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const AuthContext = createContext(null);
 
@@ -9,6 +9,13 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // If Supabase is not configured, skip auth setup
+    if (!isSupabaseConfigured || !supabase) {
+      console.log('Supabase not configured - running in demo mode');
+      setIsLoading(false);
+      return;
+    }
+
     let mounted = true;
 
     const handleSession = async (session) => {
@@ -57,6 +64,10 @@ export function AuthProvider({ children }) {
   /* ---------- AUTH ACTIONS ---------- */
 
   const signup = async ({ name, email, password, role = 'user', location, categories = [] }) => {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase not configured. Please add your credentials.');
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -83,18 +94,27 @@ export function AuthProvider({ children }) {
   };
 
   const login = async (email, password) => {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase not configured. Please add your credentials.');
+    }
+
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
     setProfiles(null);
     setSession(null);
   };
 
   const updateProfile = async (updates) => {
     if (!profiles) throw new Error('Not authenticated');
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase not configured. Please add your credentials.');
+    }
 
     const { data, error } = await supabase
       .from('profiles')
@@ -124,6 +144,7 @@ export function AuthProvider({ children }) {
         isArtist: profiles?.role === 'artist',
         isLeadChitrakar: profiles?.role === 'lead_chitrakar',
         isKalakar: profiles?.role === 'kalakar',
+        isSupabaseConfigured,
       }}
     >
       {children}
