@@ -1680,16 +1680,24 @@ async def update_profile(
 ):
     try:
         supabase = get_supabase_client()
+        
+        if not supabase:
+            raise HTTPException(status_code=503, detail="Database not configured")
 
         update_data = updates.model_dump(exclude_unset=True)
 
         if not update_data:
             return {"success": True}
 
-        supabase.table('profiles') \
+        # Log the update for debugging
+        print(f"Updating profile for user {user['id']} with data: {update_data}")
+
+        result = supabase.table('profiles') \
             .update(update_data) \
             .eq('id', user['id']) \
             .execute()
+        
+        print(f"Update result: {result}")
 
         updated_user = supabase.table('profiles') \
             .select('*') \
@@ -1698,6 +1706,8 @@ async def update_profile(
             .execute()
 
         return {"success": True, "user": updated_user.data}
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error updating profile: {e}")
         raise HTTPException(status_code=500, detail=str(e))
