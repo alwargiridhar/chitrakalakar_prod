@@ -901,6 +901,7 @@ const handleSaveProfile = async () => {
                     onChange={(e) => setNewArtwork({ ...newArtwork, title: e.target.value })}
                     required
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    data-testid="artwork-title-input"
                   />
                 </div>
                 <div>
@@ -910,6 +911,7 @@ const handleSaveProfile = async () => {
                     onChange={(e) => setNewArtwork({ ...newArtwork, category: e.target.value })}
                     required
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    data-testid="artwork-category-select"
                   >
                     <option value="">Select category</option>
                     {ART_CATEGORIES.map((cat) => (
@@ -925,22 +927,46 @@ const handleSaveProfile = async () => {
                     onChange={(e) => setNewArtwork({ ...newArtwork, price: e.target.value })}
                     required
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    data-testid="artwork-price-input"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Artwork Image</label>
-                  <ImageUpload
-                    bucket={BUCKETS.ARTWORKS}
-                    folder="artworks"
-                    onUpload={(url) => {
-                      console.log('Image uploaded, URL:', url);
-                      setNewArtwork({ ...newArtwork, image: url });
-                    }}
-                    label="Upload Artwork Image"
-                  />
-                  {newArtwork.image && (
-                    <p className="text-xs text-green-600 mt-2">✓ Image uploaded successfully</p>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Artwork Images (up to 5)
+                  </label>
+                  
+                  {/* Uploaded images preview */}
+                  {newArtwork.images.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {newArtwork.images.map((url, index) => (
+                        <div key={index} className="relative w-20 h-20 border rounded overflow-hidden">
+                          <img src={url} alt={`Image ${index + 1}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(index)}
+                            className="absolute top-0 right-0 bg-red-500 text-white w-5 h-5 flex items-center justify-center text-xs"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   )}
+                  
+                  {newArtwork.images.length < 5 && (
+                    <ImageUpload
+                      bucket={BUCKETS.ARTWORKS}
+                      folder="artworks"
+                      onUpload={handleImageUpload}
+                      label={`Upload Image (${newArtwork.images.length}/5)`}
+                    />
+                  )}
+                  
+                  <p className="text-xs text-gray-500 mt-2">
+                    {newArtwork.images.length === 0 
+                      ? 'Upload at least 1 image' 
+                      : `${newArtwork.images.length} image(s) uploaded. You can add up to ${5 - newArtwork.images.length} more.`}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
