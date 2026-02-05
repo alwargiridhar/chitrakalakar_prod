@@ -68,6 +68,7 @@ const fetchData = useCallback(async () => {
     setDashboardData(dashboard);
     setArtworks(Array.isArray(portfolio.artworks) ? portfolio.artworks : []);
     setOrders(Array.isArray(ordersData.orders) ? ordersData.orders : []);
+    setMembershipStatus(membership);
   } catch (error) {
     console.error('Error fetching data:', error);
   } finally {
