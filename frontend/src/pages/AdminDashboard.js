@@ -301,21 +301,43 @@ function AdminDashboard() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {pendingArtworks.map((artwork) => (
-                    <div key={artwork.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="h-40 bg-gray-100">
-                        {artwork.image ? (
-                          <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover" />
+                    <div key={artwork.id} className="border border-gray-200 rounded-lg overflow-hidden" data-testid={`pending-artwork-${artwork.id}`}>
+                      <div className="h-48 bg-gray-50 relative">
+                        {(artwork.images?.[0] || artwork.image) ? (
+                          <img 
+                            src={artwork.images?.[0] || artwork.image} 
+                            alt={artwork.title} 
+                            className="w-full h-full object-contain" 
+                          />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-4xl">🎨</div>
+                        )}
+                        {artwork.images && artwork.images.length > 1 && (
+                          <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs">
+                            +{artwork.images.length - 1} more
+                          </div>
                         )}
                       </div>
                       <div className="p-4">
                         <h3 className="font-semibold text-gray-900">{artwork.title}</h3>
                         <p className="text-sm text-gray-500">{artwork.artist_name}</p>
                         <p className="text-sm text-orange-500">₹{artwork.price?.toLocaleString()}</p>
+                        <p className="text-xs text-gray-400">{artwork.category}</p>
                         <div className="flex gap-2 mt-3">
-                          <button onClick={() => handleApproveArtwork(artwork.id, true)} className="flex-1 px-3 py-1.5 bg-green-500 text-white rounded text-sm hover:bg-green-600">Approve</button>
-                          <button onClick={() => handleApproveArtwork(artwork.id, false)} className="flex-1 px-3 py-1.5 bg-red-500 text-white rounded text-sm hover:bg-red-600">Reject</button>
+                          <button 
+                            onClick={() => handleApproveArtwork(artwork.id, true)} 
+                            className="flex-1 px-3 py-1.5 bg-green-500 text-white rounded text-sm hover:bg-green-600"
+                            data-testid={`approve-artwork-${artwork.id}`}
+                          >
+                            Approve
+                          </button>
+                          <button 
+                            onClick={() => handleApproveArtwork(artwork.id, false)} 
+                            className="flex-1 px-3 py-1.5 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+                            data-testid={`reject-artwork-${artwork.id}`}
+                          >
+                            Reject
+                          </button>
                         </div>
                       </div>
                     </div>
