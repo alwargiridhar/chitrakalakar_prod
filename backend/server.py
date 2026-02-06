@@ -1314,19 +1314,12 @@ async def get_admin_dashboard(admin: dict = Depends(require_admin)):
 
 @app.get("/api/admin/pending-artists")
 async def get_pending_artists(admin: dict = Depends(require_admin)):
+    """Get artists awaiting approval"""
     supabase = get_supabase_client()
-
-    artists = (
-        supabase
-        .table('profiles')
-        .select('*')
-        .eq('role', 'artist')
-        .or_('is_approved.is.null,is_approved.eq.false')
-        .execute()
-    )
-
+    
+    artists = supabase.table('profiles').select('*').eq('role', 'artist').eq('is_approved', False).execute()
+    
     return {"artists": artists.data or []}
-
 
 @app.post("/api/admin/approve-artist")
 async def approve_artist(artist_id: str, approved: bool, admin: dict = Depends(require_admin)):
@@ -1342,24 +1335,20 @@ async def approve_artist(artist_id: str, approved: bool, admin: dict = Depends(r
 
 @app.get("/api/admin/pending-artworks")
 async def get_pending_artworks(admin: dict = Depends(require_admin)):
+    """Get artworks awaiting approval"""
     supabase = get_supabase_client()
-
-    artworks = (
-        supabase
-        .table('artworks')
-        .select('*, profiles!artist_id(full_name, email)')
-        .or_('is_approved.is.null,is_approved.eq.false')
-        .execute()
-    )
-
+    
+    artworks = supabase.table('artworks').select('*, profiles!artist_id(full_name, email)').eq('is_approved', False).execute()
+    
+    # Transform for frontend
     result = []
-    for artwork in artworks.data or []:
+    for artwork in (artworks.data or []):
         result.append({
             **artwork,
             "artist_name": artwork.get('profiles', {}).get('full_name', 'Unknown'),
             "artist_email": artwork.get('profiles', {}).get('email', '')
         })
-
+    
     return {"artworks": result}
 
 @app.post("/api/admin/approve-artwork")
@@ -1370,10 +1359,7 @@ async def approve_artwork(request: ArtworkApprovalRequest, admin: dict = Depends
     if request.approved:
         result = supabase.table('artworks').update({"is_approved": True}).eq('id', request.artwork_id).execute()
     else:
-        supabase.table('artworks').update({
-            "is_approved": False,
-            "status": "rejected"
-        }).eq('id', request.artwork_id).execute()
+        result = supabase.table('artworks').delete().eq('id', request.artwork_id).execute()
     
     return {"success": True, "message": f"Artwork {'approved' if request.approved else 'rejected'}"}
 
@@ -1394,15 +1380,7 @@ async def approve_exhibition(request: ExhibitionApprovalRequest, admin: dict = D
     if request.approved:
         result = supabase.table('exhibitions').update({"is_approved": True, "status": "active"}).eq('id', request.exhibition_id).execute()
     else:
-        result = (
-            supabase.table('exhibitions').update({
-                "is_approved": False,
-                "status": "rejected",
-                "rejected_at": datetime.now(timezone.utc).isoformat()
-            })
-            .eq('id', request.exhibition_id)
-            .execute()
-        )
+        result = supabase.table('exhibitions').delete().eq('id', request.exhibition_id).execute()
     
     return {"success": True, "message": f"Exhibition {'approved' if request.approved else 'rejected'}"}
 
@@ -1647,14 +1625,7 @@ async def lead_chitrakar_approve_artwork(request: ArtworkApprovalRequest, user: 
     if request.approved:
         result = supabase.table('artworks').update({"is_approved": True}).eq('id', request.artwork_id).execute()
     else:
-        result = (supabase.table('artworks').update({
-            "is_approved": False,
-            "status": "rejected",
-            "rejected_at": datetime.now(timezone.utc).isoformat()
-          })
-         .eq('id', request.artwork_id)
-         .execute()
-        )
+        result = supabase.table('artworks').delete().eq('id', request.artwork_id).execute()
     
     return {"success": True, "message": f"Artwork {'approved' if request.approved else 'rejected'}"}
 
