@@ -770,10 +770,14 @@ const handleSaveProfile = async () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Profile Picture</label>
                   <ImageUpload
-                    bucket={BUCKETS.AVATARS}
-                    folder="avatars"
-                    onUpload={(url) => setProfileForm({ ...profileForm, avatar: url })}
-                  />
+                      bucket={BUCKETS.AVATARS}
+                      folder="avatars"
+                      onUpload={async (url) => {
+                        setProfileForm((prev) => ({ ...prev, avatar: url }));
+
+                        await authAPI.updateProfile({ avatar: url });
+                      }}
+                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
