@@ -143,6 +143,7 @@ const handleAddArtwork = async (e) => {
   try {
     await artistAPI.addArtwork({
       ...newArtwork,
+      image: newArtwork.images[0],
       price: priceValue,
     });
 
