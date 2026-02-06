@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -70,117 +71,60 @@ function AdminDashboard() {
     fetchData();
   }, [profiles, isAdmin, isLoading, navigate]);
 
-const fetchData = async () => {
-  try {
-    setLoading(true);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
 
-    const responses = await Promise.all([
-      adminAPI.getDashboard(),
-      adminAPI.getPendingArtists(),
-      adminAPI.getPendingArtworks(),
-      adminAPI.getPendingExhibitions(),
-      adminAPI.getAllUsers(),
-      adminAPI.getApprovedArtists(),
-      adminAPI.getFeaturedArtists(),
-      adminAPI.getSubAdmins(),
-    ]);
+      const [
+        dashboard,
+        artists,
+        artworks,
+        exhibitions,
+        users,
+        approved,
+        featured,
+        subadmins,
+      ] = await Promise.all([
+        adminAPI.getDashboard(),
+        adminAPI.getPendingArtists(),
+        adminAPI.getPendingArtworks(),
+        adminAPI.getPendingExhibitions(),
+        adminAPI.getAllUsers(),
+        adminAPI.getApprovedArtists().catch(() => ({ artists: [] })),
+        adminAPI.getFeaturedArtists().catch(() => ({ contemporary: [], registered: [] })),
+        adminAPI.getSubAdmins().catch(() => ({ sub_admins: [] })),
+      ]);
 
-    const [
-      dashboard,
-      artistsRes,
-      artworksRes,
-      exhibitionsRes,
-      usersRes,
-      approvedRes,
-      featuredRes,
-      subadminsRes,
-    ] = responses;
-
-    console.log('ADMIN DEBUG ↓↓↓');
-    console.log('dashboard:', dashboard);
-    console.log('pending artists:', artistsRes);
-    console.log('pending artworks:', artworksRes);
-    console.log('pending exhibitions:', exhibitionsRes);
-    console.log('users:', usersRes);
-
-    setDashboardData(dashboard || null);
-
-    setPendingArtists(
-      Array.isArray(artistsRes)
-        ? artistsRes
-        : artistsRes?.artists || artistsRes?.data || []
-    );
-
-
-    setPendingArtworks(
-      Array.isArray(artworksRes)
-        ? artworksRes
-        : artworksRes?.artworks || artworksRes?.data || []
-    );
-
-    setPendingExhibitions(
-      Array.isArray(exhibitionsRes)
-        ? exhibitionsRes
-        : exhibitionsRes?.exhibitions || exhibitionsRes?.data || []
-    );
-
-    setAllUsers(
-      Array.isArray(usersRes)
-        ? usersRes
-        : usersRes?.users || usersRes?.data || []
-    );
-
-    setApprovedArtists(
-      Array.isArray(approvedRes)
-        ? approvedRes
-        : approvedRes?.artists || approvedRes?.data || []
-    );
-
-    setFeaturedArtists(
-      featuredRes || { contemporary: [], registered: [] }
-    );
-
-    setSubAdmins(
-      Array.isArray(subadminsRes)
-        ? subadminsRes
-        : subadminsRes?.sub_admins || subadminsRes?.data || []
-    );
-  } catch (err) {
-    console.error('❌ Admin dashboard fetch error:', err);
-  } finally {
-    setLoading(false);
-  }
-};
-
+      setDashboardData(dashboard);
+      setPendingArtists(artists.artists || []);
+      setPendingArtworks(artworks.artworks || []);
+      setPendingExhibitions(exhibitions.exhibitions || []);
+      setAllUsers(users.users || []);
+      setApprovedArtists(approved.artists || []);
+      setFeaturedArtists(featured);
+      setSubAdmins(subadmins.sub_admins || []);
+    } catch (err) {
+      console.error('Admin dashboard fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // === ACTION HANDLERS ===
-const handleApproveArtist = async (id, approved) => {
-  try {
+  const handleApproveArtist = async (id, approved) => {
     await adminAPI.approveArtist(id, approved);
-    await fetchData();
-  } catch (e) {
-    console.error('Approve artist failed', e);
-  }
-};
+    fetchData();
+  };
 
-const handleApproveArtwork = async (id, approved) => {
-  try {
+  const handleApproveArtwork = async (id, approved) => {
     await adminAPI.approveArtwork(id, approved);
-    await fetchData();
-  } catch (e) {
-    console.error('Approve artwork failed', e);
-  }
-};
+    fetchData();
+  };
 
-const handleApproveExhibition = async (id, approved) => {
-  try {
+  const handleApproveExhibition = async (id, approved) => {
     await adminAPI.approveExhibition(id, approved);
-    await fetchData();
-  } catch (e) {
-    console.error('Approve exhibition failed', e);
-  }
-};
-
+    fetchData();
+  };
 
   const handleToggleUserStatus = async (id) => {
     await adminAPI.toggleUserStatus(id);
@@ -261,14 +205,6 @@ const handleApproveExhibition = async (id, approved) => {
           Welcome, {profiles?.full_name || profiles?.email}
         </p>
 
-      {/* Recent addition*/}
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded text-sm">
-          <strong>Debug:</strong>
-          <div>Pending Artists: {pendingArtists.length}</div>
-          <div>Pending Artworks: {pendingArtworks.length}</div>
-          <div>Pending Exhibitions: {pendingExhibitions.length}</div>
-        </div>
-
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-8">
           {tabs.map((tab) => (
@@ -314,7 +250,6 @@ const handleApproveExhibition = async (id, approved) => {
             </div>
           </div>
         )}
-
 
         {/* Pending Artists Tab */}
         {activeTab === 'artists' && (
@@ -366,63 +301,48 @@ const handleApproveExhibition = async (id, approved) => {
                 <p className="text-gray-500 text-center py-8">No pending artworks to review</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {pendingArtworks.map((artwork) => {
-                    const artworkImage =artwork.images?.[0] ||
-                      artwork.image ||
-                      artwork.image_url ||
-                      null;
-
-                      return (
-                        <div
-                          key={artwork.id}
-                          className="border border-gray-200 rounded-lg overflow-hidden"
-                        >       
-                          <div className="h-48 bg-gray-50 relative">
-                            {artworkImage ? (
-                              <img
-                                src={artworkImage}
-                                alt={artwork.title}
-                                className="w-full h-full object-contain"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-4xl">
-                                🎨
-                              </div>
-                            )}
-                    
-                            {artwork.images && artwork.images.length > 1 && (
-                              <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs">  
-                                +{artwork.images.length - 1} more
-                              </div>
-                            )}
+                  {pendingArtworks.map((artwork) => (
+                    <div key={artwork.id} className="border border-gray-200 rounded-lg overflow-hidden" data-testid={`pending-artwork-${artwork.id}`}>
+                      <div className="h-48 bg-gray-50 relative">
+                        {(artwork.images?.[0] || artwork.image) ? (
+                          <img 
+                            src={artwork.images?.[0] || artwork.image} 
+                            alt={artwork.title} 
+                            className="w-full h-full object-contain" 
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-4xl">🎨</div>
+                        )}
+                        {artwork.images && artwork.images.length > 1 && (
+                          <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs">
+                            +{artwork.images.length - 1} more
                           </div>
-
-                          <div className="p-4">
-                            <h3 className="font-semibold text-gray-900">{artwork.title}</h3>
-                            <p className="text-sm text-gray-500">{artwork.artist_name}</p>
-                            <p className="text-sm text-orange-500">
-                              ₹{artwork.price?.toLocaleString()}
-                            </p>
-                            <p className="text-xs text-gray-400">{artwork.category}</p>
-
-                            <div className="flex gap-2 mt-3">
-                              <button
-                                onClick={() => handleApproveArtwork(artwork.id, true)}
-                                className="flex-1 px-3 py-1.5 bg-green-500 text-white rounded text-sm hover:bg-green-600"
-                              >
-                                Approve
-                              </button>
-                              <button
-                                onClick={() => handleApproveArtwork(artwork.id, false)}
-                                className="flex-1 px-3 py-1.5 bg-red-500 text-white rounded text-sm hover:bg-red-600"
-                              >
-                                Reject  
-                              </button>
-                            </div>
-                          </div>
+                        )}
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-semibold text-gray-900">{artwork.title}</h3>
+                        <p className="text-sm text-gray-500">{artwork.artist_name}</p>
+                        <p className="text-sm text-orange-500">₹{artwork.price?.toLocaleString()}</p>
+                        <p className="text-xs text-gray-400">{artwork.category}</p>
+                        <div className="flex gap-2 mt-3">
+                          <button 
+                            onClick={() => handleApproveArtwork(artwork.id, true)} 
+                            className="flex-1 px-3 py-1.5 bg-green-500 text-white rounded text-sm hover:bg-green-600"
+                            data-testid={`approve-artwork-${artwork.id}`}
+                          >
+                            Approve
+                          </button>
+                          <button 
+                            onClick={() => handleApproveArtwork(artwork.id, false)} 
+                            className="flex-1 px-3 py-1.5 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+                            data-testid={`reject-artwork-${artwork.id}`}
+                          >
+                            Reject
+                          </button>
                         </div>
-                      );
-                    })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
