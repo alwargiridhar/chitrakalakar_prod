@@ -1353,6 +1353,153 @@ function AdminDashboard() {
             </div>
           </div>
         )}
+
+        {/* Create Voucher Modal */}
+        {showCreateVoucher && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+                <h2 className="text-xl font-bold text-gray-900">Create Voucher</h2>
+                <button onClick={() => setShowCreateVoucher(false)} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Voucher Code *</label>
+                  <input
+                    type="text"
+                    value={voucherForm.code}
+                    onChange={(e) => setVoucherForm({ ...voucherForm, code: e.target.value.toUpperCase() })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 font-mono uppercase"
+                    placeholder="e.g., SUMMER20"
+                    maxLength={20}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Discount Type</label>
+                    <select
+                      value={voucherForm.discount_type}
+                      onChange={(e) => setVoucherForm({ ...voucherForm, discount_type: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    >
+                      <option value="percentage">Percentage (%)</option>
+                      <option value="fixed">Fixed Amount (₹)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Discount Value *
+                    </label>
+                    <input
+                      type="number"
+                      value={voucherForm.discount_value}
+                      onChange={(e) => setVoucherForm({ ...voucherForm, discount_value: parseFloat(e.target.value) })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      placeholder={voucherForm.discount_type === 'percentage' ? '10' : '50'}
+                      min={1}
+                      max={voucherForm.discount_type === 'percentage' ? 100 : 10000}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Valid From</label>
+                    <input
+                      type="date"
+                      value={voucherForm.valid_from}
+                      onChange={(e) => setVoucherForm({ ...voucherForm, valid_from: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Valid Until</label>
+                    <input
+                      type="date"
+                      value={voucherForm.valid_until}
+                      onChange={(e) => setVoucherForm({ ...voucherForm, valid_until: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Max Uses</label>
+                  <input
+                    type="number"
+                    value={voucherForm.max_uses}
+                    onChange={(e) => setVoucherForm({ ...voucherForm, max_uses: parseInt(e.target.value) })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    placeholder="100"
+                    min={1}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Applicable Plans</label>
+                  <div className="flex gap-3">
+                    {['monthly', 'annual'].map((plan) => (
+                      <label key={plan} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={voucherForm.applicable_plans.includes(plan)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setVoucherForm({ ...voucherForm, applicable_plans: [...voucherForm.applicable_plans, plan] });
+                            } else {
+                              setVoucherForm({ ...voucherForm, applicable_plans: voucherForm.applicable_plans.filter(p => p !== plan) });
+                            }
+                          }}
+                          className="w-4 h-4 text-orange-500 rounded"
+                        />
+                        <span className="capitalize">{plan}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Leave empty to apply to all plans</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Description (optional)</label>
+                  <input
+                    type="text"
+                    value={voucherForm.description}
+                    onChange={(e) => setVoucherForm({ ...voucherForm, description: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    placeholder="e.g., Summer sale discount"
+                  />
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+                  <p><strong>Preview:</strong> {voucherForm.code || 'CODE'} gives {
+                    voucherForm.discount_type === 'percentage' 
+                      ? `${voucherForm.discount_value}% off` 
+                      : `₹${voucherForm.discount_value} off`
+                  }</p>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateVoucher(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCreateVoucher}
+                    disabled={!voucherForm.code || !voucherForm.discount_value}
+                    className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50"
+                  >
+                    Create Voucher
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
