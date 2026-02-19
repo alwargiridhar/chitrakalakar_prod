@@ -48,7 +48,11 @@ function PaintingDetailPage() {
       alert('Added to cart!');
     } catch (error) {
       console.error('Error adding to cart:', error);
-      alert(error.message || 'Failed to add to cart');
+      if (error.message?.includes('fetch') || error.message?.includes('network')) {
+        alert('Unable to connect. Please check your internet connection and try again.');
+      } else {
+        alert(error.message || 'Failed to add to cart. Please try again.');
+      }
     }
   };
 
