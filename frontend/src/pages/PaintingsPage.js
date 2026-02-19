@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { publicAPI, cartAPI } from '../services/api';
 import { ART_CATEGORIES } from '../utils/branding';
 import { useAuth } from '../contexts/AuthContext';
+import VirtualRoomPreview from '../components/VirtualRoomPreview';
 
 function PaintingsPage() {
   const { isAuthenticated } = useAuth();
@@ -12,6 +13,7 @@ function PaintingsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('latest');
   const [priceRange, setPriceRange] = useState('all');
+  const [previewPainting, setPreviewPainting] = useState(null);
 
   const fetchPaintings = useCallback(async () => {
     try {
