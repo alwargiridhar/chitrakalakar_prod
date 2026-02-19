@@ -57,6 +57,17 @@ function AdminDashboard() {
     location: '',
   });
 
+  const [voucherForm, setVoucherForm] = useState({
+    code: '',
+    discount_type: 'percentage',
+    discount_value: 10,
+    valid_from: new Date().toISOString().split('T')[0],
+    valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    max_uses: 100,
+    applicable_plans: [],
+    description: '',
+  });
+
   const tabs = [
     { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'artists', label: 'Pending Artists', icon: '👥' },
