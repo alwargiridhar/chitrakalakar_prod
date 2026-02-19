@@ -1,54 +1,74 @@
-import { useEffect } from "react";
-import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+// Components
+import NavBar from './components/NavBar';
+import Layout from './components/Layout';
+import Chatbot from './components/Chatbot';
+import NotificationPopup from './components/NotificationPopup';
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
+// Pages
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import AdminDashboard from './pages/AdminDashboard';
+import ArtistDashboard from './pages/ArtistDashboard';
+import UserDashboard from './pages/UserDashboard';
+import AboutPage from './pages/AboutPage';
+import ArtistsPage from './pages/ArtistsPage';
+import ArtistDetailPage from './pages/ArtistDetailPage';
+import PaintingsPage from './pages/PaintingsPage';
+import PaintingDetailPage from './pages/PaintingDetailPage';
+import ExhibitionsPage from './pages/ExhibitionsPage';
+import ArchivedExhibitionsPage from './pages/ArchivedExhibitionsPage';
+import ArtClassesPage from './pages/ArtClassesPage';
+import ContactPage from './pages/ContactPage';
+import FAQPage from './pages/FAQPage';
+import PrivacyPage from './pages/PrivacyPage';
+import TermsPage from './pages/TermsPage';
+import NotFoundPage from './pages/NotFoundPage';
+import LeadChitrakarDashboard from './pages/LeadChitrakarDashboard';
+import KalakarDashboard from './pages/KalakarDashboard';
 
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
+import './App.css';
 
 function App() {
   return (
-    <div className="App">
+    <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
+          <Route path="/" element={<Layout><HomePage /></Layout>} />
+          <Route path="/login" element={<Layout><LoginPage /></Layout>} />
+          <Route path="/signup" element={<Layout><SignupPage /></Layout>} />
+          <Route path="/forgot-password" element={<Layout><ForgotPasswordPage /></Layout>} />
+          <Route path="/about" element={<Layout><AboutPage /></Layout>} />
+          <Route path="/artists" element={<Layout><ArtistsPage /></Layout>} />
+          <Route path="/artist/:id" element={<Layout><ArtistDetailPage /></Layout>} />
+          <Route path="/paintings" element={<Layout><PaintingsPage /></Layout>} />
+          <Route path="/painting/:id" element={<Layout><PaintingDetailPage /></Layout>} />
+          <Route path="/exhibitions" element={<Layout><ExhibitionsPage /></Layout>} />
+          <Route path="/exhibitions/archived" element={<Layout><ArchivedExhibitionsPage /></Layout>} />
+          <Route path="/art-classes" element={<Layout><ArtClassesPage /></Layout>} />
+          <Route path="/contact" element={<Layout><ContactPage /></Layout>} />
+          <Route path="/faq" element={<Layout><FAQPage /></Layout>} />
+          <Route path="/privacy" element={<Layout><PrivacyPage /></Layout>} />
+          <Route path="/terms" element={<Layout><TermsPage /></Layout>} />
+          <Route path="/admin" element={<><NavBar /><AdminDashboard /></>} />
+          <Route path="/dashboard" element={<><NavBar /><ArtistDashboard /></>} />
+          <Route path="/user-dashboard" element={<><NavBar /><UserDashboard /></>} />
+          <Route path="/lead-chitrakar" element={<><NavBar /><LeadChitrakarDashboard /></>} />
+          <Route path="/kalakar" element={<><NavBar /><KalakarDashboard /></>} />
+          <Route path="*" element={<Layout><NotFoundPage /></Layout>} />
         </Routes>
+        <Chatbot />
+        <NotificationPopup />
       </BrowserRouter>
-    </div>
+    </AuthProvider>
   );
 }
 
+// Export for backwards compatibility
+export { LoginPage, SignupPage, AdminDashboard };
 export default App;
