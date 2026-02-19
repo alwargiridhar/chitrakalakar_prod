@@ -412,30 +412,44 @@ async def get_featured_artists():
 
 @app.get("/api/public/artists")
 async def get_public_artists():
-    """Get all approved artists (without contact info for public view)"""
+    """Get all approved artists WITH ACTIVE MEMBERSHIP (without contact info for public view)"""
     supabase = get_supabase_client()
     
     if not supabase:
         return {"artists": []}
     
     try:
-        # Get all approved and active artists (including avatar)
+        # Get all approved and active artists WITH membership info
         artists = supabase.table('profiles').select(
-            'id, full_name, bio, categories, location, avatar, created_at'
+            'id, full_name, bio, categories, location, avatar, created_at, is_member, membership_expiry'
         ).eq('role', 'artist').eq('is_approved', True).eq('is_active', True).execute()
         
-        # Transform full_name to name for frontend compatibility
+        # Filter to only show artists with ACTIVE membership
         artist_list = []
+        now = datetime.now(timezone.utc)
+        
         for artist in (artists.data or []):
-            artist_list.append({
-                "id": artist.get("id"),
-                "name": artist.get("full_name"),
-                "bio": artist.get("bio"),
-                "categories": artist.get("categories"),
-                "location": artist.get("location"),
-                "avatar": artist.get("avatar"),
-                "created_at": artist.get("created_at")
-            })
+            # Check if artist has active membership
+            is_active_member = False
+            if artist.get('is_member') and artist.get('membership_expiry'):
+                try:
+                    expiry = datetime.fromisoformat(artist['membership_expiry'].replace('Z', '+00:00'))
+                    is_active_member = expiry > now
+                except:
+                    pass
+            
+            # Only include artists with active membership in public list
+            if is_active_member:
+                artist_list.append({
+                    "id": artist.get("id"),
+                    "name": artist.get("full_name"),
+                    "bio": artist.get("bio"),
+                    "categories": artist.get("categories"),
+                    "location": artist.get("location"),
+                    "avatar": artist.get("avatar"),
+                    "created_at": artist.get("created_at"),
+                    "is_member": True
+                })
         
         return {"artists": artist_list}
     except Exception as e:
