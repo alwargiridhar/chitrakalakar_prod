@@ -72,6 +72,38 @@ Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrak
 
 ## What's Been Implemented
 
+### Feb 19, 2026 - Session 7: Bug Fixes & Feature Enhancements
+
+1. **PWA Installation Fix**
+   - Fixed manifest.json with proper icon purposes (separate "any" and "maskable")
+   - Changed `start_url` from "." to "/" for better compatibility
+   - Added unique `id` field for PWA identification
+   - Reduced install banner delay from 30s to 5s for better UX
+
+2. **Subscription Page Improvements**
+   - Made pricing plans dynamic (fetched from API)
+   - Added voucher code input with apply functionality
+   - Fixed price display for API response format (base_price → price mapping)
+   - Added GST calculation display
+
+3. **Community Creation Enabled for All Users**
+   - Removed membership requirement for community creation
+   - All authenticated users can now create communities
+   - Communities still require admin approval
+
+4. **Admin Pricing Management**
+   - Admins can now edit pricing plan details (name, price, duration, features)
+   - Plans are displayed in editable cards with inline editing
+   - GST is calculated automatically (18%)
+
+5. **Featured Artists Management**
+   - Added "Edit" button to contemporary featured artists
+   - Admins can modify artist details (bio, categories, artworks)
+
+6. **React Hook Fix**
+   - Fixed `useEffect` dependency warning in CommunityDetailPage.js
+   - Wrapped `fetchCommunityData` in `useCallback`
+
 ### Feb 19, 2026 - Session 6: Community, Pricing & Trending Features
 
 1. **Trending Artists Section** (`/app/frontend/src/components/TrendingArtists.js`) ✨ NEW
