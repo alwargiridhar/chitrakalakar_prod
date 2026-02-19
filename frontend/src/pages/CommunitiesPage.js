@@ -62,8 +62,8 @@ function CommunitiesPage() {
   const handleCreateCommunity = async (e) => {
     e.preventDefault();
     
-    if (!profiles?.is_member) {
-      alert('Active membership required to create communities');
+    if (!isAuthenticated) {
+      alert('Please login to create communities');
       return;
     }
 
