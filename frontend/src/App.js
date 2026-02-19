@@ -72,6 +72,8 @@ function App() {
           <Route path="/account" element={<><NavBar /><AccountPage /></>} />
           <Route path="/change-password" element={<><NavBar /><ChangePasswordPage /></>} />
           <Route path="/subscription" element={<><NavBar /><SubscriptionPage /></>} />
+          <Route path="/communities" element={<Layout><CommunitiesPage /></Layout>} />
+          <Route path="/community/:id" element={<Layout><CommunityDetailPage /></Layout>} />
           <Route path="*" element={<Layout><NotFoundPage /></Layout>} />
         </Routes>
         <Chatbot />
