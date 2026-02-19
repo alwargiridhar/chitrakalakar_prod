@@ -217,10 +217,28 @@ export const adminAPI = {
     method: 'POST',
   }),
   getAllUsers: () => apiCall('/admin/all-users'),
-  toggleUserStatus: (userId) => apiCall(`/admin/toggle-user-status/${userId}`, {
+  toggleUserStatus: (userId) => apiCall(`/admin/toggle-user-status?user_id=${userId}`, {
     method: 'POST',
   }),
   getAllOrders: () => apiCall('/admin/all-orders'),
+  
+  // Artists by Membership
+  getArtistsByMembership: () => apiCall('/admin/artists-by-membership'),
+  
+  // Role Management
+  updateUserRole: (userId, newRole) => apiCall('/admin/update-user-role', {
+    method: 'POST',
+    body: JSON.stringify({ user_id: userId, new_role: newRole }),
+  }),
+  
+  // Membership Management
+  grantMembership: (artistId, plan, durationDays) => apiCall('/admin/grant-membership', {
+    method: 'POST',
+    body: JSON.stringify({ artist_id: artistId, plan, duration_days: durationDays }),
+  }),
+  revokeMembership: (artistId) => apiCall(`/admin/revoke-membership?artist_id=${artistId}`, {
+    method: 'POST',
+  }),
   
   // Featured Artists
   getFeaturedArtists: () => apiCall('/admin/featured-artists'),
