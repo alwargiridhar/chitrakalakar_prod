@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { publicAPI, cartAPI, videoScreeningAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import VirtualRoomPreview from '../components/VirtualRoomPreview';
 
 function PaintingDetailPage() {
   const { id } = useParams();
@@ -12,6 +13,7 @@ function PaintingDetailPage() {
   const [error, setError] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showScreeningModal, setShowScreeningModal] = useState(false);
+  const [showRoomPreview, setShowRoomPreview] = useState(false);
   const [screeningForm, setScreeningForm] = useState({
     preferred_date: '',
     message: ''
