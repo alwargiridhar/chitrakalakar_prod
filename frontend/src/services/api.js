@@ -112,6 +112,9 @@ export const communityAPI = {
   join: (communityId) => apiCall(`/community/${communityId}/join`, {
     method: 'POST',
   }),
+  leave: (communityId) => apiCall(`/community/${communityId}/leave`, {
+    method: 'POST',
+  }),
   getJoinRequests: (communityId) => apiCall(`/community/${communityId}/join-requests`),
   approveJoin: (communityId, requestId, approved) => apiCall(`/community/${communityId}/approve-join/${requestId}?approved=${approved}`, {
     method: 'POST',
