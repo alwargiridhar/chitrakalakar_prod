@@ -240,6 +240,26 @@ export const adminAPI = {
     method: 'POST',
   }),
   
+  // Pricing & Plans Management
+  getMembershipPlans: () => apiCall('/admin/membership-plans'),
+  updateMembershipPlan: (plan) => apiCall('/admin/update-membership-plan', {
+    method: 'POST',
+    body: JSON.stringify(plan),
+  }),
+  
+  // Voucher Management
+  getVouchers: () => apiCall('/admin/vouchers'),
+  createVoucher: (voucher) => apiCall('/admin/create-voucher', {
+    method: 'POST',
+    body: JSON.stringify(voucher),
+  }),
+  deleteVoucher: (voucherId) => apiCall(`/admin/voucher/${voucherId}`, {
+    method: 'DELETE',
+  }),
+  toggleVoucher: (voucherId) => apiCall(`/admin/toggle-voucher/${voucherId}`, {
+    method: 'POST',
+  }),
+  
   // Featured Artists
   getFeaturedArtists: () => apiCall('/admin/featured-artists'),
   getApprovedArtists: () => apiCall('/admin/approved-artists'),
