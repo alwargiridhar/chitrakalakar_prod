@@ -687,57 +687,128 @@ function AdminDashboard() {
         {/* Pricing & Vouchers Tab */}
         {activeTab === 'pricing' && (
           <div className="space-y-8">
-            {/* Membership Plans Overview */}
+            {/* Membership Plans Management */}
             <div className="bg-white rounded-xl shadow-sm">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-900">Membership Plans</h2>
-                <p className="text-sm text-gray-500">Current pricing structure for artist memberships</p>
+              <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Membership Plans</h2>
+                  <p className="text-sm text-gray-500">Manage pricing structure for artist memberships</p>
+                </div>
               </div>
               <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Monthly Plan */}
-                  <div className="border border-gray-200 rounded-xl p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-900">Monthly Membership</h3>
-                        <p className="text-sm text-gray-500">30-day access to all features</p>
-                      </div>
-                      <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">Active</span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {pricingPlans.map((plan) => (
+                    <div 
+                      key={plan.id} 
+                      className={`border rounded-xl p-6 relative ${plan.popular ? 'border-2 border-orange-400' : 'border-gray-200'}`}
+                      data-testid={`pricing-plan-${plan.id}`}
+                    >
+                      {plan.popular && (
+                        <div className="absolute -top-3 left-4 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                          Most Popular
+                        </div>
+                      )}
+                      
+                      {editingPlan === plan.id ? (
+                        /* Edit Mode */
+                        <div className="space-y-4">
+                          <input
+                            type="text"
+                            value={plan.name}
+                            onChange={(e) => handleUpdatePlan(plan.id, { name: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg font-bold text-lg"
+                          />
+                          <div className="flex gap-2">
+                            <input
+                              type="number"
+                              value={plan.price}
+                              onChange={(e) => handleUpdatePlan(plan.id, { price: parseInt(e.target.value) })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                              placeholder="Price"
+                            />
+                          </div>
+                          <input
+                            type="text"
+                            value={plan.duration}
+                            onChange={(e) => handleUpdatePlan(plan.id, { duration: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            placeholder="Duration label"
+                          />
+                          <input
+                            type="number"
+                            value={plan.duration_days}
+                            onChange={(e) => handleUpdatePlan(plan.id, { duration_days: parseInt(e.target.value) })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            placeholder="Duration in days"
+                          />
+                          <div>
+                            <label className="text-xs text-gray-500">Features (one per line)</label>
+                            <textarea
+                              value={(plan.features || []).join('\n')}
+                              onChange={(e) => handleUpdatePlan(plan.id, { features: e.target.value.split('\n').filter(f => f.trim()) })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                              rows={4}
+                            />
+                          </div>
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={plan.popular}
+                              onChange={(e) => handleUpdatePlan(plan.id, { popular: e.target.checked })}
+                              className="w-4 h-4"
+                            />
+                            Mark as Popular
+                          </label>
+                          <div className="flex gap-2 pt-2">
+                            <button
+                              onClick={() => setEditingPlan(null)}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => handleSavePlan(plan)}
+                              className="flex-1 px-3 py-2 bg-green-500 text-white rounded-lg text-sm"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* View Mode */
+                        <>
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
+                              <p className="text-sm text-gray-500">{plan.duration} ({plan.duration_days} days)</p>
+                            </div>
+                            <button
+                              onClick={() => setEditingPlan(plan.id)}
+                              className="text-orange-500 hover:text-orange-600 text-sm font-medium"
+                              data-testid={`edit-plan-${plan.id}-btn`}
+                            >
+                              ✏️ Edit
+                            </button>
+                          </div>
+                          <div className="mb-4">
+                            <p className="text-3xl font-bold text-gray-900">₹{plan.price.toLocaleString()}</p>
+                            <p className="text-sm text-gray-500">+ 18% GST = ₹{Math.round(plan.price * 1.18).toLocaleString()}</p>
+                          </div>
+                          <ul className="text-sm text-gray-600 space-y-2">
+                            {(plan.features || []).map((feature, idx) => (
+                              <li key={idx} className="flex items-center gap-2">
+                                <span className="text-green-500">✓</span> {feature}
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
                     </div>
-                    <div className="mb-4">
-                      <p className="text-3xl font-bold text-gray-900">₹99</p>
-                      <p className="text-sm text-gray-500">+ 18% GST = ₹116.82</p>
-                    </div>
-                    <ul className="text-sm text-gray-600 space-y-2">
-                      <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Public artist profile</li>
-                      <li className="flex items-center gap-2"><span className="text-green-500">✓</span> List artworks on marketplace</li>
-                      <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Join communities</li>
-                    </ul>
-                  </div>
-
-                  {/* Annual Plan */}
-                  <div className="border-2 border-orange-400 rounded-xl p-6 relative">
-                    <div className="absolute -top-3 left-4 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-                      Best Value
-                    </div>
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-900">Annual Membership</h3>
-                        <p className="text-sm text-gray-500">365-day access (save 16%)</p>
-                      </div>
-                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">Active</span>
-                    </div>
-                    <div className="mb-4">
-                      <p className="text-3xl font-bold text-gray-900">₹999</p>
-                      <p className="text-sm text-gray-500">+ 18% GST = ₹1,178.82</p>
-                    </div>
-                    <ul className="text-sm text-gray-600 space-y-2">
-                      <li className="flex items-center gap-2"><span className="text-green-500">✓</span> All monthly features</li>
-                      <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Featured on homepage</li>
-                      <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Priority support</li>
-                    </ul>
-                  </div>
+                  ))}
                 </div>
+                <p className="text-xs text-gray-400 mt-4 text-center">
+                  Note: Plan changes will sync with the database when saved. GST is calculated automatically.
+                </p>
               </div>
             </div>
 
