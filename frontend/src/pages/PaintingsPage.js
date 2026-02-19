@@ -195,24 +195,78 @@ function PaintingsPage() {
                       🖼️
                     </div>
                   )}
+                  {/* Category Badge */}
                   <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-sm font-medium text-orange-600">
                     {painting.category}
                   </div>
+                  
+                  {/* Multiple Images Indicator */}
                   {painting.images && painting.images.length > 1 && (
                     <div className="absolute bottom-3 left-3 bg-black/50 text-white px-2 py-1 rounded text-xs">
                       +{painting.images.length - 1} more
                     </div>
                   )}
+                  
+                  {/* Key Info Overlay on Hover */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute bottom-0 left-0 right-0 p-3 text-white text-xs space-y-1">
+                      {painting.medium && (
+                        <p className="flex items-center gap-1">
+                          <span>🎨</span> {painting.medium}
+                        </p>
+                      )}
+                      {painting.dimensions && (
+                        <p className="flex items-center gap-1">
+                          <span>📐</span> {painting.dimensions.height}×{painting.dimensions.width} {painting.dimensions.unit}
+                        </p>
+                      )}
+                      {painting.year_of_creation && (
+                        <p className="flex items-center gap-1">
+                          <span>📅</span> {painting.year_of_creation}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <div className="p-4">
                   <h3 className="font-semibold text-gray-900 mb-1 truncate">{painting.title}</h3>
                   <p className="text-sm text-gray-500 mb-2">
                     by {painting.profiles?.full_name || 'Unknown Artist'}
                   </p>
+                  
+                  {/* Key Info Tags */}
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {painting.artwork_type && painting.artwork_type !== 'Original' && (
+                      <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                        {painting.artwork_type}
+                      </span>
+                    )}
+                    {painting.certificate_of_authenticity && (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                        COA
+                      </span>
+                    )}
+                    {painting.signed_by_artist && painting.signed_by_artist !== 'Not Signed' && (
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                        Signed
+                      </span>
+                    )}
+                    {painting.framing_status === 'Framed' && (
+                      <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                        Framed
+                      </span>
+                    )}
+                  </div>
+                  
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-lg font-bold text-orange-600">
-                      ₹{painting.price?.toLocaleString('en-IN')}
-                    </span>
+                    <div>
+                      <span className="text-lg font-bold text-orange-600">
+                        ₹{painting.price?.toLocaleString('en-IN')}
+                      </span>
+                      {painting.price_type === 'Negotiable' && (
+                        <span className="text-xs text-gray-500 ml-1">(Negotiable)</span>
+                      )}
+                    </div>
                     {painting.views > 0 && (
                       <span className="text-xs text-gray-400">
                         {painting.views} views
