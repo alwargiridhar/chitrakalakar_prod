@@ -351,7 +351,7 @@ async def get_public_stats():
 
 @app.get("/api/public/featured-artists")
 async def get_featured_artists():
-    """Get featured artists (contemporary and registered)"""
+    """Get featured artists (contemporary and registered with membership)"""
     supabase = get_supabase_client()
     
     if not supabase:
@@ -361,12 +361,27 @@ async def get_featured_artists():
         # Get contemporary featured artists
         contemporary = supabase.table('featured_artists').select('*').eq('type', 'contemporary').eq('is_featured', True).execute()
         
-        # Get registered featured artists
-        registered = supabase.table('featured_artists').select('*').eq('type', 'registered').eq('is_featured', True).execute()
+        # Get registered featured artists (only those with active membership)
+        registered_query = supabase.table('featured_artists').select('*, profiles!artist_id(is_member, membership_expiry)').eq('type', 'registered').eq('is_featured', True).execute()
+        
+        # Filter registered artists to only include those with active membership
+        registered_with_membership = []
+        now = datetime.now(timezone.utc)
+        for artist in (registered_query.data or []):
+            profile = artist.get('profiles', {})
+            if profile and profile.get('is_member'):
+                expiry = profile.get('membership_expiry')
+                if expiry:
+                    try:
+                        expiry_date = datetime.fromisoformat(expiry.replace('Z', '+00:00'))
+                        if expiry_date > now:
+                            registered_with_membership.append(artist)
+                    except:
+                        pass
         
         return {
             "contemporary": contemporary.data or [],
-            "registered": registered.data or []
+            "registered": registered_with_membership
         }
     except Exception as e:
         print(f"Featured artists error: {e}")
