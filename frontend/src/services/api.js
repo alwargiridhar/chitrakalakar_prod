@@ -151,17 +151,17 @@ export const membershipAPI = {
     method: 'POST',
     body: JSON.stringify({ voucher_code: voucherCode, plan_id: planId }),
   }),
+  initiateMembership: (planType, voucherCode = null) => apiCall('/membership/create-order', {
+    method: 'POST',
+    body: JSON.stringify({ plan_type: planType, voucher_code: voucherCode }),
+  }),
   createOrder: (planType) => apiCall('/membership/create-order', {
     method: 'POST',
     body: JSON.stringify({ plan_type: planType }),
   }),
-  verifyPayment: (orderId, paymentId, signature) => apiCall('/membership/verify-payment', {
+  verifyPayment: (data) => apiCall('/membership/verify-payment', {
     method: 'POST',
-    body: JSON.stringify({
-      razorpay_order_id: orderId,
-      razorpay_payment_id: paymentId,
-      razorpay_signature: signature,
-    }),
+    body: JSON.stringify(data),
   }),
   getStatus: () => apiCall('/membership/status'),
 };
