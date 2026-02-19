@@ -102,6 +102,19 @@ Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrak
    - `POST /api/admin/grant-membership` - Grant membership
    - `POST /api/admin/revoke-membership` - Revoke membership
 
+#### Session 4: User Dropdown Menu & Account Pages
+1. **NavBar User Dropdown** (`/app/frontend/src/components/NavBar.js`)
+   - Circular avatar with role-based colors (Admin=red, Artist=orange, etc.)
+   - Dropdown shows: Name, Email, Role badge
+   - Menu items based on role: Profile, Dashboard, Account Settings, Subscription (artists only), Change Password, Logout
+   - Mobile-responsive with full menu in hamburger menu
+
+2. **New Account Pages**:
+   - `/profile` - Edit profile (name, phone, location, bio, avatar)
+   - `/account` - Account overview with quick links, status, danger zone
+   - `/change-password` - Change password with validation
+   - `/subscription` - Membership plans (Basic, Premium, Annual) with Razorpay
+
 ---
 
 ## Prioritized Backlog
