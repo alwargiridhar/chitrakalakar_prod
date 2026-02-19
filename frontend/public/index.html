@@ -242,12 +242,12 @@
         e.preventDefault();
         deferredPrompt = e;
         
-        // Show install banner after 30 seconds
+        // Show install banner after 5 seconds
         setTimeout(() => {
           if (!localStorage.getItem('pwa-banner-dismissed')) {
             showPWABanner();
           }
-        }, 30000);
+        }, 5000);
       });
       
       function showPWABanner() {
