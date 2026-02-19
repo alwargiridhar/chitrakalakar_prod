@@ -18,11 +18,17 @@ function AdminDashboard() {
   const [approvedArtists, setApprovedArtists] = useState([]);
   const [featuredArtists, setFeaturedArtists] = useState({ contemporary: [], registered: [] });
   const [subAdmins, setSubAdmins] = useState([]);
+  const [memberArtists, setMemberArtists] = useState([]);
+  const [nonMemberArtists, setNonMemberArtists] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Forms
   const [showAddContemporary, setShowAddContemporary] = useState(false);
   const [showCreateSubAdmin, setShowCreateSubAdmin] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showMembershipModal, setShowMembershipModal] = useState(false);
+  const [membershipForm, setMembershipForm] = useState({ plan: 'basic', duration_days: 30 });
 
   const [contemporaryForm, setContemporaryForm] = useState({
     name: '',
