@@ -18,60 +18,39 @@ function SubscriptionPage() {
   const fetchPlans = async () => {
     try {
       const response = await membershipAPI.getPlans();
-      setPlans(response.plans || []);
+      // Map API response to our format, handling different field names
+      const mappedPlans = (response.plans || []).map(plan => ({
+        id: plan.id,
+        name: plan.name,
+        price: plan.price || plan.base_price || plan.total_price || 0,
+        duration: plan.duration || `${plan.duration_days} Days`,
+        duration_days: plan.duration_days,
+        features: plan.features || getDefaultFeatures(plan.id),
+        popular: plan.popular || plan.id === 'premium',
+        gst_amount: plan.gst_amount,
+        total_price: plan.total_price,
+      }));
+      
+      // If we have plans from API, use them; otherwise use defaults
+      if (mappedPlans.length > 0) {
+        setPlans(mappedPlans);
+      }
     } catch (error) {
       console.error('Error fetching plans:', error);
-      // Fallback to default plans
-      setPlans([
-        {
-          id: 'basic',
-          name: 'Basic',
-          price: 999,
-          duration: '1 Month',
-          duration_days: 30,
-          features: [
-            'Appear in Artists Directory',
-            'Upload up to 10 artworks',
-            'Basic portfolio page',
-            'Email support',
-          ],
-          popular: false,
-        },
-        {
-          id: 'premium',
-          name: 'Premium',
-          price: 2499,
-          duration: '3 Months',
-          duration_days: 90,
-          features: [
-            'Everything in Basic',
-            'Upload unlimited artworks',
-            'Featured artist placement',
-            'Priority support',
-            'Analytics dashboard',
-          ],
-          popular: true,
-        },
-        {
-          id: 'annual',
-          name: 'Annual',
-          price: 7999,
-          duration: '12 Months',
-          duration_days: 365,
-          features: [
-            'Everything in Premium',
-            'Custom portfolio URL',
-            'Exhibition priority',
-            'Dedicated account manager',
-            'Marketing features',
-            '2 months FREE',
-          ],
-          popular: false,
-        },
-      ]);
+      // Keep default plans on error
     } finally {
       setPlansLoading(false);
     }
+  };
+
+  const getDefaultFeatures = (planId) => {
+    const features = {
+      basic: ['Appear in Artists Directory', 'Upload up to 10 artworks', 'Basic portfolio page', 'Email support'],
+      monthly: ['Appear in Artists Directory', 'Upload up to 10 artworks', 'Basic portfolio page', 'Email support'],
+      premium: ['Everything in Basic', 'Upload unlimited artworks', 'Featured artist placement', 'Priority support', 'Analytics dashboard'],
+      annual: ['Everything in Premium', 'Custom portfolio URL', 'Exhibition priority', 'Dedicated account manager', 'Marketing features', '2 months FREE'],
+    };
+    return features[planId] || features.basic;
   };
 
   const isActiveMember = profiles?.is_member && profiles?.membership_expiry && 
