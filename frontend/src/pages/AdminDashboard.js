@@ -21,6 +21,12 @@ function AdminDashboard() {
   const [memberArtists, setMemberArtists] = useState([]);
   const [nonMemberArtists, setNonMemberArtists] = useState([]);
   const [vouchers, setVouchers] = useState([]);
+  const [pricingPlans, setPricingPlans] = useState([
+    { id: 'basic', name: 'Basic', price: 999, duration: '1 Month', duration_days: 30, features: ['Appear in Artists Directory', 'Upload up to 10 artworks', 'Basic portfolio page', 'Email support'], popular: false, active: true },
+    { id: 'premium', name: 'Premium', price: 2499, duration: '3 Months', duration_days: 90, features: ['Everything in Basic', 'Upload unlimited artworks', 'Featured artist placement', 'Priority support', 'Analytics dashboard'], popular: true, active: true },
+    { id: 'annual', name: 'Annual', price: 7999, duration: '12 Months', duration_days: 365, features: ['Everything in Premium', 'Custom portfolio URL', 'Exhibition priority', 'Dedicated account manager', 'Marketing features', '2 months FREE'], popular: false, active: true },
+  ]);
+  const [editingPlan, setEditingPlan] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Forms
