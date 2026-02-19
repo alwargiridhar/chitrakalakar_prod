@@ -52,6 +52,8 @@ function AdminDashboard() {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'artists', label: 'Pending Artists', icon: '👥' },
+    { id: 'members', label: 'Members', icon: '💳' },
+    { id: 'non-members', label: 'Non-Members', icon: '👤' },
     { id: 'artworks', label: 'Pending Artworks', icon: '🖼️' },
     { id: 'exhibitions', label: 'Exhibitions', icon: '🎨' },
     { id: 'feature', label: 'Feature Artists', icon: '⭐' },
