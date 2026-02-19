@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { publicAPI, communityAPI } from '../services/api';
 import { BRAND_NAME, BRAND_TAGLINE, ART_CATEGORIES } from '../utils/branding';
 import { useAuth } from '../contexts/AuthContext';
+import ArtistOfTheDay from '../components/ArtistOfTheDay';
 
 function HomePage() {
   const { isAuthenticated } = useAuth();
