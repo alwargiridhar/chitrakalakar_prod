@@ -102,19 +102,30 @@ function HomePage() {
               </div>
             </div>
 
-            <div className="hidden lg:flex items-center justify-center">
-              <div className="relative bg-white rounded-3xl p-8 shadow-2xl">
+            <div className="hidden lg:flex flex-col gap-6">
+              {/* Artist of the Day */}
+              <ArtistOfTheDay />
+              
+              {/* Quick Actions */}
+              <div className="bg-white rounded-2xl p-6 shadow-lg">
                 <div className="grid grid-cols-2 gap-4">
-                  {[{ icon: '🎨', label: 'Paintings' }, { icon: '👥', label: 'Artisans' }, { icon: '⭐', label: 'Exhibitions' }, { icon: '📍', label: 'Community' }].map((item, i) => (
-                    <div key={i} className="flex flex-col items-center justify-center p-6 bg-gradient-to-br from-orange-50 to-yellow-50 rounded-2xl hover:shadow-lg transition-shadow">
-                      <span className="text-3xl mb-2">{item.icon}</span>
-                      <p className="text-sm font-semibold text-gray-900">{item.label}</p>
-                    </div>
+                  {[{ icon: '🎨', label: 'Paintings', href: '/paintings' }, { icon: '👥', label: 'Artisans', href: '/artists' }, { icon: '⭐', label: 'Exhibitions', href: '/exhibitions' }, { icon: '📍', label: 'Community', href: '/communities' }].map((item, i) => (
+                    <Link key={i} to={item.href} className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-orange-50 to-yellow-50 rounded-xl hover:shadow-md transition-all hover:scale-105">
+                      <span className="text-2xl mb-1">{item.icon}</span>
+                      <p className="text-xs font-semibold text-gray-900">{item.label}</p>
+                    </Link>
                   ))}
                 </div>
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Mobile Artist of the Day */}
+      <section className="lg:hidden py-8 bg-gray-50">
+        <div className="max-w-lg mx-auto px-4">
+          <ArtistOfTheDay />
         </div>
       </section>
 
