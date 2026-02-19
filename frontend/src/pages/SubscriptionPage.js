@@ -97,6 +97,7 @@ function SubscriptionPage() {
   };
 
   const calculateDiscountedPrice = (plan) => {
+    if (!plan || plan.price === undefined || plan.price === null) return 0;
     if (!appliedVoucher || appliedVoucher.planId !== plan.id) return plan.price;
     
     if (appliedVoucher.discount_type === 'percentage') {
