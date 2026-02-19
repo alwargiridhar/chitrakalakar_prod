@@ -1681,6 +1681,142 @@ async def approve_profile_modification(modification_id: str, approved: bool, adm
     
     return {"success": True, "message": f"Profile modification {'approved' if approved else 'rejected'}"}
 
+# ============ ADMIN ARTIST MANAGEMENT (Members vs Non-Members) ============
+
+@app.get("/api/admin/artists-by-membership")
+async def get_artists_by_membership(admin: dict = Depends(require_admin)):
+    """Get all artists separated by membership status"""
+    supabase = get_supabase_client()
+    
+    # Get all approved artists
+    artists = supabase.table('profiles').select('*').eq('role', 'artist').eq('is_approved', True).execute()
+    
+    members = []
+    non_members = []
+    now = datetime.now(timezone.utc)
+    
+    for artist in (artists.data or []):
+        # Check membership status
+        is_active_member = False
+        if artist.get('is_member') and artist.get('membership_expiry'):
+            try:
+                expiry = datetime.fromisoformat(artist['membership_expiry'].replace('Z', '+00:00'))
+                is_active_member = expiry > now
+            except:
+                pass
+        
+        artist_data = {
+            "id": artist.get("id"),
+            "full_name": artist.get("full_name"),
+            "email": artist.get("email"),
+            "phone": artist.get("phone"),
+            "bio": artist.get("bio"),
+            "categories": artist.get("categories"),
+            "location": artist.get("location"),
+            "avatar": artist.get("avatar"),
+            "is_member": is_active_member,
+            "membership_expiry": artist.get("membership_expiry"),
+            "membership_plan": artist.get("membership_plan"),
+            "created_at": artist.get("created_at"),
+            "role": artist.get("role"),
+            "is_active": artist.get("is_active")
+        }
+        
+        if is_active_member:
+            members.append(artist_data)
+        else:
+            non_members.append(artist_data)
+    
+    return {
+        "members": members,
+        "non_members": non_members,
+        "total_members": len(members),
+        "total_non_members": len(non_members)
+    }
+
+class UpdateUserRoleRequest(BaseModel):
+    user_id: str
+    new_role: str  # 'user', 'artist', 'admin', 'lead_chitrakar', 'kalakar'
+
+@app.post("/api/admin/update-user-role")
+async def update_user_role(request: UpdateUserRoleRequest, admin: dict = Depends(require_admin)):
+    """Admin can change user roles"""
+    supabase = get_supabase_client()
+    
+    valid_roles = ['user', 'artist', 'admin', 'lead_chitrakar', 'kalakar']
+    if request.new_role not in valid_roles:
+        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(valid_roles)}")
+    
+    # Prevent demoting self
+    if request.user_id == admin['id'] and request.new_role != 'admin':
+        raise HTTPException(status_code=400, detail="Cannot change your own admin role")
+    
+    result = supabase.table('profiles').update({
+        "role": request.new_role,
+        "is_approved": True if request.new_role in ['admin', 'lead_chitrakar', 'kalakar'] else None
+    }).eq('id', request.user_id).execute()
+    
+    if not result.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"success": True, "message": f"User role updated to {request.new_role}"}
+
+class GrantMembershipRequest(BaseModel):
+    artist_id: str
+    plan: str  # 'basic', 'premium', 'annual'
+    duration_days: int = 30
+
+@app.post("/api/admin/grant-membership")
+async def admin_grant_membership(request: GrantMembershipRequest, admin: dict = Depends(require_admin)):
+    """Admin can grant membership to an artist"""
+    supabase = get_supabase_client()
+    
+    expiry_date = datetime.now(timezone.utc) + timedelta(days=request.duration_days)
+    
+    result = supabase.table('profiles').update({
+        "is_member": True,
+        "membership_plan": request.plan,
+        "membership_started_at": datetime.now(timezone.utc).isoformat(),
+        "membership_expiry": expiry_date.isoformat()
+    }).eq('id', request.artist_id).execute()
+    
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Artist not found")
+    
+    return {"success": True, "message": f"Membership granted until {expiry_date.strftime('%Y-%m-%d')}"}
+
+@app.post("/api/admin/revoke-membership")
+async def admin_revoke_membership(artist_id: str, admin: dict = Depends(require_admin)):
+    """Admin can revoke membership from an artist"""
+    supabase = get_supabase_client()
+    
+    result = supabase.table('profiles').update({
+        "is_member": False,
+        "membership_expiry": None
+    }).eq('id', artist_id).execute()
+    
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Artist not found")
+    
+    return {"success": True, "message": "Membership revoked"}
+
+@app.post("/api/admin/toggle-user-status")
+async def toggle_user_status(user_id: str, admin: dict = Depends(require_admin)):
+    """Admin can activate/deactivate users"""
+    supabase = get_supabase_client()
+    
+    # Get current status
+    user = supabase.table('profiles').select('is_active').eq('id', user_id).single().execute()
+    
+    if not user.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    new_status = not user.data.get('is_active', True)
+    
+    supabase.table('profiles').update({"is_active": new_status}).eq('id', user_id).execute()
+    
+    return {"success": True, "message": f"User {'activated' if new_status else 'deactivated'}", "is_active": new_status}
+
 # Admin Video Screenings
 @app.get("/api/admin/pending-video-screenings")
 async def get_pending_video_screenings(admin: dict = Depends(require_admin)):
