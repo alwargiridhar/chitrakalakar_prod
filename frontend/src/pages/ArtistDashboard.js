@@ -5,6 +5,7 @@ import { artistAPI, authAPI, membershipAPI } from '../services/api';
 import { ART_CATEGORIES } from '../utils/branding';
 import ImageUpload from '../components/ImageUpload';
 import LocationAutocomplete from '../components/LocationAutocomplete';
+import ArtworkForm from '../components/ArtworkForm';
 import { BUCKETS } from '../lib/supabase';
 
 function ArtistDashboard() {
