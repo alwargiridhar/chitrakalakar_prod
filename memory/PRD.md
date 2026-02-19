@@ -12,6 +12,7 @@ Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrak
 1. Enhanced artwork listing form with comprehensive checklist/dropdowns
 2. Show key information on thumbnails
 3. Show all artwork information in detail page
+4. **Virtual Room Preview** - Visualize artwork in different room settings
 
 ---
 
@@ -28,6 +29,7 @@ Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrak
 - `/app/backend/server.py` - Main FastAPI application
 - `/app/frontend/src/pages/` - React page components
 - `/app/frontend/src/components/ArtworkForm.js` - Enhanced artwork form
+- `/app/frontend/src/components/VirtualRoomPreview.js` - Room visualization
 - `/app/frontend/src/services/api.js` - API service layer
 
 ---
@@ -35,7 +37,7 @@ Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrak
 ## User Personas
 
 1. **Artists** - Create profiles, upload artworks, manage portfolio
-2. **Buyers** - Browse marketplace, purchase artworks
+2. **Buyers** - Browse marketplace, purchase artworks, visualize in rooms
 3. **Admin** - Approve artists/artworks, manage featured artists, oversee platform
 
 ---
@@ -50,20 +52,14 @@ Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrak
 ### Artwork Listing Requirements
 
 #### Mandatory Fields
-- Title
-- Category/Subject
-- Price & Currency
-- Minimum 1 image
-- Artwork Type (Original/Limited Edition/Open Edition)
-- Ownership/Rights declaration
-- Shipping info
+- Title, Category/Subject, Price & Currency, Minimum 1 image
+- Artwork Type, Ownership/Rights declaration, Shipping info
 
 #### Optional Fields (Improves Visibility)
 - Year of creation, Medium, Surface, Dimensions
 - Authenticity (COA, Signed, Hand-embellished)
 - Condition details, Framing status
-- Story & Context (Inspiration, Technique, Artist Statement)
-- Investment Signals (Previously Exhibited, Publications, Awards)
+- Story & Context, Investment Signals
 
 ---
 
@@ -71,32 +67,26 @@ Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrak
 
 ### Date: Feb 19, 2026
 
-1. **Enhanced Artwork Form Component** (`/app/frontend/src/components/ArtworkForm.js`)
-   - 10 collapsible sections for comprehensive artwork listing
-   - Progress indicator for completion
-   - All mandatory and optional fields as specified
-   - Support for up to 8 images
+#### Session 1: Core Enhancements
+1. **Enhanced Artwork Form** - 10 collapsible sections, 50+ fields
+2. **Enhanced Thumbnails** - Key info overlay, badge system
+3. **Comprehensive Detail Page** - Organized info sections
+4. **Backend Updates** - Extended model, optimized queries
+5. **Bug Fixes** - Parallel query execution, membership checks
 
-2. **Enhanced Thumbnails** (`/app/frontend/src/pages/PaintingsPage.js`)
-   - Key info overlay on hover (Medium, Dimensions, Year)
-   - Badge system (COA, Signed, Framed, Artwork Type, Negotiable)
-   - Improved visual hierarchy
+#### Session 2: Virtual Room Preview Feature
+1. **VirtualRoomPreview Component** (`/app/frontend/src/components/VirtualRoomPreview.js`)
+   - 6 Room Presets: Modern Living, Classic Living, Bedroom, Office, Dining, Hallway
+   - 10 Wall Colors: White, Cream, Beige, Gray, Sage, Blue, Blush, Charcoal, Navy, Forest
+   - 5 Frame Styles: Modern, Classic, Minimal, Ornate, Float
+   - Artwork Size Slider (Small to Large)
+   - Drag-to-Reposition functionality
+   - SVG Furniture graphics for each room type
 
-3. **Comprehensive Detail Page** (`/app/frontend/src/pages/PaintingDetailPage.js`)
-   - Organized sections: Artwork Details, Authenticity, Framing & Shipping
-   - Ownership & Rights section
-   - Story & Context section
-   - Investment Signals section
-   - Enhanced artist info card
-
-4. **Backend Updates** (`/app/backend/server.py`)
-   - Extended ArtworkCreate model with 50+ fields
-   - Optimized stats endpoint with parallel queries
-   - Membership check for featured registered artists
-
-5. **Bug Fixes**
-   - Parallel query execution for faster stats loading
-   - Membership requirement for marketplace push (already existed)
+2. **Integration Points**
+   - "View in Your Room" button on Painting Detail Page
+   - Quick 🏠 button on each painting card in gallery
+   - Responsive modal with split view (preview + controls)
 
 ---
 
@@ -104,28 +94,27 @@ Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrak
 
 ### P0 - Critical
 - [ ] Verify Supabase connection for actual data flow
-- [ ] Test full artwork submission workflow end-to-end
+- [ ] Test full artwork submission workflow
 
 ### P1 - High Priority
-- [ ] Add image zoom functionality on detail page
-- [ ] Implement artwork edit functionality with same form
-- [ ] Add search functionality across artworks
+- [ ] Add real room background images (upgrade from gradients)
+- [ ] Implement artwork edit functionality
+- [ ] Add search functionality
 
 ### P2 - Medium Priority
-- [ ] Add artwork comparison feature
-- [ ] Implement artwork sharing to social media
-- [ ] Add recently viewed artworks section
-- [ ] Implement artwork recommendations
+- [ ] Save favorite room configurations
+- [ ] Share room preview as image
+- [ ] Add AR view using device camera
 
 ### P3 - Nice to Have
-- [ ] Virtual room preview (AR/VR mockup)
-- [ ] Price history chart for investment tracking
-- [ ] Bulk artwork upload for artists
+- [ ] Price history chart
+- [ ] Bulk artwork upload
+- [ ] Artist analytics dashboard
 
 ---
 
 ## Next Tasks
-1. Test with actual Supabase data to verify all fields save correctly
-2. Implement artwork edit functionality
-3. Add validation for mandatory fields in backend
-4. Create admin review interface for new artwork fields
+1. Add sample paintings to test full Virtual Room Preview integration
+2. Consider real room background images from Unsplash
+3. Implement artwork edit functionality
+4. Add share feature for room previews
