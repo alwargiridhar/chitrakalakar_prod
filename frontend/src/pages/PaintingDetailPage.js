@@ -557,6 +557,13 @@ function PaintingDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Virtual Room Preview Modal */}
+      <VirtualRoomPreview
+        artwork={painting}
+        isOpen={showRoomPreview}
+        onClose={() => setShowRoomPreview(false)}
+      />
     </div>
   );
 }
