@@ -97,12 +97,72 @@ class UploadUrlRequest(BaseModel):
     folder: str
 
 class ArtworkCreate(BaseModel):
+    # Basic Artwork Information (Required)
     title: str
-    category: str
+    category: str  # Subject Category (Nature / Portrait / Spiritual / Modern / etc.)
     price: float
-    images: Optional[List[str]] = None  # Support multiple images (up to 5)
+    images: Optional[List[str]] = None  # Support multiple images (up to 8)
     image: Optional[str] = None  # Legacy single image support
     description: Optional[str] = None
+    
+    # Basic Info
+    year_of_creation: Optional[int] = None
+    medium: Optional[str] = None  # Oil / Acrylic / Watercolor / Mixed Media / Digital / Other
+    surface: Optional[str] = None  # Canvas / Paper / Wood / Metal / Other
+    dimensions: Optional[dict] = None  # {"height": float, "width": float, "depth": float, "unit": "cm/inches"}
+    orientation: Optional[str] = None  # Portrait / Landscape / Square
+    style: Optional[str] = None  # Abstract / Realism / Contemporary / Traditional / etc.
+    
+    # Authenticity & Certification
+    artwork_type: Optional[str] = None  # Original / Limited Edition / Open Edition
+    edition_number: Optional[str] = None  # e.g., "3 of 25"
+    total_edition_size: Optional[int] = None
+    certificate_of_authenticity: Optional[bool] = False
+    signed_by_artist: Optional[str] = None  # None / Front / Back / Both
+    date_signed: Optional[str] = None
+    hand_embellished: Optional[bool] = False
+    artist_stamp: Optional[bool] = False
+    
+    # Condition Details
+    condition: Optional[str] = None  # Brand New / Excellent / Minor Imperfections / Restored
+    condition_notes: Optional[str] = None
+    restoration_history: Optional[str] = None
+    
+    # Framing & Presentation
+    framing_status: Optional[str] = None  # Unframed / Framed / Gallery Wrapped / Ready to Hang
+    frame_material: Optional[str] = None
+    frame_included_in_price: Optional[bool] = True
+    
+    # Pricing & Availability
+    price_type: Optional[str] = None  # Fixed / Negotiable / Auction
+    currency: Optional[str] = "INR"
+    quantity_available: Optional[int] = 1
+    international_shipping: Optional[bool] = False
+    
+    # Shipping Details
+    ships_rolled: Optional[bool] = False
+    ships_stretched: Optional[bool] = False
+    ships_framed: Optional[bool] = False
+    insured_shipping: Optional[bool] = False
+    dispatch_time: Optional[str] = None  # Estimated dispatch time
+    
+    # Ownership & Usage Rights
+    ownership_type: Optional[str] = None  # Physical Only / Commercial Rights / Reproduction Rights / Copyright Transfer
+    
+    # Story & Context
+    inspiration: Optional[str] = None
+    technique_explanation: Optional[str] = None
+    artist_statement: Optional[str] = None
+    exhibition_history: Optional[str] = None
+    awards_recognition: Optional[str] = None
+    
+    # Investment / Value Signals
+    previously_exhibited: Optional[bool] = False
+    featured_in_publication: Optional[bool] = False
+    sold_similar_works: Optional[bool] = False
+    part_of_series: Optional[bool] = False
+    series_name: Optional[str] = None
+    collector_interest: Optional[bool] = False
 
 class ArtworkApprovalRequest(BaseModel):
     artwork_id: str
