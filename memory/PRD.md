@@ -1,80 +1,131 @@
-# ChitraKalakar Platform PRD
+# ChitraKalakar - Art Marketplace Platform
 
 ## Original Problem Statement
-Art marketplace platform improvements for chitrakalakar.com including:
-- Location services for users/artists
-- Multiple images per painting (up to 5)
-- Admin dashboard fixes
-- Artist membership (Razorpay)
-- Community feature
-- Chatbot "Chitrakar"
-- Google/Gmail login
-- Forgot password
-- Real-time notifications
-- Courier tracking with AWB
+Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrakalakar_prod) and implement the following enhancements:
 
-## What's Been Implemented (Feb 5, 2026)
+### Issues to Fix:
+1. Analytics on loading page loads late
+2. Paintings showing "pending for approval" but admin doesn't receive requests  
+3. Membership-based access for registered artists column and marketplace
 
-### Phase 1 - Core Infrastructure
-- [x] Location autocomplete (OpenStreetMap/Nominatim)
-- [x] Multiple images per painting (up to 5)
-- [x] Image display fix (object-contain)
-- [x] Chatbot "Chitrakar" (AI-powered)
-- [x] Community section on landing page
-- [x] Membership system (Razorpay ready)
-- [x] Push to marketplace feature
-- [x] Real-time purchase notifications
-- [x] Courier AWB tracking
-- [x] Video screening booking
-- [x] Cart & checkout functionality
-- [x] Google OAuth login/signup
-- [x] Forgot password page
-- [x] Profile update improvements
+### New Features:
+1. Enhanced artwork listing form with comprehensive checklist/dropdowns
+2. Show key information on thumbnails
+3. Show all artwork information in detail page
 
-### Backend APIs Added
-- `/api/locations/search` - Location autocomplete
-- `/api/membership/*` - Subscription management
-- `/api/chat/*` - Chitrakar chatbot
-- `/api/communities/*` - Artist communities
-- `/api/video-screening/*` - Video screening requests
-- `/api/cart/*` - Shopping cart
-- `/api/orders/*` - Order management
-- `/api/notifications/*` - Real-time notifications
+---
 
-### Frontend Components Added
-- `Chatbot.js` - AI chat assistant
-- `LocationAutocomplete.js` - Location search
-- `NotificationPopup.js` - Purchase notifications
-- `ForgotPasswordPage.js` - Password reset
+## Architecture
 
-## Credentials Required
-### Backend (.env)
-- SUPABASE_URL
-- SUPABASE_KEY (or SUPABASE_SERVICE_KEY)
-- AWS_ACCESS_KEY_ID
-- AWS_SECRET_ACCESS_KEY
-- AWS_S3_BUCKET
-- AWS_REGION
-- RAZORPAY_KEY_ID
-- RAZORPAY_KEY_SECRET
+### Tech Stack
+- **Frontend**: React.js with TailwindCSS
+- **Backend**: FastAPI (Python)
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: JWT tokens with Supabase Auth
+- **Payment**: Razorpay integration
 
-### Frontend (.env)
-- REACT_APP_SUPABASE_URL
-- REACT_APP_SUPABASE_ANON_KEY
-- REACT_APP_BACKEND_URL
-- REACT_APP_RAZORPAY_KEY_ID
+### Key Files
+- `/app/backend/server.py` - Main FastAPI application
+- `/app/frontend/src/pages/` - React page components
+- `/app/frontend/src/components/ArtworkForm.js` - Enhanced artwork form
+- `/app/frontend/src/services/api.js` - API service layer
 
-### For Google OAuth (in Supabase)
-- Enable Google provider in Supabase Auth
-- Add Google OAuth Client ID and Secret
+---
 
-## Next Tasks (P0)
-1. Test Google OAuth end-to-end on production
-2. Test artist profile bio update
-3. Verify admin can see pending artworks
-4. Test membership payment flow
+## User Personas
 
-## Backlog (P1)
-1. OTP-based password reset (needs SMS provider)
-2. Email notifications for orders
-3. Analytics dashboard
+1. **Artists** - Create profiles, upload artworks, manage portfolio
+2. **Buyers** - Browse marketplace, purchase artworks
+3. **Admin** - Approve artists/artworks, manage featured artists, oversee platform
+
+---
+
+## Core Requirements (Static)
+
+### Membership System
+- Artists can create profiles for free
+- To appear in "Registered Artists" section - membership required
+- To push artworks to marketplace - membership required
+
+### Artwork Listing Requirements
+
+#### Mandatory Fields
+- Title
+- Category/Subject
+- Price & Currency
+- Minimum 1 image
+- Artwork Type (Original/Limited Edition/Open Edition)
+- Ownership/Rights declaration
+- Shipping info
+
+#### Optional Fields (Improves Visibility)
+- Year of creation, Medium, Surface, Dimensions
+- Authenticity (COA, Signed, Hand-embellished)
+- Condition details, Framing status
+- Story & Context (Inspiration, Technique, Artist Statement)
+- Investment Signals (Previously Exhibited, Publications, Awards)
+
+---
+
+## What's Been Implemented
+
+### Date: Feb 19, 2026
+
+1. **Enhanced Artwork Form Component** (`/app/frontend/src/components/ArtworkForm.js`)
+   - 10 collapsible sections for comprehensive artwork listing
+   - Progress indicator for completion
+   - All mandatory and optional fields as specified
+   - Support for up to 8 images
+
+2. **Enhanced Thumbnails** (`/app/frontend/src/pages/PaintingsPage.js`)
+   - Key info overlay on hover (Medium, Dimensions, Year)
+   - Badge system (COA, Signed, Framed, Artwork Type, Negotiable)
+   - Improved visual hierarchy
+
+3. **Comprehensive Detail Page** (`/app/frontend/src/pages/PaintingDetailPage.js`)
+   - Organized sections: Artwork Details, Authenticity, Framing & Shipping
+   - Ownership & Rights section
+   - Story & Context section
+   - Investment Signals section
+   - Enhanced artist info card
+
+4. **Backend Updates** (`/app/backend/server.py`)
+   - Extended ArtworkCreate model with 50+ fields
+   - Optimized stats endpoint with parallel queries
+   - Membership check for featured registered artists
+
+5. **Bug Fixes**
+   - Parallel query execution for faster stats loading
+   - Membership requirement for marketplace push (already existed)
+
+---
+
+## Prioritized Backlog
+
+### P0 - Critical
+- [ ] Verify Supabase connection for actual data flow
+- [ ] Test full artwork submission workflow end-to-end
+
+### P1 - High Priority
+- [ ] Add image zoom functionality on detail page
+- [ ] Implement artwork edit functionality with same form
+- [ ] Add search functionality across artworks
+
+### P2 - Medium Priority
+- [ ] Add artwork comparison feature
+- [ ] Implement artwork sharing to social media
+- [ ] Add recently viewed artworks section
+- [ ] Implement artwork recommendations
+
+### P3 - Nice to Have
+- [ ] Virtual room preview (AR/VR mockup)
+- [ ] Price history chart for investment tracking
+- [ ] Bulk artwork upload for artists
+
+---
+
+## Next Tasks
+1. Test with actual Supabase data to verify all fields save correctly
+2. Implement artwork edit functionality
+3. Add validation for mandatory fields in backend
+4. Create admin review interface for new artwork fields
