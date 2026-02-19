@@ -734,11 +734,21 @@ async def join_community(community_id: str, user: dict = Depends(require_user)):
     return {"success": True, "message": "Joined community successfully"}
 
 @app.post("/api/communities/{community_id}/leave")
+@app.post("/api/community/{community_id}/leave")
 async def leave_community(community_id: str, user: dict = Depends(require_user)):
     """Leave a community"""
     supabase = get_supabase_client()
     
     result = supabase.table('community_members').delete().eq('community_id', community_id).eq('user_id', user['id']).execute()
+    
+    # Update member count
+    try:
+        community = supabase.table('communities').select('member_count').eq('id', community_id).single().execute()
+        if community.data:
+            new_count = max(0, (community.data.get('member_count') or 1) - 1)
+            supabase.table('communities').update({'member_count': new_count}).eq('id', community_id).execute()
+    except:
+        pass
     
     return {"success": True, "message": "Left community successfully"}
 
