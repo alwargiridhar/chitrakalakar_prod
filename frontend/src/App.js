@@ -35,6 +35,8 @@ import ProfilePage from './pages/ProfilePage';
 import AccountPage from './pages/AccountPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import SubscriptionPage from './pages/SubscriptionPage';
+import CommunitiesPage from './pages/CommunitiesPage';
+import CommunityDetailPage from './pages/CommunityDetailPage';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 import './App.css';
