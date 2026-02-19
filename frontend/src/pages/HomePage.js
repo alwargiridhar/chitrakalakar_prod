@@ -4,6 +4,7 @@ import { publicAPI, communityAPI } from '../services/api';
 import { BRAND_NAME, BRAND_TAGLINE, ART_CATEGORIES } from '../utils/branding';
 import { useAuth } from '../contexts/AuthContext';
 import ArtistOfTheDay from '../components/ArtistOfTheDay';
+import TrendingArtists from '../components/TrendingArtists';
 
 function HomePage() {
   const { isAuthenticated } = useAuth();
