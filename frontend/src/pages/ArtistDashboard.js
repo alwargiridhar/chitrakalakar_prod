@@ -893,113 +893,22 @@ const handleSaveProfile = async () => {
         {/* Add Artwork Modal */}
         {showAddArtwork && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white z-10">
                 <h2 className="text-xl font-bold text-gray-900">Add New Artwork</h2>
-                <button onClick={() => setShowAddArtwork(false)} className="text-gray-500 hover:text-gray-700">✕</button>
+                <button onClick={() => setShowAddArtwork(false)} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
               </div>
-              <form onSubmit={handleAddArtwork} className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                  <input
-                    type="text"
-                    value={newArtwork.title}
-                    onChange={(e) => setNewArtwork({ ...newArtwork, title: e.target.value })}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                    data-testid="artwork-title-input"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                  <select
-                    value={newArtwork.category}
-                    onChange={(e) => setNewArtwork({ ...newArtwork, category: e.target.value })}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                    data-testid="artwork-category-select"
-                  >
-                    <option value="">Select category</option>
-                    {ART_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Price (₹)</label>
-                  <input
-                    type="number"
-                    value={newArtwork.price}
-                    onChange={(e) => setNewArtwork({ ...newArtwork, price: e.target.value })}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                    data-testid="artwork-price-input"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Artwork Images (up to 5)
-                  </label>
-                  
-                  {/* Uploaded images preview */}
-                  {newArtwork.images.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {newArtwork.images.map((url, index) => (
-                        <div key={index} className="relative w-20 h-20 border rounded overflow-hidden">
-                          <img src={url} alt={`Image ${index + 1}`} className="w-full h-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveImage(index)}
-                            className="absolute top-0 right-0 bg-red-500 text-white w-5 h-5 flex items-center justify-center text-xs"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {newArtwork.images.length < 5 && (
-                    <ImageUpload
-                      bucket={BUCKETS.ARTWORKS}
-                      folder="artworks"
-                      onUpload={handleImageUpload}
-                      label={`Upload Image (${newArtwork.images.length}/5)`}
-                    />
-                  )}
-                  
-                  <p className="text-xs text-gray-500 mt-2">
-                    {newArtwork.images.length === 0 
-                      ? 'Upload at least 1 image' 
-                      : `${newArtwork.images.length} image(s) uploaded. You can add up to ${5 - newArtwork.images.length} more.`}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                  <textarea
-                    value={newArtwork.description}
-                    onChange={(e) => setNewArtwork({ ...newArtwork, description: e.target.value })}
-                    rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddArtwork(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
-                    data-testid="submit-artwork-btn"
-                  >
-                    Add Artwork
-                  </button>
-                </div>
-              </form>
+              <div className="p-6">
+                <ArtworkForm
+                  categories={ART_CATEGORIES}
+                  onSubmit={async (artworkData) => {
+                    await artistAPI.addArtwork(artworkData);
+                    setShowAddArtwork(false);
+                    fetchData();
+                  }}
+                  onCancel={() => setShowAddArtwork(false)}
+                />
+              </div>
             </div>
           </div>
         )}
