@@ -113,8 +113,10 @@ Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrak
 
 ---
 
-## Next Tasks
-1. Add sample paintings to test full Virtual Room Preview integration
-2. Consider real room background images from Unsplash
-3. Implement artwork edit functionality
-4. Add share feature for room previews
+## Next Steps
+
+1. **Run Supabase Migration** → See `/app/SUPABASE_MIGRATION_GUIDE.md`
+2. **Quick Migration** → Copy `/app/scripts/supabase_migration.sql` to Supabase SQL Editor
+3. **Field Mapping Reference** → See `/app/docs/BACKEND_DATABASE_MAPPING.md`
+4. Add sample paintings to test Virtual Room Preview
+5. Consider real room background images from Unsplash
