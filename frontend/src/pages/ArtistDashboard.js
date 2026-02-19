@@ -351,6 +351,7 @@ const handleSaveProfile = async () => {
     { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'portfolio', label: 'Portfolio', icon: '🖼️' },
     { id: 'orders', label: 'Orders', icon: '📦' },
+    { id: 'communities', label: 'Communities', icon: '🤝' },
     { id: 'membership', label: 'Membership', icon: '⭐' },
     { id: 'profile', label: 'Profile', icon: '👤' },
   ];
