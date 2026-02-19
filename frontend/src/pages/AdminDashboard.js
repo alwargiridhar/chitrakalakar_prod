@@ -213,9 +213,15 @@ function AdminDashboard() {
   };
 
   const handleDeleteContemporaryArtist = async (id) => {
-    if (!window.confirm('Delete this featured artist?')) return;
-    await adminAPI.deleteFeaturedArtist(id);
-    fetchData();
+    if (!window.confirm('Remove this featured artist?')) return;
+    try {
+      await adminAPI.deleteFeaturedArtist(id);
+      alert('Featured artist removed successfully');
+      fetchData();
+    } catch (error) {
+      console.error('Error removing featured artist:', error);
+      alert(error.message || 'Failed to remove featured artist. Please try again.');
+    }
   };
 
   // === SUB ADMIN ===
