@@ -302,6 +302,120 @@ function AdminDashboard() {
           </div>
         )}
 
+        {/* Members Tab */}
+        {activeTab === 'members' && (
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">Member Artists ({memberArtists.length})</h2>
+              <p className="text-sm text-gray-500">Artists with active membership - visible publicly</p>
+            </div>
+            <div className="p-6">
+              {memberArtists.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No member artists</p>
+              ) : (
+                <div className="space-y-4">
+                  {memberArtists.map((artist) => (
+                    <div key={artist.id} className="border border-green-200 bg-green-50 rounded-lg p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center overflow-hidden">
+                          {artist.avatar ? (
+                            <img src={artist.avatar} alt={artist.full_name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-xl">👤</span>
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{artist.full_name}</h3>
+                          <p className="text-sm text-gray-500">{artist.email}</p>
+                          <div className="flex gap-2 mt-1">
+                            <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">
+                              {artist.membership_plan || 'Member'}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              Expires: {artist.membership_expiry ? new Date(artist.membership_expiry).toLocaleDateString() : 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { setSelectedUser(artist); setShowRoleModal(true); }}
+                          className="px-3 py-1.5 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+                        >
+                          Change Role
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (window.confirm('Revoke membership?')) {
+                              await adminAPI.revokeMembership(artist.id);
+                              fetchData();
+                            }
+                          }}
+                          className="px-3 py-1.5 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+                        >
+                          Revoke
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Non-Members Tab */}
+        {activeTab === 'non-members' && (
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">Non-Member Artists ({nonMemberArtists.length})</h2>
+              <p className="text-sm text-gray-500">Artists without membership - NOT visible publicly until they upgrade</p>
+            </div>
+            <div className="p-6">
+              {nonMemberArtists.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No non-member artists</p>
+              ) : (
+                <div className="space-y-4">
+                  {nonMemberArtists.map((artist) => (
+                    <div key={artist.id} className="border border-gray-200 rounded-lg p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                          {artist.avatar ? (
+                            <img src={artist.avatar} alt={artist.full_name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-xl">👤</span>
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{artist.full_name}</h3>
+                          <p className="text-sm text-gray-500">{artist.email}</p>
+                          <span className="text-xs bg-gray-300 text-gray-700 px-2 py-0.5 rounded-full">
+                            No Membership
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { setSelectedUser(artist); setShowRoleModal(true); }}
+                          className="px-3 py-1.5 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+                        >
+                          Change Role
+                        </button>
+                        <button
+                          onClick={() => { setSelectedUser(artist); setShowMembershipModal(true); }}
+                          className="px-3 py-1.5 bg-green-500 text-white rounded text-sm hover:bg-green-600"
+                        >
+                          Grant Membership
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Pending Artworks Tab */}
         {activeTab === 'artworks' && (
           <div className="bg-white rounded-xl shadow-sm">
