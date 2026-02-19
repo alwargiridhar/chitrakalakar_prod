@@ -1860,6 +1860,431 @@ async def toggle_user_status(user_id: str, admin: dict = Depends(require_admin))
     
     return {"success": True, "message": f"User {'activated' if new_status else 'deactivated'}", "is_active": new_status}
 
+# ============ PRICING & VOUCHER MANAGEMENT ============
+
+@app.get("/api/admin/membership-plans")
+async def get_membership_plans(admin: dict = Depends(require_admin)):
+    """Get all membership plans"""
+    supabase = get_supabase_client()
+    
+    try:
+        plans = supabase.table('membership_plans').select('*').order('price').execute()
+        return {"plans": plans.data or []}
+    except:
+        # Return default plans if table doesn't exist
+        return {"plans": [
+            {"id": "basic", "name": "Basic", "price": 999, "duration_days": 30, "features": ["Appear in Artists Directory", "Upload up to 10 artworks", "Basic portfolio page", "Email support"], "is_active": True},
+            {"id": "premium", "name": "Premium", "price": 2499, "duration_days": 90, "features": ["Everything in Basic", "Upload unlimited artworks", "Featured artist placement", "Priority support", "Analytics dashboard"], "is_active": True},
+            {"id": "annual", "name": "Annual", "price": 7999, "duration_days": 365, "features": ["Everything in Premium", "Custom portfolio URL", "Exhibition priority", "Dedicated account manager", "Marketing features", "2 months FREE"], "is_active": True}
+        ]}
+
+@app.post("/api/admin/update-membership-plan")
+async def update_membership_plan(plan: MembershipPlanUpdate, admin: dict = Depends(require_admin)):
+    """Update a membership plan"""
+    supabase = get_supabase_client()
+    
+    plan_data = {
+        "id": plan.plan_id,
+        "name": plan.name,
+        "price": plan.price,
+        "duration_days": plan.duration_days,
+        "features": plan.features,
+        "is_active": plan.is_active,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": admin['id']
+    }
+    
+    # Upsert the plan
+    result = supabase.table('membership_plans').upsert(plan_data).execute()
+    
+    return {"success": True, "message": f"Plan {plan.name} updated successfully", "plan": result.data[0] if result.data else plan_data}
+
+@app.get("/api/admin/vouchers")
+async def get_vouchers(admin: dict = Depends(require_admin)):
+    """Get all vouchers"""
+    supabase = get_supabase_client()
+    
+    try:
+        vouchers = supabase.table('vouchers').select('*').order('created_at', desc=True).execute()
+        return {"vouchers": vouchers.data or []}
+    except:
+        return {"vouchers": []}
+
+@app.post("/api/admin/create-voucher")
+async def create_voucher(voucher: VoucherCreate, admin: dict = Depends(require_admin)):
+    """Create a new voucher"""
+    supabase = get_supabase_client()
+    
+    voucher_data = {
+        "code": voucher.code.upper(),
+        "discount_type": voucher.discount_type,
+        "discount_value": voucher.discount_value,
+        "valid_from": voucher.valid_from,
+        "valid_until": voucher.valid_until,
+        "max_uses": voucher.max_uses,
+        "current_uses": 0,
+        "applicable_plans": voucher.applicable_plans,
+        "description": voucher.description,
+        "is_active": True,
+        "created_by": admin['id'],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table('vouchers').insert(voucher_data).execute()
+    
+    return {"success": True, "message": f"Voucher {voucher.code} created", "voucher": result.data[0] if result.data else voucher_data}
+
+@app.delete("/api/admin/voucher/{voucher_id}")
+async def delete_voucher(voucher_id: str, admin: dict = Depends(require_admin)):
+    """Delete a voucher"""
+    supabase = get_supabase_client()
+    
+    supabase.table('vouchers').delete().eq('id', voucher_id).execute()
+    
+    return {"success": True, "message": "Voucher deleted"}
+
+@app.post("/api/admin/toggle-voucher/{voucher_id}")
+async def toggle_voucher(voucher_id: str, admin: dict = Depends(require_admin)):
+    """Toggle voucher active status"""
+    supabase = get_supabase_client()
+    
+    voucher = supabase.table('vouchers').select('is_active').eq('id', voucher_id).single().execute()
+    
+    if not voucher.data:
+        raise HTTPException(status_code=404, detail="Voucher not found")
+    
+    new_status = not voucher.data.get('is_active', True)
+    supabase.table('vouchers').update({"is_active": new_status}).eq('id', voucher_id).execute()
+    
+    return {"success": True, "is_active": new_status}
+
+@app.post("/api/public/apply-voucher")
+async def apply_voucher(request: VoucherApply):
+    """Apply a voucher code and get discount"""
+    supabase = get_supabase_client()
+    
+    # Find voucher
+    voucher = supabase.table('vouchers').select('*').eq('code', request.voucher_code.upper()).eq('is_active', True).single().execute()
+    
+    if not voucher.data:
+        raise HTTPException(status_code=404, detail="Invalid or expired voucher code")
+    
+    v = voucher.data
+    now = datetime.now(timezone.utc)
+    
+    # Check validity
+    valid_from = datetime.fromisoformat(v['valid_from'].replace('Z', '+00:00'))
+    valid_until = datetime.fromisoformat(v['valid_until'].replace('Z', '+00:00'))
+    
+    if now < valid_from or now > valid_until:
+        raise HTTPException(status_code=400, detail="Voucher is not valid at this time")
+    
+    if v['current_uses'] >= v['max_uses']:
+        raise HTTPException(status_code=400, detail="Voucher has reached maximum uses")
+    
+    # Check if applicable to plan
+    if v['applicable_plans'] and request.plan_id not in v['applicable_plans']:
+        raise HTTPException(status_code=400, detail="Voucher is not applicable to this plan")
+    
+    return {
+        "success": True,
+        "discount_type": v['discount_type'],
+        "discount_value": v['discount_value'],
+        "description": v['description'],
+        "code": v['code']
+    }
+
+# ============ CONTEMPORARY ARTIST OF THE DAY ============
+
+@app.get("/api/public/artist-of-the-day")
+async def get_artist_of_the_day():
+    """Get the contemporary artist of the day (rotates daily)"""
+    supabase = get_supabase_client()
+    
+    if not supabase:
+        return {"artist": None}
+    
+    try:
+        # Get all contemporary featured artists
+        artists = supabase.table('featured_artists').select('*').eq('type', 'contemporary').eq('is_featured', True).execute()
+        
+        if not artists.data:
+            return {"artist": None}
+        
+        # Use day of year to rotate through artists
+        day_of_year = datetime.now(timezone.utc).timetuple().tm_yday
+        index = day_of_year % len(artists.data)
+        
+        artist = artists.data[index]
+        
+        return {
+            "artist": artist,
+            "rotation_info": {
+                "total_artists": len(artists.data),
+                "current_index": index,
+                "next_rotation": "Tomorrow"
+            }
+        }
+    except Exception as e:
+        print(f"Artist of the day error: {e}")
+        return {"artist": None}
+
+# ============ COMMUNITY MANAGEMENT ============
+
+@app.post("/api/community/create")
+async def create_community(community: CommunityCreate, artist: dict = Depends(require_artist)):
+    """Create a new community (requires membership)"""
+    supabase = get_supabase_client()
+    
+    # Check if artist has membership
+    profile = supabase.table('profiles').select('is_member, membership_expiry').eq('id', artist['id']).single().execute()
+    
+    if not profile.data.get('is_member'):
+        raise HTTPException(status_code=403, detail="Active membership required to create communities")
+    
+    community_data = {
+        "name": community.name,
+        "description": community.description,
+        "image": community.image,
+        "category": community.category,
+        "location": community.location,
+        "invite_criteria": community.invite_criteria,
+        "created_by": artist['id'],
+        "member_count": 1,
+        "is_approved": False,  # Needs admin approval
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table('communities').insert(community_data).execute()
+    
+    if result.data:
+        # Add creator as admin member
+        supabase.table('community_members').insert({
+            "community_id": result.data[0]['id'],
+            "user_id": artist['id'],
+            "role": "admin",
+            "joined_at": datetime.now(timezone.utc).isoformat()
+        }).execute()
+    
+    return {"success": True, "message": "Community created and pending approval", "community": result.data[0] if result.data else None}
+
+@app.get("/api/communities")
+async def get_communities():
+    """Get all approved communities"""
+    supabase = get_supabase_client()
+    
+    communities = supabase.table('communities').select('*, profiles!created_by(full_name, avatar)').eq('is_approved', True).order('member_count', desc=True).execute()
+    
+    return {"communities": communities.data or []}
+
+@app.get("/api/community/{community_id}")
+async def get_community_details(community_id: str):
+    """Get community details with recent posts"""
+    supabase = get_supabase_client()
+    
+    community = supabase.table('communities').select('*, profiles!created_by(full_name, avatar)').eq('id', community_id).single().execute()
+    
+    if not community.data:
+        raise HTTPException(status_code=404, detail="Community not found")
+    
+    # Get members
+    members = supabase.table('community_members').select('*, profiles!user_id(full_name, avatar, location)').eq('community_id', community_id).order('joined_at').execute()
+    
+    # Get recent posts
+    posts = supabase.table('community_posts').select('*, profiles!user_id(full_name, avatar)').eq('community_id', community_id).order('created_at', desc=True).limit(20).execute()
+    
+    return {
+        "community": community.data,
+        "members": members.data or [],
+        "posts": posts.data or []
+    }
+
+@app.post("/api/community/{community_id}/join")
+async def request_to_join_community(community_id: str, artist: dict = Depends(require_artist)):
+    """Request to join a community"""
+    supabase = get_supabase_client()
+    
+    # Check if already a member
+    existing = supabase.table('community_members').select('id').eq('community_id', community_id).eq('user_id', artist['id']).execute()
+    
+    if existing.data:
+        raise HTTPException(status_code=400, detail="Already a member of this community")
+    
+    # Check pending request
+    pending = supabase.table('community_join_requests').select('id').eq('community_id', community_id).eq('user_id', artist['id']).eq('status', 'pending').execute()
+    
+    if pending.data:
+        raise HTTPException(status_code=400, detail="Join request already pending")
+    
+    # Create join request
+    request_data = {
+        "community_id": community_id,
+        "user_id": artist['id'],
+        "status": "pending",
+        "requested_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    supabase.table('community_join_requests').insert(request_data).execute()
+    
+    return {"success": True, "message": "Join request submitted"}
+
+@app.get("/api/community/{community_id}/join-requests")
+async def get_join_requests(community_id: str, artist: dict = Depends(require_artist)):
+    """Get pending join requests for community (admin/creator only)"""
+    supabase = get_supabase_client()
+    
+    # Check if user is admin of community
+    member = supabase.table('community_members').select('role').eq('community_id', community_id).eq('user_id', artist['id']).single().execute()
+    
+    if not member.data or member.data['role'] != 'admin':
+        raise HTTPException(status_code=403, detail="Only community admins can view join requests")
+    
+    requests = supabase.table('community_join_requests').select('*, profiles!user_id(full_name, avatar, location, categories)').eq('community_id', community_id).eq('status', 'pending').execute()
+    
+    return {"requests": requests.data or []}
+
+@app.post("/api/community/{community_id}/approve-join/{request_id}")
+async def approve_join_request(community_id: str, request_id: str, approved: bool, artist: dict = Depends(require_artist)):
+    """Approve or reject a join request"""
+    supabase = get_supabase_client()
+    
+    # Check if user is admin of community
+    member = supabase.table('community_members').select('role').eq('community_id', community_id).eq('user_id', artist['id']).single().execute()
+    
+    if not member.data or member.data['role'] != 'admin':
+        raise HTTPException(status_code=403, detail="Only community admins can approve requests")
+    
+    # Get request
+    join_request = supabase.table('community_join_requests').select('*').eq('id', request_id).single().execute()
+    
+    if not join_request.data:
+        raise HTTPException(status_code=404, detail="Join request not found")
+    
+    if approved:
+        # Add member
+        supabase.table('community_members').insert({
+            "community_id": community_id,
+            "user_id": join_request.data['user_id'],
+            "role": "member",
+            "joined_at": datetime.now(timezone.utc).isoformat()
+        }).execute()
+        
+        # Update member count
+        supabase.rpc('increment_community_members', {"community_id": community_id}).execute()
+    
+    # Update request status
+    supabase.table('community_join_requests').update({
+        "status": "approved" if approved else "rejected",
+        "processed_at": datetime.now(timezone.utc).isoformat(),
+        "processed_by": artist['id']
+    }).eq('id', request_id).execute()
+    
+    return {"success": True, "message": f"Join request {'approved' if approved else 'rejected'}"}
+
+@app.post("/api/community/{community_id}/invite")
+async def invite_to_community(community_id: str, invite: CommunityInvite, artist: dict = Depends(require_artist)):
+    """Invite artists to join community"""
+    supabase = get_supabase_client()
+    
+    # Check if user is admin of community
+    member = supabase.table('community_members').select('role').eq('community_id', community_id).eq('user_id', artist['id']).single().execute()
+    
+    if not member.data or member.data['role'] != 'admin':
+        raise HTTPException(status_code=403, detail="Only community admins can send invites")
+    
+    invited = 0
+    for artist_id in invite.artist_ids:
+        # Check if already member
+        existing = supabase.table('community_members').select('id').eq('community_id', community_id).eq('user_id', artist_id).execute()
+        
+        if not existing.data:
+            # Create invite
+            supabase.table('community_invites').insert({
+                "community_id": community_id,
+                "user_id": artist_id,
+                "invited_by": artist['id'],
+                "message": invite.message,
+                "status": "pending",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }).execute()
+            invited += 1
+    
+    return {"success": True, "message": f"{invited} invites sent"}
+
+@app.post("/api/community/{community_id}/post")
+async def create_community_post(community_id: str, post: CommunityPostCreate, artist: dict = Depends(require_artist)):
+    """Create a post in a community"""
+    supabase = get_supabase_client()
+    
+    # Check membership
+    member = supabase.table('community_members').select('id').eq('community_id', community_id).eq('user_id', artist['id']).execute()
+    
+    if not member.data:
+        raise HTTPException(status_code=403, detail="Must be a community member to post")
+    
+    post_data = {
+        "community_id": community_id,
+        "user_id": artist['id'],
+        "content": post.content,
+        "images": post.images,
+        "post_type": post.post_type,
+        "likes": 0,
+        "comments_count": 0,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table('community_posts').insert(post_data).execute()
+    
+    return {"success": True, "post": result.data[0] if result.data else None}
+
+@app.get("/api/community/my-communities")
+async def get_my_communities(artist: dict = Depends(require_artist)):
+    """Get communities the artist is a member of"""
+    supabase = get_supabase_client()
+    
+    memberships = supabase.table('community_members').select('community_id, role, communities!community_id(*)').eq('user_id', artist['id']).execute()
+    
+    return {"communities": memberships.data or []}
+
+@app.get("/api/community/invites")
+async def get_my_invites(artist: dict = Depends(require_artist)):
+    """Get pending community invites"""
+    supabase = get_supabase_client()
+    
+    invites = supabase.table('community_invites').select('*, communities!community_id(name, image, description)').eq('user_id', artist['id']).eq('status', 'pending').execute()
+    
+    return {"invites": invites.data or []}
+
+@app.post("/api/community/respond-invite/{invite_id}")
+async def respond_to_invite(invite_id: str, accept: bool, artist: dict = Depends(require_artist)):
+    """Accept or decline a community invite"""
+    supabase = get_supabase_client()
+    
+    invite = supabase.table('community_invites').select('*').eq('id', invite_id).eq('user_id', artist['id']).single().execute()
+    
+    if not invite.data:
+        raise HTTPException(status_code=404, detail="Invite not found")
+    
+    if accept:
+        # Add as member
+        supabase.table('community_members').insert({
+            "community_id": invite.data['community_id'],
+            "user_id": artist['id'],
+            "role": "member",
+            "joined_at": datetime.now(timezone.utc).isoformat()
+        }).execute()
+        
+        # Update member count
+        supabase.rpc('increment_community_members', {"community_id": invite.data['community_id']}).execute()
+    
+    # Update invite status
+    supabase.table('community_invites').update({
+        "status": "accepted" if accept else "declined",
+        "responded_at": datetime.now(timezone.utc).isoformat()
+    }).eq('id', invite_id).execute()
+    
+    return {"success": True, "message": f"Invite {'accepted' if accept else 'declined'}"}
+
 # Admin Video Screenings
 @app.get("/api/admin/pending-video-screenings")
 async def get_pending_video_screenings(admin: dict = Depends(require_admin)):
