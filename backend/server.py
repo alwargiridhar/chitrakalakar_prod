@@ -1802,22 +1802,82 @@ async def create_artwork(
         if artwork.image and not images:
             images = [artwork.image]
         
-        # Limit to 5 images
-        images = images[:5]
+        # Limit to 8 images
+        images = images[:8]
         
+        # Build comprehensive artwork data
         artwork_data = {
-             "artist_id": artist["id"],
-             "title": artwork.title,
-             "description": artwork.description or "",
-             "category": artwork.category,
-             "price": float(artwork.price),
-             "image": images[0] if images else None,  # Primary image for backwards compatibility
-             "images": images,  # All images
-             "is_approved": False,
-             "is_available": True,
-             "in_marketplace": False,  # Not in marketplace until pushed
-             "views": 0,
-        } 
+            "artist_id": artist["id"],
+            "title": artwork.title,
+            "description": artwork.description or "",
+            "category": artwork.category,
+            "price": float(artwork.price),
+            "image": images[0] if images else None,  # Primary image for backwards compatibility
+            "images": images,  # All images
+            "is_approved": False,
+            "is_available": True,
+            "in_marketplace": False,  # Not in marketplace until pushed
+            "views": 0,
+            
+            # Basic Info
+            "year_of_creation": artwork.year_of_creation,
+            "medium": artwork.medium,
+            "surface": artwork.surface,
+            "dimensions": artwork.dimensions,
+            "orientation": artwork.orientation,
+            "style": artwork.style,
+            
+            # Authenticity & Certification
+            "artwork_type": artwork.artwork_type or "Original",
+            "edition_number": artwork.edition_number,
+            "total_edition_size": artwork.total_edition_size,
+            "certificate_of_authenticity": artwork.certificate_of_authenticity,
+            "signed_by_artist": artwork.signed_by_artist,
+            "date_signed": artwork.date_signed,
+            "hand_embellished": artwork.hand_embellished,
+            "artist_stamp": artwork.artist_stamp,
+            
+            # Condition Details
+            "condition": artwork.condition or "Brand New",
+            "condition_notes": artwork.condition_notes,
+            "restoration_history": artwork.restoration_history,
+            
+            # Framing & Presentation
+            "framing_status": artwork.framing_status,
+            "frame_material": artwork.frame_material,
+            "frame_included_in_price": artwork.frame_included_in_price,
+            
+            # Pricing & Availability
+            "price_type": artwork.price_type or "Fixed",
+            "currency": artwork.currency or "INR",
+            "quantity_available": artwork.quantity_available or 1,
+            "international_shipping": artwork.international_shipping,
+            
+            # Shipping Details
+            "ships_rolled": artwork.ships_rolled,
+            "ships_stretched": artwork.ships_stretched,
+            "ships_framed": artwork.ships_framed,
+            "insured_shipping": artwork.insured_shipping,
+            "dispatch_time": artwork.dispatch_time,
+            
+            # Ownership & Usage Rights
+            "ownership_type": artwork.ownership_type or "Physical Only",
+            
+            # Story & Context
+            "inspiration": artwork.inspiration,
+            "technique_explanation": artwork.technique_explanation,
+            "artist_statement": artwork.artist_statement,
+            "exhibition_history": artwork.exhibition_history,
+            "awards_recognition": artwork.awards_recognition,
+            
+            # Investment / Value Signals
+            "previously_exhibited": artwork.previously_exhibited,
+            "featured_in_publication": artwork.featured_in_publication,
+            "sold_similar_works": artwork.sold_similar_works,
+            "part_of_series": artwork.part_of_series,
+            "series_name": artwork.series_name,
+            "collector_interest": artwork.collector_interest,
+        }
 
         result = supabase.table("artworks").insert(artwork_data).execute()
 
