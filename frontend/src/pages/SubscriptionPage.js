@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { membershipAPI } from '../services/api';
 
@@ -11,11 +11,17 @@ function SubscriptionPage() {
   const [appliedVoucher, setAppliedVoucher] = useState(null);
   const [applyingVoucher, setApplyingVoucher] = useState(false);
 
-  useEffect(() => {
-    fetchPlans();
+  const getDefaultFeatures = useCallback((planId) => {
+    const features = {
+      basic: ['Appear in Artists Directory', 'Upload up to 10 artworks', 'Basic portfolio page', 'Email support'],
+      monthly: ['Appear in Artists Directory', 'Upload up to 10 artworks', 'Basic portfolio page', 'Email support'],
+      premium: ['Everything in Basic', 'Upload unlimited artworks', 'Featured artist placement', 'Priority support', 'Analytics dashboard'],
+      annual: ['Everything in Premium', 'Custom portfolio URL', 'Exhibition priority', 'Dedicated account manager', 'Marketing features', '2 months FREE'],
+    };
+    return features[planId] || features.basic;
   }, []);
 
-  const fetchPlans = async () => {
+  const fetchPlans = useCallback(async () => {
     try {
       const response = await membershipAPI.getPlans();
       // Map API response to our format, handling different field names
@@ -41,17 +47,11 @@ function SubscriptionPage() {
     } finally {
       setPlansLoading(false);
     }
-  };
+  }, [getDefaultFeatures]);
 
-  const getDefaultFeatures = (planId) => {
-    const features = {
-      basic: ['Appear in Artists Directory', 'Upload up to 10 artworks', 'Basic portfolio page', 'Email support'],
-      monthly: ['Appear in Artists Directory', 'Upload up to 10 artworks', 'Basic portfolio page', 'Email support'],
-      premium: ['Everything in Basic', 'Upload unlimited artworks', 'Featured artist placement', 'Priority support', 'Analytics dashboard'],
-      annual: ['Everything in Premium', 'Custom portfolio URL', 'Exhibition priority', 'Dedicated account manager', 'Marketing features', '2 months FREE'],
-    };
-    return features[planId] || features.basic;
-  };
+  useEffect(() => {
+    fetchPlans();
+  }, [fetchPlans]);
 
   const isActiveMember = profiles?.is_member && profiles?.membership_expiry && 
     new Date(profiles.membership_expiry) > new Date();
