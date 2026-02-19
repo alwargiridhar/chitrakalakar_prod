@@ -101,6 +101,37 @@ function PaintingDetailPage() {
 
   const artist = painting.profiles;
 
+  // Helper to render info row
+  const InfoRow = ({ icon, label, value }) => {
+    if (!value) return null;
+    return (
+      <div className="flex items-start gap-2 py-2 border-b border-gray-100 last:border-0">
+        <span className="text-lg">{icon}</span>
+        <div>
+          <span className="text-xs text-gray-500 block">{label}</span>
+          <span className="text-sm text-gray-900 font-medium">{value}</span>
+        </div>
+      </div>
+    );
+  };
+
+  // Helper to render badge
+  const Badge = ({ children, color = 'gray' }) => {
+    const colors = {
+      gray: 'bg-gray-100 text-gray-700',
+      green: 'bg-green-100 text-green-700',
+      blue: 'bg-blue-100 text-blue-700',
+      purple: 'bg-purple-100 text-purple-700',
+      orange: 'bg-orange-100 text-orange-700',
+      amber: 'bg-amber-100 text-amber-700',
+    };
+    return (
+      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${colors[color]}`}>
+        {children}
+      </span>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -119,8 +150,8 @@ function PaintingDetailPage() {
           </ol>
         </nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Image Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column - Images */}
           <div className="space-y-4">
             <div className="aspect-square bg-white rounded-xl shadow-lg overflow-hidden">
               {images.length > 0 ? (
@@ -156,24 +187,50 @@ function PaintingDetailPage() {
             )}
           </div>
 
-          {/* Details Section */}
+          {/* Right Column - Details */}
           <div className="space-y-6">
+            {/* Title & Price */}
             <div>
-              <span className="inline-block px-3 py-1 bg-orange-100 text-orange-600 rounded-full text-sm font-medium mb-3">
-                {painting.category}
-              </span>
+              <div className="flex flex-wrap gap-2 mb-3">
+                <Badge color="orange">{painting.category}</Badge>
+                {painting.artwork_type && <Badge color="purple">{painting.artwork_type}</Badge>}
+                {painting.condition && painting.condition !== 'Brand New' && (
+                  <Badge color="amber">{painting.condition}</Badge>
+                )}
+              </div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2" data-testid="painting-title">{painting.title}</h1>
-              <p className="text-2xl font-bold text-orange-600" data-testid="painting-price">
-                ₹{painting.price?.toLocaleString('en-IN')}
-              </p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-3xl font-bold text-orange-600" data-testid="painting-price">
+                  {painting.currency === 'USD' ? '$' : painting.currency === 'EUR' ? '€' : '₹'}
+                  {painting.price?.toLocaleString('en-IN')}
+                </p>
+                {painting.price_type === 'Negotiable' && (
+                  <span className="text-sm text-gray-500">(Negotiable)</span>
+                )}
+              </div>
             </div>
 
-            {painting.description && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
-                <p className="text-gray-600 leading-relaxed">{painting.description}</p>
-              </div>
-            )}
+            {/* Quick Tags */}
+            <div className="flex flex-wrap gap-2">
+              {painting.certificate_of_authenticity && (
+                <Badge color="green">✓ Certificate of Authenticity</Badge>
+              )}
+              {painting.signed_by_artist && painting.signed_by_artist !== 'Not Signed' && (
+                <Badge color="blue">✓ Signed ({painting.signed_by_artist})</Badge>
+              )}
+              {painting.framing_status === 'Framed' && (
+                <Badge color="amber">✓ Framed</Badge>
+              )}
+              {painting.framing_status === 'Ready to Hang' && (
+                <Badge color="green">✓ Ready to Hang</Badge>
+              )}
+              {painting.international_shipping && (
+                <Badge color="blue">🌍 Ships Internationally</Badge>
+              )}
+              {painting.insured_shipping && (
+                <Badge color="green">🛡️ Insured Shipping</Badge>
+              )}
+            </div>
 
             {/* Action Buttons */}
             <div className="flex gap-3">
@@ -193,52 +250,234 @@ function PaintingDetailPage() {
               </button>
             </div>
 
-            {/* Artist Info (without contact) */}
+            {/* Artwork Details Grid */}
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <span>📋</span> Artwork Details
+              </h3>
+              <div className="grid grid-cols-2 gap-x-6">
+                <InfoRow icon="📅" label="Year Created" value={painting.year_of_creation} />
+                <InfoRow icon="🎨" label="Medium" value={painting.medium} />
+                <InfoRow icon="📄" label="Surface" value={painting.surface} />
+                <InfoRow icon="🖼️" label="Style" value={painting.style} />
+                <InfoRow icon="📏" label="Orientation" value={painting.orientation} />
+                {painting.dimensions && (
+                  <InfoRow 
+                    icon="📐" 
+                    label="Dimensions" 
+                    value={`${painting.dimensions.height} × ${painting.dimensions.width}${painting.dimensions.depth ? ` × ${painting.dimensions.depth}` : ''} ${painting.dimensions.unit}`} 
+                  />
+                )}
+                {painting.edition_number && (
+                  <InfoRow icon="🔢" label="Edition" value={painting.edition_number} />
+                )}
+                <InfoRow icon="📦" label="Quantity" value={painting.quantity_available > 1 ? `${painting.quantity_available} available` : null} />
+                <InfoRow icon="⏱️" label="Dispatch Time" value={painting.dispatch_time} />
+              </div>
+            </div>
+
+            {/* Authenticity & Certification */}
+            {(painting.certificate_of_authenticity || painting.signed_by_artist || painting.hand_embellished || painting.artist_stamp) && (
+              <div className="bg-green-50 rounded-xl p-6 border border-green-200">
+                <h3 className="text-lg font-semibold text-green-800 mb-3 flex items-center gap-2">
+                  <span>✅</span> Authenticity & Certification
+                </h3>
+                <ul className="space-y-2 text-sm text-green-700">
+                  <li className="flex items-center gap-2">
+                    <span>{painting.artwork_type === 'Original' ? '✓' : '○'}</span>
+                    Original Artwork: <strong>{painting.artwork_type || 'Original'}</strong>
+                  </li>
+                  {painting.certificate_of_authenticity && (
+                    <li className="flex items-center gap-2">✓ Certificate of Authenticity Included</li>
+                  )}
+                  {painting.signed_by_artist && painting.signed_by_artist !== 'Not Signed' && (
+                    <li className="flex items-center gap-2">✓ Signed by Artist ({painting.signed_by_artist})</li>
+                  )}
+                  {painting.hand_embellished && (
+                    <li className="flex items-center gap-2">✓ Hand-embellished</li>
+                  )}
+                  {painting.artist_stamp && (
+                    <li className="flex items-center gap-2">✓ Artist Stamp Available</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
+            {/* Framing & Shipping Info */}
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <span>📦</span> Framing & Shipping
+              </h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-500">Framing Status:</span>
+                  <p className="font-medium text-gray-900">{painting.framing_status || 'Not specified'}</p>
+                </div>
+                {painting.frame_material && (
+                  <div>
+                    <span className="text-gray-500">Frame Material:</span>
+                    <p className="font-medium text-gray-900">{painting.frame_material}</p>
+                  </div>
+                )}
+                <div className="col-span-2">
+                  <span className="text-gray-500">Shipping Options:</span>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {painting.ships_rolled && <Badge>Ships Rolled</Badge>}
+                    {painting.ships_stretched && <Badge>Ships Stretched</Badge>}
+                    {painting.ships_framed && <Badge>Ships Framed</Badge>}
+                    {!painting.ships_rolled && !painting.ships_stretched && !painting.ships_framed && (
+                      <span className="text-gray-500">Contact artist for details</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Ownership & Rights */}
+            {painting.ownership_type && (
+              <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+                <h3 className="text-lg font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                  <span>⚖️</span> Ownership & Usage Rights
+                </h3>
+                <p className="text-sm text-blue-700">{painting.ownership_type}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Full Width Sections */}
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Description & Story */}
+          <div className="space-y-6">
+            {painting.description && (
+              <div className="bg-white rounded-xl p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Description</h3>
+                <p className="text-gray-600 leading-relaxed whitespace-pre-line">{painting.description}</p>
+              </div>
+            )}
+
+            {(painting.inspiration || painting.technique_explanation || painting.artist_statement) && (
+              <div className="bg-white rounded-xl p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <span>📖</span> Story & Context
+                </h3>
+                {painting.inspiration && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-1">Inspiration</h4>
+                    <p className="text-gray-600 text-sm leading-relaxed">{painting.inspiration}</p>
+                  </div>
+                )}
+                {painting.technique_explanation && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-1">Technique</h4>
+                    <p className="text-gray-600 text-sm leading-relaxed">{painting.technique_explanation}</p>
+                  </div>
+                )}
+                {painting.artist_statement && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-1">Artist Statement</h4>
+                    <p className="text-gray-600 text-sm leading-relaxed italic">"{painting.artist_statement}"</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {(painting.exhibition_history || painting.awards_recognition) && (
+              <div className="bg-white rounded-xl p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <span>🏆</span> Recognition & History
+                </h3>
+                {painting.exhibition_history && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-1">Exhibition History</h4>
+                    <p className="text-gray-600 text-sm leading-relaxed">{painting.exhibition_history}</p>
+                  </div>
+                )}
+                {painting.awards_recognition && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-1">Awards & Recognition</h4>
+                    <p className="text-gray-600 text-sm leading-relaxed">{painting.awards_recognition}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Investment Signals */}
+            {(painting.previously_exhibited || painting.featured_in_publication || painting.sold_similar_works || painting.part_of_series || painting.collector_interest) && (
+              <div className="bg-purple-50 rounded-xl p-6 border border-purple-200">
+                <h3 className="text-lg font-semibold text-purple-800 mb-3 flex items-center gap-2">
+                  <span>📈</span> Investment Signals
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {painting.previously_exhibited && <Badge color="purple">Previously Exhibited</Badge>}
+                  {painting.featured_in_publication && <Badge color="purple">Featured in Publication</Badge>}
+                  {painting.sold_similar_works && <Badge color="purple">Sold Similar Works</Badge>}
+                  {painting.collector_interest && <Badge color="purple">Collector Interest</Badge>}
+                  {painting.part_of_series && (
+                    <Badge color="purple">Part of Series{painting.series_name ? `: ${painting.series_name}` : ''}</Badge>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Artist Info */}
+          <div className="space-y-6">
             <div className="bg-white rounded-xl p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">About the Artist</h3>
               <div className="flex items-start gap-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-100 to-yellow-100 flex items-center justify-center overflow-hidden">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-100 to-yellow-100 flex items-center justify-center overflow-hidden">
                   {artist?.avatar ? (
                     <img src={artist.avatar} alt={artist.full_name} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-2xl">👤</span>
+                    <span className="text-3xl">👤</span>
                   )}
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900">{artist?.full_name || 'Unknown Artist'}</h4>
+                  <h4 className="font-semibold text-gray-900 text-lg">{artist?.full_name || 'Unknown Artist'}</h4>
                   {artist?.location && (
                     <p className="text-sm text-gray-500 flex items-center gap-1">
                       <span>📍</span> {artist.location}
                     </p>
                   )}
                   {artist?.categories && artist.categories.length > 0 && (
-                    <p className="text-sm text-orange-500 mt-1">
-                      {artist.categories.join(', ')}
-                    </p>
-                  )}
-                  {artist?.bio && (
-                    <p className="text-sm text-gray-600 mt-2 line-clamp-3">{artist.bio}</p>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {artist.categories.map((cat, i) => (
+                        <span key={i} className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                          {cat}
+                        </span>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
+              {artist?.bio && (
+                <p className="text-sm text-gray-600 mt-4 leading-relaxed">{artist.bio}</p>
+              )}
               <Link 
                 to={`/artist/${artist?.id}`}
-                className="mt-4 block text-center px-4 py-2 border border-orange-500 text-orange-500 rounded-lg hover:bg-orange-50 transition-colors"
+                className="mt-4 block text-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
               >
                 View Artist Profile
               </Link>
             </div>
 
-            {/* Stats */}
-            <div className="flex items-center gap-4 text-sm text-gray-500">
-              {painting.views > 0 && (
-                <span className="flex items-center gap-1">
-                  <span>👁️</span> {painting.views} views
-                </span>
-              )}
-              <span className="flex items-center gap-1">
-                <span>📅</span> Added {new Date(painting.created_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}
-              </span>
+            {/* Stats & Meta */}
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Statistics</h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-2xl font-bold text-orange-500">{painting.views || 0}</span>
+                  <p className="text-gray-500">Views</p>
+                </div>
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-2xl font-bold text-orange-500">{images.length}</span>
+                  <p className="text-gray-500">Images</p>
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 mt-4 text-center">
+                Listed on {new Date(painting.created_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
             </div>
           </div>
         </div>
