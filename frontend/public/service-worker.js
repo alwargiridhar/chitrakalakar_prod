@@ -1,8 +1,8 @@
 /* eslint-disable no-restricted-globals */
 
-const CACHE_NAME = 'chitrakalakar-v2';
-const STATIC_CACHE = 'chitrakalakar-static-v2';
-const DYNAMIC_CACHE = 'chitrakalakar-dynamic-v2';
+const CACHE_NAME = 'chitrakalakar-v3';
+const STATIC_CACHE = 'chitrakalakar-static-v3';
+const DYNAMIC_CACHE = 'chitrakalakar-dynamic-v3';
 
 // Assets to cache immediately on install
 const STATIC_ASSETS = [
