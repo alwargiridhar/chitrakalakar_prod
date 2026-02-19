@@ -31,6 +31,10 @@ import TermsPage from './pages/TermsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import LeadChitrakarDashboard from './pages/LeadChitrakarDashboard';
 import KalakarDashboard from './pages/KalakarDashboard';
+import ProfilePage from './pages/ProfilePage';
+import AccountPage from './pages/AccountPage';
+import ChangePasswordPage from './pages/ChangePasswordPage';
+import SubscriptionPage from './pages/SubscriptionPage';
 
 import './App.css';
 
