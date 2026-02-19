@@ -6,21 +6,27 @@ import { BRAND_NAME, BRAND_TAGLINE } from '../utils/branding';
 function NavBar() {
   const [isOpen, setIsOpen] = useState(false);
   const [showExhibitionDropdown, setShowExhibitionDropdown] = useState(false);
-  const { isAuthenticated, user, logout, isAdmin } = useAuth();
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const { isAuthenticated, user, profiles, logout, isAdmin, isArtist } = useAuth();
   const navigate = useNavigate();
-  const dropdownRef = useRef(null);
+  const exhibitionDropdownRef = useRef(null);
+  const userDropdownRef = useRef(null);
 
   const handleLogout = () => {
     logout();
     setIsOpen(false);
+    setShowUserDropdown(false);
     navigate('/');
   };
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (exhibitionDropdownRef.current && !exhibitionDropdownRef.current.contains(event.target)) {
         setShowExhibitionDropdown(false);
+      }
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+        setShowUserDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -37,6 +43,48 @@ function NavBar() {
     { label: 'Contact', href: '/contact' },
     { label: 'Art Classes', href: '/art-classes' },
   ];
+
+  // Get dashboard link based on role
+  const getDashboardLink = () => {
+    if (isAdmin) return { href: '/admin', label: 'Admin Dashboard' };
+    if (profiles?.role === 'lead_chitrakar') return { href: '/lead-chitrakar', label: 'Lead Chitrakar' };
+    if (profiles?.role === 'kalakar') return { href: '/kalakar', label: 'Kalakar Panel' };
+    if (isArtist) return { href: '/dashboard', label: 'Artist Dashboard' };
+    return { href: '/user-dashboard', label: 'My Dashboard' };
+  };
+
+  // Get user menu items based on role
+  const getUserMenuItems = () => {
+    const items = [
+      { label: 'Profile', href: '/profile', icon: '👤' },
+      { label: getDashboardLink().label, href: getDashboardLink().href, icon: '📊' },
+      { label: 'Account Settings', href: '/account', icon: '⚙️' },
+    ];
+
+    // Add subscription for artists
+    if (isArtist) {
+      items.push({ label: 'Subscription', href: '/subscription', icon: '💳' });
+    }
+
+    items.push({ label: 'Change Password', href: '/change-password', icon: '🔐' });
+
+    return items;
+  };
+
+  // Get avatar initial
+  const getAvatarInitial = () => {
+    const name = profiles?.full_name || user?.name || 'U';
+    return name.charAt(0).toUpperCase();
+  };
+
+  // Get role badge color
+  const getRoleBadgeColor = () => {
+    if (isAdmin) return 'bg-red-500';
+    if (profiles?.role === 'lead_chitrakar') return 'bg-purple-500';
+    if (profiles?.role === 'kalakar') return 'bg-blue-500';
+    if (isArtist) return 'bg-orange-500';
+    return 'bg-gray-500';
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
@@ -62,7 +110,7 @@ function NavBar() {
             ))}
             
             {/* Exhibitions Dropdown */}
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative" ref={exhibitionDropdownRef}>
               <button
                 onMouseEnter={() => setShowExhibitionDropdown(true)}
                 onClick={() => setShowExhibitionDropdown(!showExhibitionDropdown)}
@@ -108,31 +156,84 @@ function NavBar() {
           <div className="hidden md:flex items-center gap-3">
             {isAuthenticated ? (
               <>
-                <span className="text-sm font-medium text-gray-700 mr-2">{user?.name?.split(' ')[0]}</span>
-                {isAdmin ? (
-                  <Link to="/admin" className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600">
-                    Admin Panel
-                  </Link>
-                ) : user?.role === 'lead_chitrakar' ? (
-                  <Link to="/lead-chitrakar" className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600">
-                    Lead Chitrakar
-                  </Link>
-                ) : user?.role === 'kalakar' ? (
-                  <Link to="/kalakar" className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600">
-                    Kalakar Panel
-                  </Link>
-                ) : user?.role === 'artist' ? (
-                  <Link to="/dashboard" className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600">
-                    Artist Dashboard
-                  </Link>
-                ) : (
-                  <Link to="/user-dashboard" className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600">
-                    My Dashboard
-                  </Link>
-                )}
-                <button onClick={handleLogout} className="px-4 py-2 border border-red-300 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50">
-                  Logout
-                </button>
+                {/* User Avatar Dropdown */}
+                <div className="relative" ref={userDropdownRef}>
+                  <button
+                    onClick={() => setShowUserDropdown(!showUserDropdown)}
+                    className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                    data-testid="user-menu-button"
+                  >
+                    {/* Avatar Circle */}
+                    <div className={`w-10 h-10 rounded-full ${getRoleBadgeColor()} flex items-center justify-center text-white font-bold text-sm shadow-md overflow-hidden`}>
+                      {profiles?.avatar ? (
+                        <img src={profiles.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        getAvatarInitial()
+                      )}
+                    </div>
+                    <svg className={`w-4 h-4 text-gray-500 transition-transform ${showUserDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* User Dropdown Menu */}
+                  {showUserDropdown && (
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50">
+                      {/* User Info Header */}
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-12 h-12 rounded-full ${getRoleBadgeColor()} flex items-center justify-center text-white font-bold overflow-hidden`}>
+                            {profiles?.avatar ? (
+                              <img src={profiles.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              getAvatarInitial()
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-900 truncate">
+                              {profiles?.full_name || user?.name || 'User'}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                            <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs text-white ${getRoleBadgeColor()}`}>
+                              {isAdmin ? 'Admin' : 
+                               profiles?.role === 'lead_chitrakar' ? 'Lead Chitrakar' :
+                               profiles?.role === 'kalakar' ? 'Kalakar' :
+                               isArtist ? 'Artist' : 'User'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Menu Items */}
+                      <div className="py-2">
+                        {getUserMenuItems().map((item) => (
+                          <Link
+                            key={item.href}
+                            to={item.href}
+                            onClick={() => setShowUserDropdown(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                            data-testid={`menu-${item.label.toLowerCase().replace(' ', '-')}`}
+                          >
+                            <span className="text-lg">{item.icon}</span>
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+
+                      {/* Logout */}
+                      <div className="border-t border-gray-100 pt-2">
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                          data-testid="logout-button"
+                        >
+                          <span className="text-lg">🚪</span>
+                          Logout
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <>
@@ -151,6 +252,7 @@ function NavBar() {
           </button>
         </div>
 
+        {/* Mobile Menu */}
         {isOpen && (
           <div className="md:hidden border-t border-gray-200 py-4 space-y-3">
             {navLinks.map((link) => (
@@ -169,27 +271,48 @@ function NavBar() {
                 {link.label}
               </Link>
             ))}
+            
+            {/* Mobile User Menu */}
             <div className="pt-2 space-y-2 border-t border-gray-200">
               {isAuthenticated ? (
                 <>
-                  <Link 
-                    to={
-                      isAdmin ? '/admin' : 
-                      user?.role === 'lead_chitrakar' ? '/lead-chitrakar' :
-                      user?.role === 'kalakar' ? '/kalakar' :
-                      user?.role === 'artist' ? '/dashboard' :
-                      '/user-dashboard'
-                    } 
-                    onClick={() => setIsOpen(false)} 
-                    className="block w-full px-4 py-2 bg-orange-500 text-white text-center rounded-lg"
+                  {/* User Info */}
+                  <div className="px-3 py-3 bg-gray-50 rounded-lg mx-2">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full ${getRoleBadgeColor()} flex items-center justify-center text-white font-bold overflow-hidden`}>
+                        {profiles?.avatar ? (
+                          <img src={profiles.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          getAvatarInitial()
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">{profiles?.full_name || user?.name}</p>
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs text-white ${getRoleBadgeColor()}`}>
+                          {isAdmin ? 'Admin' : isArtist ? 'Artist' : 'User'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Menu Items */}
+                  {getUserMenuItems().map((item) => (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md"
+                    >
+                      <span>{item.icon}</span>
+                      {item.label}
+                    </Link>
+                  ))}
+
+                  <button 
+                    onClick={handleLogout} 
+                    className="flex items-center gap-3 w-full px-3 py-2 text-base font-medium text-red-600 hover:bg-red-50 rounded-md"
                   >
-                    {isAdmin ? 'Admin Panel' : 
-                     user?.role === 'lead_chitrakar' ? 'Lead Chitrakar' :
-                     user?.role === 'kalakar' ? 'Kalakar Panel' :
-                     user?.role === 'artist' ? 'Artist Dashboard' :
-                     'My Dashboard'}
-                  </Link>
-                  <button onClick={handleLogout} className="block w-full px-4 py-2 border border-red-300 text-red-600 rounded-lg">
+                    <span>🚪</span>
                     Logout
                   </button>
                 </>
