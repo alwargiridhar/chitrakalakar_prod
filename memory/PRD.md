@@ -88,6 +88,20 @@ Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrak
    - Quick 🏠 button on each painting card in gallery
    - Responsive modal with split view (preview + controls)
 
+#### Session 3: Membership-Based Artist Visibility
+1. **Public Artists Filter** - Only shows artists with ACTIVE membership
+2. **Admin Dashboard Updates**:
+   - New "Members" tab - Shows artists with active membership
+   - New "Non-Members" tab - Shows artists without membership
+   - Role Change Modal - Admin can change any user's role
+   - Grant Membership Modal - Admin can grant membership with plan/duration
+   - Revoke Membership - Admin can revoke artist membership
+3. **New Backend Endpoints**:
+   - `GET /api/admin/artists-by-membership` - Separate members/non-members
+   - `POST /api/admin/update-user-role` - Change user roles
+   - `POST /api/admin/grant-membership` - Grant membership
+   - `POST /api/admin/revoke-membership` - Revoke membership
+
 ---
 
 ## Prioritized Backlog
