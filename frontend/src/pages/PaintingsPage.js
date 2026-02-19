@@ -275,13 +275,29 @@ function PaintingsPage() {
                       </span>
                     )}
                   </div>
-                  <button
-                    onClick={(e) => handleAddToCart(e, painting.id)}
-                    className="w-full py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium"
-                    data-testid={`add-to-cart-${painting.id}`}
-                  >
-                    Add to Cart
-                  </button>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => handleAddToCart(e, painting.id)}
+                      className="flex-1 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium"
+                      data-testid={`add-to-cart-${painting.id}`}
+                    >
+                      Add to Cart
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setPreviewPainting(painting);
+                      }}
+                      className="px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm"
+                      title="View in Room"
+                      data-testid={`room-preview-${painting.id}`}
+                    >
+                      🏠
+                    </button>
+                  </div>
                 </div>
               </Link>
             ))}
@@ -298,6 +314,13 @@ function PaintingsPage() {
           </p>
         </div>
       </div>
+
+      {/* Virtual Room Preview Modal */}
+      <VirtualRoomPreview
+        artwork={previewPainting}
+        isOpen={!!previewPainting}
+        onClose={() => setPreviewPainting(null)}
+      />
     </div>
   );
 }
