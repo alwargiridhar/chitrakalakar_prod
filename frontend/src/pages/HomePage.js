@@ -106,6 +106,9 @@ function HomePage() {
             <div className="hidden lg:flex flex-col gap-6">
               {/* Artist of the Day */}
               <ArtistOfTheDay />
+
+              {/* Trending Artists Section */}
+              <TrendingArtists />
               
               {/* Quick Actions */}
               <div className="bg-white rounded-2xl p-6 shadow-lg">
