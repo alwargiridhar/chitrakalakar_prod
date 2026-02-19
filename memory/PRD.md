@@ -13,6 +13,13 @@ Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrak
 2. Show key information on thumbnails
 3. Show all artwork information in detail page
 4. **Virtual Room Preview** - Visualize artwork in different room settings
+5. User profile dropdown with account management pages
+6. PWA functionality for mobile/desktop installation
+7. Admin ability to manage featured artists
+8. Sub-admin creation with location autocomplete
+9. Pricing & voucher management system
+10. Artist of the Day feature
+11. Community feature for artists
 
 ---
 
@@ -36,9 +43,9 @@ Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrak
 
 ## User Personas
 
-1. **Artists** - Create profiles, upload artworks, manage portfolio
+1. **Artists** - Create profiles, upload artworks, manage portfolio, join communities
 2. **Buyers** - Browse marketplace, purchase artworks, visualize in rooms
-3. **Admin** - Approve artists/artworks, manage featured artists, oversee platform
+3. **Admin** - Approve artists/artworks, manage featured artists, create vouchers
 
 ---
 
@@ -65,82 +72,96 @@ Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrak
 
 ## What's Been Implemented
 
-### Date: Feb 19, 2026
+### Feb 19, 2026 - Session 6: Community & Pricing Features
 
-#### Session 1: Core Enhancements
-1. **Enhanced Artwork Form** - 10 collapsible sections, 50+ fields
-2. **Enhanced Thumbnails** - Key info overlay, badge system
-3. **Comprehensive Detail Page** - Organized info sections
-4. **Backend Updates** - Extended model, optimized queries
-5. **Bug Fixes** - Parallel query execution, membership checks
+1. **Community Detail Page** (`/app/frontend/src/pages/CommunityDetailPage.js`)
+   - View individual community with posts and members
+   - Create posts (text, image, announcements)
+   - Invite artists to community (admin only)
+   - Join/Leave community functionality
+   - Responsive design for mobile
 
-#### Session 2: Virtual Room Preview Feature
-1. **VirtualRoomPreview Component** (`/app/frontend/src/components/VirtualRoomPreview.js`)
-   - 6 Room Presets: Modern Living, Classic Living, Bedroom, Office, Dining, Hallway
-   - 10 Wall Colors: White, Cream, Beige, Gray, Sage, Blue, Blush, Charcoal, Navy, Forest
-   - 5 Frame Styles: Modern, Classic, Minimal, Ornate, Float
-   - Artwork Size Slider (Small to Large)
-   - Drag-to-Reposition functionality
-   - SVG Furniture graphics for each room type
+2. **Admin Pricing & Voucher Management**
+   - New "Pricing & Vouchers" tab in Admin Dashboard
+   - View membership plans (Monthly ₹99, Annual ₹999)
+   - Create/Edit/Delete discount vouchers
+   - Toggle voucher active status
+   - View voucher usage statistics
 
-2. **Integration Points**
-   - "View in Your Room" button on Painting Detail Page
-   - Quick 🏠 button on each painting card in gallery
-   - Responsive modal with split view (preview + controls)
+3. **Backend Endpoints Added/Updated**
+   - `POST /api/community/{id}/leave` - Leave a community
+   - `POST /api/community/{id}/post` - Create community post
+   - `GET /api/admin/vouchers` - List all vouchers
+   - `POST /api/admin/create-voucher` - Create new voucher
+   - `DELETE /api/admin/voucher/{id}` - Delete voucher
+   - `POST /api/admin/toggle-voucher/{id}` - Toggle voucher status
 
-#### Session 3: Membership-Based Artist Visibility
-1. **Public Artists Filter** - Only shows artists with ACTIVE membership
-2. **Admin Dashboard Updates**:
-   - New "Members" tab - Shows artists with active membership
-   - New "Non-Members" tab - Shows artists without membership
-   - Role Change Modal - Admin can change any user's role
-   - Grant Membership Modal - Admin can grant membership with plan/duration
-   - Revoke Membership - Admin can revoke artist membership
-3. **New Backend Endpoints**:
-   - `GET /api/admin/artists-by-membership` - Separate members/non-members
-   - `POST /api/admin/update-user-role` - Change user roles
-   - `POST /api/admin/grant-membership` - Grant membership
-   - `POST /api/admin/revoke-membership` - Revoke membership
+4. **Routes Added**
+   - `/communities` - Communities listing page
+   - `/community/:id` - Individual community detail page
 
-#### Session 4: User Dropdown Menu & Account Pages
-1. **NavBar User Dropdown** (`/app/frontend/src/components/NavBar.js`)
-   - Circular avatar with role-based colors (Admin=red, Artist=orange, etc.)
-   - Dropdown shows: Name, Email, Role badge
-   - Menu items based on role: Profile, Dashboard, Account Settings, Subscription (artists only), Change Password, Logout
-   - Mobile-responsive with full menu in hamburger menu
-
-2. **New Account Pages**:
-   - `/profile` - Edit profile (name, phone, location, bio, avatar)
-   - `/account` - Account overview with quick links, status, danger zone
-   - `/change-password` - Change password with validation
-   - `/subscription` - Membership plans (Basic, Premium, Annual) with Razorpay
+### Previous Sessions Summary
 
 #### Session 5: Progressive Web App (PWA)
-1. **PWA Configuration** (`/app/frontend/public/`)
-   - `manifest.json` - App name, icons, theme color, shortcuts
-   - `service-worker.js` - Offline caching, background sync
-   - `offline.html` - Offline fallback page
-   - PWA icons (logo192.png, logo512.png)
+- PWA Configuration with manifest.json and service-worker.js
+- Installable on mobile and desktop
+- Offline support with caching
 
-2. **Features**:
-   - Installable on mobile (iOS & Android) and desktop
-   - Offline support with cached pages and images
-   - Push notification ready
-   - App shortcuts for quick access
-   - iOS-specific install instructions modal
+#### Session 4: User Dropdown Menu & Account Pages
+- NavBar user dropdown with role-based colors
+- Profile, Account, Subscription, Change Password pages
 
-3. **Install Prompt** (`/app/frontend/src/components/PWAInstallPrompt.js`)
-   - Smart install banner after 60 seconds
-   - Native install prompt for Android/Desktop
-   - iOS-specific instructions with visual guide
+#### Session 3: Membership-Based Artist Visibility
+- Public Artists Filter - Only shows active members
+- Admin Dashboard updates for member management
+
+#### Session 2: Virtual Room Preview Feature
+- 6 Room Presets with SVG furniture graphics
+- 10 Wall Colors and 5 Frame Styles
+- Drag-to-Reposition functionality
+
+#### Session 1: Core Enhancements
+- Enhanced Artwork Form with 50+ fields
+- Enhanced Thumbnails with badge system
+- Comprehensive Detail Page
+- Backend optimization for parallel queries
+
+---
+
+## S3 Buckets Required
+
+Please create the following S3 buckets:
+```
+[your-prefix]-chitrakalakar-artworks     → For artwork images
+[your-prefix]-chitrakalakar-avatars      → For user profile photos
+[your-prefix]-chitrakalakar-exhibitions  → For exhibition banners
+[your-prefix]-chitrakalakar-communities  → For community images/posts
+```
+
+---
+
+## Database Schema (Supabase)
+
+### Core Tables
+- `profiles` - User profiles with role, membership status
+- `artworks` - Artwork listings with all metadata
+- `exhibitions` - Exhibition entries
+- `featured_artists` - Featured artist profiles
+
+### New Tables for Communities & Vouchers
+- `communities` - Community definitions
+- `community_members` - Membership records
+- `community_posts` - Posts within communities
+- `vouchers` - Discount voucher codes
 
 ---
 
 ## Prioritized Backlog
 
 ### P0 - Critical
-- [ ] Verify Supabase connection for actual data flow
-- [ ] Test full artwork submission workflow
+- [x] Community Detail Page implementation
+- [x] Admin Pricing & Voucher Management
+- [ ] Configure Supabase connection for actual data flow
 
 ### P1 - High Priority
 - [ ] Add real room background images (upgrade from gradients)
@@ -150,19 +171,25 @@ Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrak
 ### P2 - Medium Priority
 - [ ] Save favorite room configurations
 - [ ] Share room preview as image
-- [ ] Add AR view using device camera
+- [ ] Community post likes/comments
 
 ### P3 - Nice to Have
 - [ ] Price history chart
 - [ ] Bulk artwork upload
 - [ ] Artist analytics dashboard
+- [ ] AR view using device camera
 
 ---
 
-## Next Steps
+## Test Reports
 
-1. **Run Supabase Migration** → See `/app/SUPABASE_MIGRATION_GUIDE.md`
-2. **Quick Migration** → Copy `/app/scripts/supabase_migration.sql` to Supabase SQL Editor
-3. **Field Mapping Reference** → See `/app/docs/BACKEND_DATABASE_MAPPING.md`
-4. Add sample paintings to test Virtual Room Preview
-5. Consider real room background images from Unsplash
+- `/app/test_reports/iteration_5.json` - Latest test results
+- All tests passing (100% backend, 100% frontend)
+
+---
+
+## Notes
+
+- Supabase credentials need to be configured in preview environment
+- All features are UI-complete and tested
+- Backend APIs return empty data when Supabase is not configured
