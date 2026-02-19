@@ -83,6 +83,7 @@ export const publicAPI = {
   getActiveExhibitions: () => apiCall('/public/exhibitions/active'),
   getArchivedExhibitions: () => apiCall('/public/exhibitions/archived'),
   getFeaturedArtistDetail: (artistId) => apiCall(`/public/featured-artist/${artistId}`),
+  getTrendingArtists: () => apiCall('/public/trending-artists'),
   
   // Art Class Enquiry
   createArtClassEnquiry: (data) => apiCall('/public/art-class-enquiry', {
