@@ -72,9 +72,17 @@ Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrak
 
 ## What's Been Implemented
 
-### Feb 19, 2026 - Session 6: Community & Pricing Features
+### Feb 19, 2026 - Session 6: Community, Pricing & Trending Features
 
-1. **Community Detail Page** (`/app/frontend/src/pages/CommunityDetailPage.js`)
+1. **Trending Artists Section** (`/app/frontend/src/components/TrendingArtists.js`) ✨ NEW
+   - Shows top artists ranked by views and sales
+   - Displays artwork count, views, and sales statistics
+   - Top artwork preview for each artist
+   - Rank badges (#1 gold, #2 silver, #3 bronze)
+   - Auto-hides when no trending data available
+   - Backend endpoint: `GET /api/public/trending-artists`
+
+2. **Community Detail Page** (`/app/frontend/src/pages/CommunityDetailPage.js`)
    - View individual community with posts and members
    - Create posts (text, image, announcements)
    - Invite artists to community (admin only)
