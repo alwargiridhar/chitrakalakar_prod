@@ -122,10 +122,11 @@ function CommunitiesPage() {
             <p className="text-gray-600 mt-1">Connect with fellow artists and art enthusiasts</p>
           </div>
           
-          {isAuthenticated && isArtist && (
+          {isAuthenticated && (
             <button
               onClick={() => setShowCreateModal(true)}
               className="px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg font-medium hover:opacity-90 flex items-center gap-2 w-full md:w-auto justify-center"
+              data-testid="create-community-btn"
             >
               <span>+</span> Create Community
             </button>
