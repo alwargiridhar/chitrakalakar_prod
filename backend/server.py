@@ -164,6 +164,49 @@ class ArtworkCreate(BaseModel):
     series_name: Optional[str] = None
     collector_interest: Optional[bool] = False
 
+# Pricing Management Models
+class MembershipPlanUpdate(BaseModel):
+    plan_id: str  # 'basic', 'premium', 'annual'
+    name: str
+    price: float
+    duration_days: int
+    features: List[str]
+    is_active: bool = True
+
+class VoucherCreate(BaseModel):
+    code: str
+    discount_type: str  # 'percentage', 'fixed'
+    discount_value: float
+    valid_from: str
+    valid_until: str
+    max_uses: int = 100
+    applicable_plans: List[str] = []  # Empty means all plans
+    description: Optional[str] = None
+
+class VoucherApply(BaseModel):
+    voucher_code: str
+    plan_id: str
+
+# Community Models
+class CommunityCreate(BaseModel):
+    name: str
+    description: str
+    image: Optional[str] = None
+    category: Optional[str] = None
+    location: Optional[str] = None
+    invite_criteria: Optional[dict] = None  # {"location": "Mumbai", "categories": ["Abstract"]}
+
+class CommunityPostCreate(BaseModel):
+    community_id: str
+    content: str
+    images: List[str] = []
+    post_type: str = "text"  # 'text', 'image', 'announcement'
+
+class CommunityInvite(BaseModel):
+    community_id: str
+    artist_ids: List[str]
+    message: Optional[str] = None
+
 class ArtworkApprovalRequest(BaseModel):
     artwork_id: str
     approved: bool
