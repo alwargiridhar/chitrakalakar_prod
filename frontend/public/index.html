@@ -3,18 +3,48 @@
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/logo.png" type="image/png" />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="%PUBLIC_URL%/logo192.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
     <meta name="theme-color" content="#f97316" />
     <meta name="description" content="ChitraKalakar - Let's breathe art. A community of artisans where users and artists connect to create, commission, and celebrate beautiful artworks." />
     <meta name="keywords" content="art, artists, paintings, commission, artwork, Indian art, traditional art, contemporary art" />
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="ChitraKalakar" />
+    <meta name="application-name" content="ChitraKalakar" />
+    <meta name="msapplication-TileColor" content="#f97316" />
+    <meta name="msapplication-TileImage" content="%PUBLIC_URL%/logo192.png" />
+    <meta name="msapplication-config" content="none" />
+    
+    <!-- Open Graph / Social Media -->
     <meta property="og:title" content="ChitraKalakar - Let's breathe art" />
     <meta property="og:description" content="Connect with talented artisans to commission beautiful artwork, discover exhibitions, and celebrate creativity." />
     <meta property="og:type" content="website" />
+    <meta property="og:image" content="%PUBLIC_URL%/logo512.png" />
+    <meta property="og:url" content="https://chitrakalakar.com" />
+    <meta name="twitter:card" content="summary_large_image" />
+    
+    <!-- Splash Screens for iOS -->
+    <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" />
+    <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" />
+    <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/splash-1242x2208.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)" />
+    <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" />
+    
     <title>ChitraKalakar - Let's breathe art</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Razorpay for payments -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    
     <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script>
     <script>
       if (window.self !== window.top) {
@@ -28,9 +58,253 @@
         document.head.appendChild(tailwindScript);
       }
     </script>
+    
+    <style>
+      /* PWA Install Banner Styles */
+      .pwa-install-banner {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #f97316 0%, #eab308 100%);
+        color: white;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        z-index: 9999;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+        transform: translateY(100%);
+        transition: transform 0.3s ease-out;
+      }
+      .pwa-install-banner.show {
+        transform: translateY(0);
+      }
+      .pwa-install-banner .content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .pwa-install-banner .icon {
+        font-size: 28px;
+      }
+      .pwa-install-banner .text h4 {
+        font-weight: 600;
+        font-size: 14px;
+        margin: 0;
+      }
+      .pwa-install-banner .text p {
+        font-size: 12px;
+        opacity: 0.9;
+        margin: 2px 0 0 0;
+      }
+      .pwa-install-banner .actions {
+        display: flex;
+        gap: 8px;
+      }
+      .pwa-install-banner button {
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 13px;
+        cursor: pointer;
+        border: none;
+        transition: opacity 0.2s;
+      }
+      .pwa-install-banner .install-btn {
+        background: white;
+        color: #f97316;
+      }
+      .pwa-install-banner .dismiss-btn {
+        background: rgba(255,255,255,0.2);
+        color: white;
+      }
+      .pwa-install-banner button:hover {
+        opacity: 0.9;
+      }
+      
+      /* iOS Install Instructions */
+      .ios-install-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        z-index: 10000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s, visibility 0.3s;
+      }
+      .ios-install-modal.show {
+        opacity: 1;
+        visibility: visible;
+      }
+      .ios-install-modal .modal-content {
+        background: white;
+        border-radius: 20px 20px 0 0;
+        padding: 24px;
+        width: 100%;
+        max-width: 400px;
+        text-align: center;
+      }
+      .ios-install-modal h3 {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 16px;
+      }
+      .ios-install-modal .steps {
+        text-align: left;
+        margin: 16px 0;
+      }
+      .ios-install-modal .step {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid #f3f4f6;
+      }
+      .ios-install-modal .step-icon {
+        font-size: 24px;
+      }
+      .ios-install-modal .step-text {
+        font-size: 14px;
+        color: #4b5563;
+      }
+      .ios-install-modal .close-btn {
+        margin-top: 16px;
+        padding: 12px 24px;
+        background: #f97316;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+    </style>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+    
+    <!-- PWA Install Banner -->
+    <div id="pwa-install-banner" class="pwa-install-banner">
+      <div class="content">
+        <span class="icon">📲</span>
+        <div class="text">
+          <h4>Install ChitraKalakar</h4>
+          <p>Add to home screen for the best experience</p>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="dismiss-btn" onclick="dismissPWABanner()">Later</button>
+        <button class="install-btn" onclick="installPWA()">Install</button>
+      </div>
+    </div>
+    
+    <!-- iOS Install Instructions Modal -->
+    <div id="ios-install-modal" class="ios-install-modal" onclick="closeIOSModal(event)">
+      <div class="modal-content" onclick="event.stopPropagation()">
+        <h3>📲 Install ChitraKalakar</h3>
+        <div class="steps">
+          <div class="step">
+            <span class="step-icon">1️⃣</span>
+            <span class="step-text">Tap the <strong>Share</strong> button <span style="font-size:18px">⬆️</span> at the bottom</span>
+          </div>
+          <div class="step">
+            <span class="step-icon">2️⃣</span>
+            <span class="step-text">Scroll down and tap <strong>"Add to Home Screen"</strong></span>
+          </div>
+          <div class="step">
+            <span class="step-icon">3️⃣</span>
+            <span class="step-text">Tap <strong>"Add"</strong> in the top right corner</span>
+          </div>
+        </div>
+        <button class="close-btn" onclick="closeIOSModal()">Got it!</button>
+      </div>
+    </div>
+    
+    <script>
+      // PWA Installation Logic
+      let deferredPrompt;
+      let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      let isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      
+      // Don't show banner if already installed
+      if (isStandalone) {
+        console.log('App is running in standalone mode');
+      }
+      
+      // Listen for beforeinstallprompt event (Android/Desktop)
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // Show install banner after 30 seconds
+        setTimeout(() => {
+          if (!localStorage.getItem('pwa-banner-dismissed')) {
+            showPWABanner();
+          }
+        }, 30000);
+      });
+      
+      function showPWABanner() {
+        const banner = document.getElementById('pwa-install-banner');
+        if (banner && !isStandalone) {
+          banner.classList.add('show');
+        }
+      }
+      
+      function dismissPWABanner() {
+        const banner = document.getElementById('pwa-install-banner');
+        if (banner) {
+          banner.classList.remove('show');
+          localStorage.setItem('pwa-banner-dismissed', 'true');
+        }
+      }
+      
+      async function installPWA() {
+        if (isIOS) {
+          // Show iOS instructions
+          document.getElementById('ios-install-modal').classList.add('show');
+        } else if (deferredPrompt) {
+          // Android/Desktop - use native prompt
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log('User response:', outcome);
+          deferredPrompt = null;
+          dismissPWABanner();
+        }
+      }
+      
+      function closeIOSModal(event) {
+        if (!event || event.target.id === 'ios-install-modal') {
+          document.getElementById('ios-install-modal').classList.remove('show');
+          dismissPWABanner();
+        }
+      }
+      
+      // Register Service Worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then((registration) => {
+              console.log('ServiceWorker registered:', registration.scope);
+            })
+            .catch((error) => {
+              console.log('ServiceWorker registration failed:', error);
+            });
+        });
+      }
+      
+      // Show iOS banner after delay if on iOS and not standalone
+      if (isIOS && !isStandalone && !localStorage.getItem('pwa-banner-dismissed')) {
+        setTimeout(() => {
+          showPWABanner();
+        }, 30000);
+      }
+    </script>
   </body>
 </html>
