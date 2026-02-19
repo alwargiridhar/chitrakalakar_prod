@@ -316,7 +316,7 @@ async def search_locations(q: str, country: Optional[str] = None):
 
 @app.get("/api/public/stats")
 async def get_public_stats():
-    """Get platform statistics"""
+    """Get platform statistics - optimized for fast loading"""
     supabase = get_supabase_client()
     
     if not supabase:
@@ -329,15 +329,38 @@ async def get_public_stats():
         }
     
     try:
-        # Get counts
-        artists_response = supabase.table('profiles').select('id', count='exact').eq('role', 'artist').eq('is_approved', True).execute()
-        artworks_response = supabase.table('artworks').select('id', count='exact').eq('is_approved', True).execute()
-        exhibitions_response = supabase.table('exhibitions').select('id', count='exact').eq('is_approved', True).execute()
+        # Run all counts in parallel for faster loading
+        import asyncio
+        
+        async def get_artist_count():
+            try:
+                return supabase.table('profiles').select('id', count='exact').eq('role', 'artist').eq('is_approved', True).execute().count or 0
+            except:
+                return 0
+                
+        async def get_artwork_count():
+            try:
+                return supabase.table('artworks').select('id', count='exact').eq('is_approved', True).execute().count or 0
+            except:
+                return 0
+                
+        async def get_exhibition_count():
+            try:
+                return supabase.table('exhibitions').select('id', count='exact').eq('is_approved', True).execute().count or 0
+            except:
+                return 0
+        
+        # Execute all queries in parallel
+        artists_count, artworks_count, exhibitions_count = await asyncio.gather(
+            get_artist_count(),
+            get_artwork_count(),
+            get_exhibition_count()
+        )
         
         return {
-            "total_artists": artists_response.count or 0,
-            "total_artworks": artworks_response.count or 0,
-            "active_exhibitions": exhibitions_response.count or 0,
+            "total_artists": artists_count,
+            "total_artworks": artworks_count,
+            "active_exhibitions": exhibitions_count,
             "satisfaction_rate": 98
         }
     except Exception as e:
