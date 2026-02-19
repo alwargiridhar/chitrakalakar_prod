@@ -64,6 +64,10 @@ function App() {
           <Route path="/user-dashboard" element={<><NavBar /><UserDashboard /></>} />
           <Route path="/lead-chitrakar" element={<><NavBar /><LeadChitrakarDashboard /></>} />
           <Route path="/kalakar" element={<><NavBar /><KalakarDashboard /></>} />
+          <Route path="/profile" element={<><NavBar /><ProfilePage /></>} />
+          <Route path="/account" element={<><NavBar /><AccountPage /></>} />
+          <Route path="/change-password" element={<><NavBar /><ChangePasswordPage /></>} />
+          <Route path="/subscription" element={<><NavBar /><SubscriptionPage /></>} />
           <Route path="*" element={<Layout><NotFoundPage /></Layout>} />
         </Routes>
         <Chatbot />
