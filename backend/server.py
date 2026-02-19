@@ -2004,6 +2004,96 @@ async def apply_voucher(request: VoucherApply):
         "code": v['code']
     }
 
+# ============ TRENDING ARTISTS ============
+
+@app.get("/api/public/trending-artists")
+async def get_trending_artists():
+    """Get trending artists based on artwork views and sales"""
+    supabase = get_supabase_client()
+    
+    if not supabase:
+        return {"artists": [], "period": "This Week"}
+    
+    try:
+        # Get artists with their artwork stats
+        # Calculate trending score based on views and sales
+        artists_query = supabase.table('profiles').select(
+            'id, full_name, bio, categories, location, avatar, is_member, membership_expiry'
+        ).eq('role', 'artist').eq('is_approved', True).eq('is_active', True).execute()
+        
+        if not artists_query.data:
+            return {"artists": [], "period": "This Week"}
+        
+        trending_artists = []
+        now = datetime.now(timezone.utc)
+        
+        for artist in artists_query.data:
+            # Only include artists with active membership
+            is_active_member = False
+            if artist.get('is_member') and artist.get('membership_expiry'):
+                try:
+                    expiry = datetime.fromisoformat(artist['membership_expiry'].replace('Z', '+00:00'))
+                    is_active_member = expiry > now
+                except:
+                    pass
+            
+            if not is_active_member:
+                continue
+            
+            # Get artwork stats for this artist
+            artworks = supabase.table('artworks').select(
+                'id, views, title, image, images, price'
+            ).eq('artist_id', artist['id']).eq('is_approved', True).execute()
+            
+            total_views = sum(a.get('views', 0) for a in (artworks.data or []))
+            artwork_count = len(artworks.data or [])
+            
+            # Get sales count from orders
+            orders = supabase.table('orders').select('id').eq('artist_id', artist['id']).execute()
+            sales_count = len(orders.data or [])
+            
+            # Calculate trending score (views * 1 + sales * 10)
+            trending_score = total_views + (sales_count * 10)
+            
+            if trending_score > 0 or artwork_count > 0:
+                # Get top artwork for display
+                top_artwork = None
+                if artworks.data:
+                    sorted_artworks = sorted(artworks.data, key=lambda x: x.get('views', 0), reverse=True)
+                    top_artwork = sorted_artworks[0] if sorted_artworks else None
+                
+                trending_artists.append({
+                    "id": artist['id'],
+                    "name": artist.get('full_name'),
+                    "avatar": artist.get('avatar'),
+                    "location": artist.get('location'),
+                    "categories": artist.get('categories', []),
+                    "bio": artist.get('bio', '')[:150] + '...' if artist.get('bio') and len(artist.get('bio', '')) > 150 else artist.get('bio'),
+                    "total_views": total_views,
+                    "sales_count": sales_count,
+                    "artwork_count": artwork_count,
+                    "trending_score": trending_score,
+                    "top_artwork": {
+                        "title": top_artwork.get('title'),
+                        "image": top_artwork.get('images', [None])[0] or top_artwork.get('image'),
+                        "price": top_artwork.get('price')
+                    } if top_artwork else None
+                })
+        
+        # Sort by trending score and get top 6
+        trending_artists.sort(key=lambda x: x['trending_score'], reverse=True)
+        top_trending = trending_artists[:6]
+        
+        return {
+            "artists": top_trending,
+            "period": "This Week",
+            "total_trending": len(trending_artists)
+        }
+        
+    except Exception as e:
+        print(f"Trending artists error: {e}")
+        return {"artists": [], "period": "This Week"}
+
 # ============ CONTEMPORARY ARTIST OF THE DAY ============
 
 @app.get("/api/public/artist-of-the-day")
