@@ -1011,6 +1011,156 @@ function AdminDashboard() {
             </div>
           </div>
         )}
+
+        {/* Role Change Modal */}
+        {showRoleModal && selectedUser && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-md w-full">
+              <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-900">Change User Role</h2>
+                <button onClick={() => { setShowRoleModal(false); setSelectedUser(null); }} className="text-gray-500 hover:text-gray-700">✕</button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="font-semibold text-gray-900">{selectedUser.full_name}</p>
+                  <p className="text-sm text-gray-500">{selectedUser.email}</p>
+                  <p className="text-xs text-gray-400 mt-1">Current Role: <span className="font-medium">{selectedUser.role}</span></p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select New Role</label>
+                  <div className="space-y-2">
+                    {[
+                      { value: 'user', label: 'User', desc: 'Regular buyer account' },
+                      { value: 'artist', label: 'Artist', desc: 'Can upload and sell artworks' },
+                      { value: 'lead_chitrakar', label: 'Lead Chitrakar', desc: 'Can approve artworks' },
+                      { value: 'kalakar', label: 'Kalakar', desc: 'Can view analytics & payments' },
+                      { value: 'admin', label: 'Admin', desc: 'Full platform access' },
+                    ].map((role) => (
+                      <label 
+                        key={role.value} 
+                        className={`flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 ${
+                          selectedUser.role === role.value ? 'border-orange-500 bg-orange-50' : 'border-gray-200'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="role"
+                          value={role.value}
+                          checked={selectedUser.newRole === role.value}
+                          onChange={(e) => setSelectedUser({ ...selectedUser, newRole: e.target.value })}
+                          className="mr-3 text-orange-500"
+                        />
+                        <div>
+                          <p className="font-medium text-gray-900">{role.label}</p>
+                          <p className="text-xs text-gray-500">{role.desc}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => { setShowRoleModal(false); setSelectedUser(null); }}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (selectedUser.newRole) {
+                        await adminAPI.updateUserRole(selectedUser.id, selectedUser.newRole);
+                        setShowRoleModal(false);
+                        setSelectedUser(null);
+                        fetchData();
+                      }
+                    }}
+                    disabled={!selectedUser.newRole}
+                    className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50"
+                  >
+                    Update Role
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Grant Membership Modal */}
+        {showMembershipModal && selectedUser && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-md w-full">
+              <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-900">Grant Membership</h2>
+                <button onClick={() => { setShowMembershipModal(false); setSelectedUser(null); }} className="text-gray-500 hover:text-gray-700">✕</button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="font-semibold text-gray-900">{selectedUser.full_name}</p>
+                  <p className="text-sm text-gray-500">{selectedUser.email}</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Membership Plan</label>
+                  <select
+                    value={membershipForm.plan}
+                    onChange={(e) => setMembershipForm({ ...membershipForm, plan: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="basic">Basic</option>
+                    <option value="premium">Premium</option>
+                    <option value="annual">Annual</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Duration (days)</label>
+                  <select
+                    value={membershipForm.duration_days}
+                    onChange={(e) => setMembershipForm({ ...membershipForm, duration_days: parseInt(e.target.value) })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value={30}>30 days (1 month)</option>
+                    <option value={90}>90 days (3 months)</option>
+                    <option value={180}>180 days (6 months)</option>
+                    <option value={365}>365 days (1 year)</option>
+                  </select>
+                </div>
+
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm">
+                  <p className="text-green-800">
+                    <strong>Note:</strong> Granting membership will make this artist visible in the public Artists page.
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => { setShowMembershipModal(false); setSelectedUser(null); }}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await adminAPI.grantMembership(selectedUser.id, membershipForm.plan, membershipForm.duration_days);
+                      setShowMembershipModal(false);
+                      setSelectedUser(null);
+                      fetchData();
+                    }}
+                    className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                  >
+                    Grant Membership
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
