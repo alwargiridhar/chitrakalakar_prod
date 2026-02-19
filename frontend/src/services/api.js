@@ -271,6 +271,10 @@ export const adminAPI = {
     method: 'POST',
     body: JSON.stringify(plan),
   }),
+  updatePricingPlan: (plan) => apiCall('/admin/update-membership-plan', {
+    method: 'POST',
+    body: JSON.stringify(plan),
+  }),
   
   // Voucher Management
   getVouchers: () => apiCall('/admin/vouchers'),
