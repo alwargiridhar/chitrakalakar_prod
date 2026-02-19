@@ -235,20 +235,31 @@ function PaintingDetailPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
+            <div className="space-y-3">
+              <div className="flex gap-3">
+                <button
+                  onClick={handleAddToCart}
+                  className="flex-1 py-3 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors"
+                  data-testid="add-to-cart-btn"
+                >
+                  Add to Cart
+                </button>
+                <button
+                  onClick={() => setShowScreeningModal(true)}
+                  className="flex-1 py-3 border-2 border-orange-500 text-orange-500 rounded-lg font-medium hover:bg-orange-50 transition-colors"
+                  data-testid="request-screening-btn"
+                >
+                  Request Video Screening
+                </button>
+              </div>
+              
+              {/* Virtual Room Preview Button */}
               <button
-                onClick={handleAddToCart}
-                className="flex-1 py-3 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors"
-                data-testid="add-to-cart-btn"
+                onClick={() => setShowRoomPreview(true)}
+                className="w-full py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-lg font-medium hover:from-purple-600 hover:to-indigo-600 transition-all flex items-center justify-center gap-2 shadow-lg"
+                data-testid="virtual-room-preview-btn"
               >
-                Add to Cart
-              </button>
-              <button
-                onClick={() => setShowScreeningModal(true)}
-                className="flex-1 py-3 border-2 border-orange-500 text-orange-500 rounded-lg font-medium hover:bg-orange-50 transition-colors"
-                data-testid="request-screening-btn"
-              >
-                Request Video Screening
+                <span>🏠</span> View in Your Room
               </button>
             </div>
 
