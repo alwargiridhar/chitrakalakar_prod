@@ -115,6 +115,25 @@ Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrak
    - `/change-password` - Change password with validation
    - `/subscription` - Membership plans (Basic, Premium, Annual) with Razorpay
 
+#### Session 5: Progressive Web App (PWA)
+1. **PWA Configuration** (`/app/frontend/public/`)
+   - `manifest.json` - App name, icons, theme color, shortcuts
+   - `service-worker.js` - Offline caching, background sync
+   - `offline.html` - Offline fallback page
+   - PWA icons (logo192.png, logo512.png)
+
+2. **Features**:
+   - Installable on mobile (iOS & Android) and desktop
+   - Offline support with cached pages and images
+   - Push notification ready
+   - App shortcuts for quick access
+   - iOS-specific install instructions modal
+
+3. **Install Prompt** (`/app/frontend/src/components/PWAInstallPrompt.js`)
+   - Smart install banner after 60 seconds
+   - Native install prompt for Android/Desktop
+   - iOS-specific instructions with visual guide
+
 ---
 
 ## Prioritized Backlog
