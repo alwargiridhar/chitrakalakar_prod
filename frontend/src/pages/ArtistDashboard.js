@@ -587,6 +587,48 @@ const handleSaveProfile = async () => {
           </div>
         )}
 
+        {/* Communities Tab */}
+        {activeTab === 'communities' && (
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">My Communities</h2>
+                <p className="text-sm text-gray-500">Create and join artist communities</p>
+              </div>
+              <Link
+                to="/communities"
+                className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center gap-2"
+                data-testid="go-to-communities-btn"
+              >
+                <span>🤝</span> Browse & Create Communities
+              </Link>
+            </div>
+            <div className="p-6">
+              <div className="text-center py-12">
+                <span className="text-6xl mb-4 block">🎨</span>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Connect with Fellow Artists</h3>
+                <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                  Join communities based on art style, location, or interests. Share your work, get feedback, and collaborate with other artists.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link
+                    to="/communities"
+                    className="px-6 py-3 bg-gradient-to-r from-purple-500 to-orange-500 text-white rounded-lg font-medium hover:opacity-90"
+                  >
+                    Explore Communities
+                  </Link>
+                  <Link
+                    to="/communities"
+                    className="px-6 py-3 border border-purple-500 text-purple-500 rounded-lg font-medium hover:bg-purple-50"
+                  >
+                    + Create New Community
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Membership Tab */}
         {activeTab === 'membership' && (
           <div className="bg-white rounded-xl shadow-sm">
