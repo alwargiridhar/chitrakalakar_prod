@@ -98,18 +98,35 @@ export const publicAPI = {
   // Communities
   getCommunities: () => apiCall('/public/communities'),
   getCommunityDetail: (communityId) => apiCall(`/public/community/${communityId}`),
+  getArtistOfTheDay: () => apiCall('/public/artist-of-the-day'),
 };
 
 // Community APIs
 export const communityAPI = {
-  create: (data) => apiCall('/communities', {
+  create: (data) => apiCall('/community/create', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-  join: (communityId) => apiCall(`/communities/${communityId}/join`, {
+  getAll: () => apiCall('/communities'),
+  getDetails: (communityId) => apiCall(`/community/${communityId}`),
+  join: (communityId) => apiCall(`/community/${communityId}/join`, {
     method: 'POST',
   }),
-  leave: (communityId) => apiCall(`/communities/${communityId}/leave`, {
+  getJoinRequests: (communityId) => apiCall(`/community/${communityId}/join-requests`),
+  approveJoin: (communityId, requestId, approved) => apiCall(`/community/${communityId}/approve-join/${requestId}?approved=${approved}`, {
+    method: 'POST',
+  }),
+  invite: (communityId, artistIds, message) => apiCall(`/community/${communityId}/invite`, {
+    method: 'POST',
+    body: JSON.stringify({ community_id: communityId, artist_ids: artistIds, message }),
+  }),
+  createPost: (communityId, content, images, postType) => apiCall(`/community/${communityId}/post`, {
+    method: 'POST',
+    body: JSON.stringify({ community_id: communityId, content, images, post_type: postType }),
+  }),
+  getMyCommunities: () => apiCall('/community/my-communities'),
+  getMyInvites: () => apiCall('/community/invites'),
+  respondToInvite: (inviteId, accept) => apiCall(`/community/respond-invite/${inviteId}?accept=${accept}`, {
     method: 'POST',
   }),
 };
@@ -126,6 +143,10 @@ export const chatAPI = {
 // Membership APIs
 export const membershipAPI = {
   getPlans: () => apiCall('/membership/plans'),
+  applyVoucher: (voucherCode, planId) => apiCall('/public/apply-voucher', {
+    method: 'POST',
+    body: JSON.stringify({ voucher_code: voucherCode, plan_id: planId }),
+  }),
   createOrder: (planType) => apiCall('/membership/create-order', {
     method: 'POST',
     body: JSON.stringify({ plan_type: planType }),
