@@ -657,6 +657,147 @@ function AdminDashboard() {
           </div>
         )}
 
+        {/* Pricing & Vouchers Tab */}
+        {activeTab === 'pricing' && (
+          <div className="space-y-8">
+            {/* Membership Plans Overview */}
+            <div className="bg-white rounded-xl shadow-sm">
+              <div className="p-6 border-b border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900">Membership Plans</h2>
+                <p className="text-sm text-gray-500">Current pricing structure for artist memberships</p>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Monthly Plan */}
+                  <div className="border border-gray-200 rounded-xl p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900">Monthly Membership</h3>
+                        <p className="text-sm text-gray-500">30-day access to all features</p>
+                      </div>
+                      <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">Active</span>
+                    </div>
+                    <div className="mb-4">
+                      <p className="text-3xl font-bold text-gray-900">₹99</p>
+                      <p className="text-sm text-gray-500">+ 18% GST = ₹116.82</p>
+                    </div>
+                    <ul className="text-sm text-gray-600 space-y-2">
+                      <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Public artist profile</li>
+                      <li className="flex items-center gap-2"><span className="text-green-500">✓</span> List artworks on marketplace</li>
+                      <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Join communities</li>
+                    </ul>
+                  </div>
+
+                  {/* Annual Plan */}
+                  <div className="border-2 border-orange-400 rounded-xl p-6 relative">
+                    <div className="absolute -top-3 left-4 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                      Best Value
+                    </div>
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900">Annual Membership</h3>
+                        <p className="text-sm text-gray-500">365-day access (save 16%)</p>
+                      </div>
+                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">Active</span>
+                    </div>
+                    <div className="mb-4">
+                      <p className="text-3xl font-bold text-gray-900">₹999</p>
+                      <p className="text-sm text-gray-500">+ 18% GST = ₹1,178.82</p>
+                    </div>
+                    <ul className="text-sm text-gray-600 space-y-2">
+                      <li className="flex items-center gap-2"><span className="text-green-500">✓</span> All monthly features</li>
+                      <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Featured on homepage</li>
+                      <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Priority support</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Vouchers Section */}
+            <div className="bg-white rounded-xl shadow-sm">
+              <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Discount Vouchers</h2>
+                  <p className="text-sm text-gray-500">Create and manage promotional vouchers</p>
+                </div>
+                <button
+                  onClick={() => setShowCreateVoucher(true)}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                  data-testid="create-voucher-btn"
+                >
+                  + Create Voucher
+                </button>
+              </div>
+              <div className="p-6">
+                {vouchers.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    <span className="text-5xl block mb-4">🎟️</span>
+                    <p>No vouchers created yet</p>
+                    <p className="text-sm">Create vouchers to offer discounts on memberships</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {vouchers.map((voucher) => (
+                      <div 
+                        key={voucher.id} 
+                        className={`border rounded-lg p-4 ${voucher.is_active ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}
+                        data-testid={`voucher-${voucher.id}`}
+                      >
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <code className="bg-white px-3 py-1 rounded border font-mono text-lg font-bold text-orange-600">
+                                {voucher.code}
+                              </code>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                voucher.is_active ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'
+                              }`}>
+                                {voucher.is_active ? 'Active' : 'Inactive'}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-1">
+                              {voucher.discount_type === 'percentage' 
+                                ? `${voucher.discount_value}% off` 
+                                : `₹${voucher.discount_value} off`}
+                              {voucher.description && ` - ${voucher.description}`}
+                            </p>
+                            <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                              <span>Valid: {new Date(voucher.valid_from).toLocaleDateString()} - {new Date(voucher.valid_until).toLocaleDateString()}</span>
+                              <span>Uses: {voucher.uses_count || 0} / {voucher.max_uses}</span>
+                              {voucher.applicable_plans?.length > 0 && (
+                                <span>Plans: {voucher.applicable_plans.join(', ')}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleToggleVoucher(voucher.id)}
+                              className={`px-3 py-1.5 rounded text-sm font-medium ${
+                                voucher.is_active 
+                                  ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                  : 'bg-green-500 text-white hover:bg-green-600'
+                              }`}
+                            >
+                              {voucher.is_active ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteVoucher(voucher.id)}
+                              className="px-3 py-1.5 bg-red-100 text-red-700 rounded text-sm font-medium hover:bg-red-200"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* All Users Tab */}
         {activeTab === 'users' && (
           <div className="bg-white rounded-xl shadow-sm">
