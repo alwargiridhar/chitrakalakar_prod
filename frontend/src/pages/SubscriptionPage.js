@@ -267,13 +267,13 @@ function SubscriptionPage() {
                   <div className="mt-4 mb-6">
                     {hasDiscount ? (
                       <>
-                        <span className="text-2xl text-gray-400 line-through mr-2">₹{plan.price.toLocaleString()}</span>
-                        <span className="text-4xl font-bold text-green-600">₹{discountedPrice.toLocaleString()}</span>
+                        <span className="text-2xl text-gray-400 line-through mr-2">₹{(plan.price || 0).toLocaleString()}</span>
+                        <span className="text-4xl font-bold text-green-600">₹{(discountedPrice || 0).toLocaleString()}</span>
                       </>
                     ) : (
-                      <span className="text-4xl font-bold text-gray-900">₹{plan.price.toLocaleString()}</span>
+                      <span className="text-4xl font-bold text-gray-900">₹{(plan.price || 0).toLocaleString()}</span>
                     )}
-                    <span className="text-gray-500">/{plan.duration.toLowerCase()}</span>
+                    <span className="text-gray-500">/{(plan.duration || '').toLowerCase()}</span>
                   </div>
 
                   <ul className="space-y-3 mb-6">
