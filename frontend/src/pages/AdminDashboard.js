@@ -222,6 +222,40 @@ function AdminDashboard() {
     fetchData();
   };
 
+  // === VOUCHER HANDLERS ===
+  const handleCreateVoucher = async () => {
+    if (!voucherForm.code || !voucherForm.discount_value) return;
+
+    try {
+      await adminAPI.createVoucher(voucherForm);
+      setShowCreateVoucher(false);
+      setVoucherForm({
+        code: '',
+        discount_type: 'percentage',
+        discount_value: 10,
+        valid_from: new Date().toISOString().split('T')[0],
+        valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        max_uses: 100,
+        applicable_plans: [],
+        description: '',
+      });
+      fetchData();
+    } catch (error) {
+      alert(error.message || 'Failed to create voucher');
+    }
+  };
+
+  const handleDeleteVoucher = async (voucherId) => {
+    if (!window.confirm('Delete this voucher?')) return;
+    await adminAPI.deleteVoucher(voucherId);
+    fetchData();
+  };
+
+  const handleToggleVoucher = async (voucherId) => {
+    await adminAPI.toggleVoucher(voucherId);
+    fetchData();
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading…</div>;
   }
