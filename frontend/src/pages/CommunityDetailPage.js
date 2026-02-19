@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { communityAPI, publicAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -33,11 +33,7 @@ function CommunityDetailPage() {
   const [selectedArtists, setSelectedArtists] = useState([]);
   const [inviteMessage, setInviteMessage] = useState('');
 
-  useEffect(() => {
-    fetchCommunityData();
-  }, [id]);
-
-  const fetchCommunityData = async () => {
+  const fetchCommunityData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await communityAPI.getDetails(id);
@@ -56,8 +52,11 @@ function CommunityDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, profiles?.id]);
 
+  useEffect(() => {
+    fetchCommunityData();
+  }, [fetchCommunityData]);
   const handleJoin = async () => {
     if (!isAuthenticated) {
       alert('Please login to join communities');
