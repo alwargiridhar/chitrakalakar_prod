@@ -608,21 +608,41 @@ function AdminDashboard() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {featuredArtists.contemporary?.map((artist) => (
-                      <div key={artist.id} className="border border-gray-200 rounded-lg p-4">
+                      <div key={artist.id} className="border border-gray-200 rounded-lg p-4" data-testid={`featured-artist-${artist.id}`}>
                         <div className="flex items-start gap-4">
-                          <img src={artist.avatar} alt={artist.name} className="w-16 h-16 rounded-full object-cover" />
+                          <img src={artist.avatar || 'https://via.placeholder.com/64'} alt={artist.name} className="w-16 h-16 rounded-full object-cover" />
                           <div className="flex-1">
                             <h3 className="font-semibold text-gray-900">{artist.name}</h3>
                             <p className="text-sm text-orange-500">{(artist.categories || []).join(', ')}</p>
                             <p className="text-xs text-gray-500 mt-1 line-clamp-2">{artist.bio?.substring(0, 100)}...</p>
                             <p className="text-xs text-gray-400 mt-1">{artist.artworks?.length || 0} artworks</p>
                           </div>
-                          <button
-                            onClick={() => handleDeleteContemporaryArtist(artist.id)}
-                            className="px-3 py-1 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200"
-                          >
-                            Remove
-                          </button>
+                          <div className="flex flex-col gap-2">
+                            <button
+                              onClick={() => {
+                                setContemporaryForm({
+                                  name: artist.name || '',
+                                  bio: artist.bio || '',
+                                  avatar: artist.avatar || '',
+                                  categories: artist.categories || [],
+                                  artworks: artist.artworks || [],
+                                  location: artist.location || '',
+                                  id: artist.id,
+                                });
+                                setShowAddContemporary(true);
+                              }}
+                              className="px-3 py-1 bg-blue-100 text-blue-600 rounded text-sm hover:bg-blue-200"
+                              data-testid={`edit-featured-artist-${artist.id}-btn`}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteContemporaryArtist(artist.id)}
+                              className="px-3 py-1 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200"
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
