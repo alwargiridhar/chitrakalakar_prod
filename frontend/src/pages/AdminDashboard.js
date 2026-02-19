@@ -92,6 +92,7 @@ function AdminDashboard() {
         approved,
         featured,
         subadmins,
+        artistsByMembership,
       ] = await Promise.all([
         adminAPI.getDashboard(),
         adminAPI.getPendingArtists(),
@@ -101,6 +102,7 @@ function AdminDashboard() {
         adminAPI.getApprovedArtists().catch(() => ({ artists: [] })),
         adminAPI.getFeaturedArtists().catch(() => ({ contemporary: [], registered: [] })),
         adminAPI.getSubAdmins().catch(() => ({ sub_admins: [] })),
+        adminAPI.getArtistsByMembership().catch(() => ({ members: [], non_members: [] })),
       ]);
 
       setDashboardData(dashboard);
@@ -111,6 +113,8 @@ function AdminDashboard() {
       setApprovedArtists(approved.artists || []);
       setFeaturedArtists(featured);
       setSubAdmins(subadmins.sub_admins || []);
+      setMemberArtists(artistsByMembership.members || []);
+      setNonMemberArtists(artistsByMembership.non_members || []);
     } catch (err) {
       console.error('Admin dashboard fetch error:', err);
     } finally {
