@@ -20,10 +20,12 @@ function AdminDashboard() {
   const [subAdmins, setSubAdmins] = useState([]);
   const [memberArtists, setMemberArtists] = useState([]);
   const [nonMemberArtists, setNonMemberArtists] = useState([]);
+  const [vouchers, setVouchers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Forms
   const [showAddContemporary, setShowAddContemporary] = useState(false);
+  const [showCreateVoucher, setShowCreateVoucher] = useState(false);
   const [showCreateSubAdmin, setShowCreateSubAdmin] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
