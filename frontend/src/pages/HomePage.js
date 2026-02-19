@@ -134,25 +134,25 @@ function HomePage() {
       </section>
 
       {/* How It Works */}
-      <section className="py-20 bg-white">
+      <section className="py-12 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">How {BRAND_NAME} Works</h2>
-            <p className="text-xl text-gray-600">Simple steps to get started with your art journey</p>
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">How {BRAND_NAME} Works</h2>
+            <p className="text-lg text-gray-600">Simple steps to get started with your art journey</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {howItWorks.map((item) => (
-              <div key={item.step} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-center justify-center mb-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-full flex items-center justify-center">
+              <div key={item.step} className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg transition-shadow">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-full flex items-center justify-center">
                     <span className="text-2xl">{item.icon}</span>
                   </div>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-gray-500 mb-2">Step {item.step}</p>
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">{item.title}</h3>
-                  <p className="text-gray-600">{item.description}</p>
+                  <p className="text-xs font-semibold text-gray-500 mb-1">Step {item.step}</p>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">{item.title}</h3>
+                  <p className="text-sm text-gray-600">{item.description}</p>
                 </div>
               </div>
             ))}
@@ -161,7 +161,7 @@ function HomePage() {
       </section>
 
       {/* Join the Community Section */}
-      <section className="py-20 bg-gradient-to-br from-purple-50 to-orange-50">
+      <section className="py-12 bg-gradient-to-br from-purple-50 to-orange-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Join the Community</h2>
