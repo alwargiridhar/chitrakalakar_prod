@@ -1639,9 +1639,15 @@ async def feature_registered_artist(request: FeatureRegisteredArtistRequest, adm
         }
         
         result = supabase.table('featured_artists').insert(featured_artist).execute()
+        
+        # Also update the profiles table
+        supabase.table('profiles').update({"is_featured": True}).eq('id', request.artist_id).execute()
     else:
         # Remove from featured
         result = supabase.table('featured_artists').delete().eq('artist_id', request.artist_id).execute()
+        
+        # Also update the profiles table
+        supabase.table('profiles').update({"is_featured": False}).eq('id', request.artist_id).execute()
     
     return {"success": True, "message": f"Artist {'featured' if request.featured else 'unfeatured'}"}
 
