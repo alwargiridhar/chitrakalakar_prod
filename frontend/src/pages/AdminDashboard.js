@@ -76,6 +76,7 @@ function AdminDashboard() {
     { id: 'artworks', label: 'Pending Artworks', icon: '🖼️' },
     { id: 'exhibitions', label: 'Exhibitions', icon: '🎨' },
     { id: 'feature', label: 'Feature Artists', icon: '⭐' },
+    { id: 'pricing', label: 'Pricing & Vouchers', icon: '🎟️' },
     { id: 'users', label: 'All Users', icon: '👤' },
     { id: 'subadmins', label: 'Sub-Admins', icon: '🔑' },
   ];
