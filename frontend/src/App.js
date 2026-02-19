@@ -35,6 +35,7 @@ import ProfilePage from './pages/ProfilePage';
 import AccountPage from './pages/AccountPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import SubscriptionPage from './pages/SubscriptionPage';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 import './App.css';
 
@@ -42,6 +43,7 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <PWAInstallPrompt />
         <Routes>
           <Route path="/" element={<Layout><HomePage /></Layout>} />
           <Route path="/login" element={<Layout><LoginPage /></Layout>} />
