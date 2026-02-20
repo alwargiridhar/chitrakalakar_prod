@@ -72,6 +72,36 @@ Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrak
 
 ## What's Been Implemented
 
+### Feb 19, 2026 - Session 8: Featured Artists System Overhaul
+
+1. **Featured Artists Now Clickable**
+   - Clicking featured artist opens their profile page
+   - Links to `/artist/{artist_id}` for registered or `/featured-artist/{id}` for contemporary
+
+2. **Paid Featured Request System (₹100 for 5 days)**
+   - Artists can request to be featured from their Dashboard → Membership tab
+   - Submit payment reference (UPI transaction ID)
+   - Admin reviews payment and approves/rejects request
+   - Approved artists get featured for 5 days with auto-expiry
+   - Backend endpoints: `/api/artist/request-featured`, `/api/admin/approve-featured-request`
+
+3. **Admin Featured Management**
+   - New "Featured Requests" section in Admin → Feature tab
+   - View pending requests with artist details and payment info
+   - Approve/Reject with optional rejection reason
+   - "Currently Featured" section shows all featured artists with Remove option
+   - Manual removal available anytime
+
+4. **Auto-Expiry System**
+   - Featured artists with `expires_at` are automatically removed after expiry
+   - Cleanup endpoint: `/api/system/cleanup-expired-featured`
+   - Can be called via cron job or on-demand
+
+5. **Database Migration**
+   - New `featured_requests` table created
+   - Added `expires_at`, `type`, `paid_amount`, `artist_id` to `featured_artists` table
+   - Migration script: `/app/scripts/featured_requests_migration.sql`
+
 ### Feb 19, 2026 - Session 7: Bug Fixes & Feature Enhancements
 
 1. **PWA Installation Fix**
