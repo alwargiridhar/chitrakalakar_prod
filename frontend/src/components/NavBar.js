@@ -275,6 +275,23 @@ function NavBar() {
             
             {/* Mobile User Menu */}
             <div className="pt-2 space-y-2 border-t border-gray-200">
+              {/* Install App Button */}
+              <button 
+                onClick={() => {
+                  if (window.deferredPrompt) {
+                    window.deferredPrompt.prompt();
+                  } else {
+                    alert('To install: Open browser menu → "Add to Home Screen" or "Install App"');
+                  }
+                  setIsOpen(false);
+                }}
+                className="flex items-center gap-3 w-full px-3 py-2 text-base font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-md mx-2"
+                style={{ width: 'calc(100% - 16px)' }}
+              >
+                <span>📲</span>
+                Install App
+              </button>
+
               {isAuthenticated ? (
                 <>
                   {/* User Info */}
