@@ -39,38 +39,64 @@
       "purpose": "maskable"
     }
   ],
-  "start_url": "/",
-  "id": "/",
+  "start_url": "/?source=pwa",
+  "id": "chitrakalakar-pwa",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "theme_color": "#f97316",
   "background_color": "#ffffff",
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "en",
-  "categories": ["art", "shopping", "lifestyle"],
+  "dir": "ltr",
+  "categories": ["art", "shopping", "lifestyle", "social"],
+  "iarc_rating_id": "",
+  "screenshots": [
+    {
+      "src": "logo512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "ChitraKalakar App"
+    }
+  ],
   "shortcuts": [
     {
       "name": "Browse Paintings",
       "short_name": "Paintings",
       "description": "Explore artwork collection",
-      "url": "/paintings",
+      "url": "/paintings?source=shortcut",
       "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
     },
     {
       "name": "View Artists",
       "short_name": "Artists",
       "description": "Discover talented artists",
-      "url": "/artists",
+      "url": "/artists?source=shortcut",
       "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
     },
     {
       "name": "My Dashboard",
       "short_name": "Dashboard",
       "description": "Access your dashboard",
-      "url": "/dashboard",
+      "url": "/dashboard?source=shortcut",
+      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Communities",
+      "short_name": "Community",
+      "description": "Join artist communities",
+      "url": "/communities?source=shortcut",
       "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
     }
   ],
   "related_applications": [],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "handle_links": "preferred",
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
 }
