@@ -400,6 +400,13 @@ export const artistAPI = {
     method: 'POST',
     body: JSON.stringify(data),
   }),
+  
+  // Featured Request
+  requestFeatured: (paymentReference, durationDays = 5) => apiCall('/artist/request-featured', {
+    method: 'POST',
+    body: JSON.stringify({ payment_reference: paymentReference, duration_days: durationDays }),
+  }),
+  getFeaturedRequestStatus: () => apiCall('/artist/featured-request-status'),
 };
 
 export async function getImageUrl(key, token) {
