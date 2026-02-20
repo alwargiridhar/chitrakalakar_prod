@@ -40,6 +40,7 @@ function NavBar() {
   ];
 
   const navLinksAfterExhibitions = [
+    { label: 'Communities', href: '/communities' },
     { label: 'Contact', href: '/contact' },
     { label: 'Art Classes', href: '/art-classes' },
   ];
