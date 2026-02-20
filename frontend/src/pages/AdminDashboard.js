@@ -733,6 +733,113 @@ function AdminDashboard() {
                 )}
               </div>
             </div>
+
+            {/* Paid Featured Requests */}
+            <div className="bg-white rounded-xl shadow-sm">
+              <div className="p-6 border-b border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900">Featured Requests (₹100 for 5 days)</h2>
+                <p className="text-sm text-gray-500">Artists who paid to be featured - approve after validating payment</p>
+              </div>
+              <div className="p-6">
+                {featuredRequests.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">No pending featured requests</p>
+                ) : (
+                  <div className="space-y-4">
+                    {featuredRequests.map((request) => (
+                      <div key={request.id} className="border border-orange-200 bg-orange-50 rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                              {request.profiles?.avatar ? (
+                                <img src={request.profiles.avatar} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-2xl">👤</span>
+                              )}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-gray-900">{request.profiles?.full_name || 'Unknown Artist'}</h3>
+                              <p className="text-sm text-gray-500">{request.profiles?.email}</p>
+                              <div className="flex gap-4 mt-1 text-xs text-gray-500">
+                                <span>Amount: <strong className="text-green-600">₹{request.amount || 100}</strong></span>
+                                <span>Duration: <strong>{request.duration_days || 5} days</strong></span>
+                                <span>Requested: {new Date(request.created_at).toLocaleDateString()}</span>
+                              </div>
+                              {request.payment_reference && (
+                                <p className="text-xs text-blue-600 mt-1">Payment Ref: {request.payment_reference}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleApproveFeaturedRequest(request.id, true)}
+                              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm"
+                            >
+                              ✓ Approve
+                            </button>
+                            <button
+                              onClick={() => {
+                                const reason = prompt('Rejection reason (optional):');
+                                handleApproveFeaturedRequest(request.id, false, reason);
+                              }}
+                              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
+                            >
+                              ✕ Reject
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Currently Featured (with Remove Option) */}
+            <div className="bg-white rounded-xl shadow-sm">
+              <div className="p-6 border-b border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900">Currently Featured Artists</h2>
+                <p className="text-sm text-gray-500">All currently featured artists - paid ones expire automatically</p>
+              </div>
+              <div className="p-6">
+                {(featuredArtists.registered?.length === 0 && featuredArtists.contemporary?.length === 0) ? (
+                  <p className="text-gray-500 text-center py-4">No artists currently featured</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[...(featuredArtists.registered || []), ...(featuredArtists.contemporary || [])].map((artist) => (
+                      <div key={artist.id} className="border border-yellow-300 bg-yellow-50 rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
+                            {artist.avatar ? (
+                              <img src={artist.avatar} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="w-full h-full flex items-center justify-center text-xl">👤</span>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900">{artist.name}</h3>
+                            <p className="text-xs text-orange-500">{(artist.categories || []).slice(0, 2).join(', ')}</p>
+                            {artist.expires_at && (
+                              <p className="text-xs text-red-500 mt-1">
+                                Expires: {new Date(artist.expires_at).toLocaleDateString()}
+                              </p>
+                            )}
+                            {artist.type === 'paid' && (
+                              <span className="inline-block mt-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">Paid</span>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleRemoveFeaturedArtist(artist.artist_id || artist.id)}
+                            className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
