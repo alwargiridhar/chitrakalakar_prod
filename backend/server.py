@@ -1789,13 +1789,26 @@ async def admin_remove_featured(artist_id: str, admin: dict = Depends(require_ad
     """Admin manually removes featured artist"""
     supabase = get_supabase_client()
     
-    # Remove from featured_artists table
-    supabase.table('featured_artists').delete().eq('artist_id', artist_id).execute()
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database not configured")
     
-    # Update profiles
-    supabase.table('profiles').update({"is_featured": False}).eq('id', artist_id).execute()
-    
-    return {"success": True, "message": "Artist removed from featured"}
+    try:
+        # Try to remove by artist_id first (for registered artists)
+        result = supabase.table('featured_artists').delete().eq('artist_id', artist_id).execute()
+        
+        # If nothing was deleted, try by id (for contemporary artists)
+        if not result.data or len(result.data) == 0:
+            result = supabase.table('featured_artists').delete().eq('id', artist_id).execute()
+        
+        # Update profiles if artist_id exists
+        try:
+            supabase.table('profiles').update({"is_featured": False}).eq('id', artist_id).execute()
+        except:
+            pass  # Ignore if profile doesn't exist (contemporary artists)
+        
+        return {"success": True, "message": "Artist removed from featured"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to remove featured artist: {str(e)}")
 
 # Background task to auto-expire featured artists (called via cron or on each request)
 @app.get("/api/system/cleanup-expired-featured")
