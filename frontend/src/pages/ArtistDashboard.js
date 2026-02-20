@@ -702,6 +702,57 @@ const handleSaveProfile = async () => {
                   </button>
                 </div>
               </div>
+
+              {/* Get Featured Section */}
+              <div className="mt-8 border-t pt-8">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">⭐ Get Featured on Homepage</h3>
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <h4 className="font-bold text-lg text-gray-900">Be a Featured Artist for 5 Days!</h4>
+                      <p className="text-gray-600 mt-1">Get premium visibility on the homepage and attract more buyers</p>
+                      <ul className="mt-3 space-y-1 text-sm text-gray-600">
+                        <li>✓ Homepage featured section placement</li>
+                        <li>✓ Priority in search results</li>
+                        <li>✓ Featured badge on profile</li>
+                        <li>✓ 5 days of premium exposure</li>
+                      </ul>
+                    </div>
+                    <div className="text-center">
+                      <div className="mb-3">
+                        <span className="text-4xl font-bold text-orange-500">₹100</span>
+                        <span className="text-gray-500">/5 days</span>
+                      </div>
+                      {profiles?.is_featured ? (
+                        <div className="text-center">
+                          <span className="inline-block px-4 py-2 bg-yellow-400 text-yellow-900 rounded-lg font-medium">
+                            ⭐ Currently Featured
+                          </span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            const paymentRef = prompt('Enter your payment reference (UPI/Transaction ID):');
+                            if (paymentRef) {
+                              artistAPI.requestFeatured(paymentRef, 5)
+                                .then(() => {
+                                  alert('Featured request submitted! Admin will review your payment and approve shortly.');
+                                })
+                                .catch(err => alert(err.message || 'Failed to submit request'));
+                            }
+                          }}
+                          className="px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg font-medium hover:opacity-90"
+                        >
+                          Request Featured Status
+                        </button>
+                      )}
+                      <p className="text-xs text-gray-500 mt-2">
+                        Pay via UPI: chitrakalakar@upi
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
