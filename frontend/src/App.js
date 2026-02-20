@@ -38,6 +38,7 @@ import SubscriptionPage from './pages/SubscriptionPage';
 import CommunitiesPage from './pages/CommunitiesPage';
 import CommunityDetailPage from './pages/CommunityDetailPage';
 import InstallAppPage from './pages/InstallAppPage';
+import DownloadAppPage from './pages/DownloadAppPage';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 import './App.css';
