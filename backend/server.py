@@ -1661,6 +1661,158 @@ async def feature_registered_artist(request: FeatureRegisteredArtistRequest, adm
     
     return {"success": True, "message": f"Artist {'featured' if request.featured else 'unfeatured'}"}
 
+# ============ FEATURED REQUEST SYSTEM ============
+
+@app.post("/api/artist/request-featured")
+async def request_featured(request: FeaturedRequest, user: dict = Depends(require_user)):
+    """Artist requests to be featured (after payment)"""
+    supabase = get_supabase_client()
+    
+    # Check if artist already has a pending request
+    existing = supabase.table('featured_requests').select('*').eq('artist_id', user['id']).eq('status', 'pending').execute()
+    if existing.data:
+        raise HTTPException(status_code=400, detail="You already have a pending featured request")
+    
+    # Check if already featured
+    featured = supabase.table('featured_artists').select('id').eq('artist_id', user['id']).execute()
+    if featured.data:
+        raise HTTPException(status_code=400, detail="You are already a featured artist")
+    
+    # Create featured request
+    request_data = {
+        "artist_id": user['id'],
+        "payment_reference": request.payment_reference,
+        "duration_days": request.duration_days,
+        "amount": 100,  # ₹100 fixed fee
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    
+    result = supabase.table('featured_requests').insert(request_data).execute()
+    
+    return {"success": True, "message": "Featured request submitted. Admin will review shortly.", "request_id": result.data[0]['id'] if result.data else None}
+
+@app.get("/api/artist/featured-request-status")
+async def get_featured_request_status(user: dict = Depends(require_user)):
+    """Get artist's featured request status"""
+    supabase = get_supabase_client()
+    
+    request = supabase.table('featured_requests').select('*').eq('artist_id', user['id']).order('created_at', desc=True).limit(1).execute()
+    
+    # Check if currently featured
+    featured = supabase.table('featured_artists').select('id, created_at, expires_at').eq('artist_id', user['id']).execute()
+    
+    return {
+        "request": request.data[0] if request.data else None,
+        "is_featured": len(featured.data) > 0,
+        "featured_until": featured.data[0].get('expires_at') if featured.data else None
+    }
+
+@app.get("/api/admin/featured-requests")
+async def get_featured_requests(admin: dict = Depends(require_admin)):
+    """Admin gets all pending featured requests"""
+    supabase = get_supabase_client()
+    
+    requests = supabase.table('featured_requests').select('*, profiles(full_name, avatar, email)').eq('status', 'pending').order('created_at', desc=True).execute()
+    
+    return {"requests": requests.data or []}
+
+@app.post("/api/admin/approve-featured-request")
+async def approve_featured_request(request: FeaturedRequestApproval, admin: dict = Depends(require_admin)):
+    """Admin approves or rejects featured request"""
+    supabase = get_supabase_client()
+    
+    # Get the request
+    req = supabase.table('featured_requests').select('*').eq('id', request.request_id).single().execute()
+    if not req.data:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    if request.approved:
+        # Get artist details
+        artist = supabase.table('profiles').select('*').eq('id', req.data['artist_id']).single().execute()
+        if not artist.data:
+            raise HTTPException(status_code=404, detail="Artist not found")
+        
+        # Get artist's artworks
+        artworks = supabase.table('artworks').select('*').eq('artist_id', req.data['artist_id']).eq('is_approved', True).order('views', desc=True).limit(10).execute()
+        
+        # Calculate expiry (5 days from now)
+        expires_at = (datetime.now(timezone.utc) + timedelta(days=req.data.get('duration_days', 5))).isoformat()
+        
+        # Create featured entry
+        featured_artist = {
+            "name": artist.data['full_name'],
+            "bio": artist.data.get('bio', ''),
+            "avatar": artist.data.get('avatar'),
+            "categories": artist.data.get('categories', []),
+            "location": artist.data.get('location'),
+            "artworks": artworks.data or [],
+            "type": "paid",
+            "artist_id": req.data['artist_id'],
+            "is_featured": True,
+            "expires_at": expires_at,
+            "paid_amount": req.data.get('amount', 100),
+        }
+        
+        supabase.table('featured_artists').insert(featured_artist).execute()
+        
+        # Update profiles
+        supabase.table('profiles').update({"is_featured": True}).eq('id', req.data['artist_id']).execute()
+        
+        # Update request status
+        supabase.table('featured_requests').update({
+            "status": "approved",
+            "approved_at": datetime.now(timezone.utc).isoformat(),
+            "approved_by": admin['id'],
+            "expires_at": expires_at,
+        }).eq('id', request.request_id).execute()
+        
+        return {"success": True, "message": "Featured request approved", "expires_at": expires_at}
+    else:
+        # Reject request
+        supabase.table('featured_requests').update({
+            "status": "rejected",
+            "rejected_at": datetime.now(timezone.utc).isoformat(),
+            "rejection_reason": request.rejection_reason,
+        }).eq('id', request.request_id).execute()
+        
+        return {"success": True, "message": "Featured request rejected"}
+
+@app.delete("/api/admin/remove-featured/{artist_id}")
+async def admin_remove_featured(artist_id: str, admin: dict = Depends(require_admin)):
+    """Admin manually removes featured artist"""
+    supabase = get_supabase_client()
+    
+    # Remove from featured_artists table
+    supabase.table('featured_artists').delete().eq('artist_id', artist_id).execute()
+    
+    # Update profiles
+    supabase.table('profiles').update({"is_featured": False}).eq('id', artist_id).execute()
+    
+    return {"success": True, "message": "Artist removed from featured"}
+
+# Background task to auto-expire featured artists (called via cron or on each request)
+@app.get("/api/system/cleanup-expired-featured")
+async def cleanup_expired_featured():
+    """Remove expired featured artists"""
+    supabase = get_supabase_client()
+    if not supabase:
+        return {"cleaned": 0}
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Find expired featured artists
+    expired = supabase.table('featured_artists').select('id, artist_id').lt('expires_at', now).execute()
+    
+    if expired.data:
+        for artist in expired.data:
+            # Remove from featured
+            supabase.table('featured_artists').delete().eq('id', artist['id']).execute()
+            # Update profile
+            supabase.table('profiles').update({"is_featured": False}).eq('id', artist['artist_id']).execute()
+    
+    return {"cleaned": len(expired.data) if expired.data else 0}
+
 @app.post("/api/admin/create-sub-admin")
 async def create_sub_admin(request: CreateSubAdminRequest, admin: dict = Depends(require_admin)):
     """Admin can create sub-admin users"""
