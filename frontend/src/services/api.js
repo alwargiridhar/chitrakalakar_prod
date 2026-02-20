@@ -353,6 +353,16 @@ export const adminAPI = {
   respondToChat: (messageId, response) => apiCall(`/admin/respond-to-chat?message_id=${messageId}&response=${encodeURIComponent(response)}`, {
     method: 'POST',
   }),
+  
+  // Featured Requests
+  getFeaturedRequests: () => apiCall('/admin/featured-requests'),
+  approveFeaturedRequest: (requestId, approved, rejectionReason = null) => apiCall('/admin/approve-featured-request', {
+    method: 'POST',
+    body: JSON.stringify({ request_id: requestId, approved, rejection_reason: rejectionReason }),
+  }),
+  removeFeaturedArtist: (artistId) => apiCall(`/admin/remove-featured/${artistId}`, {
+    method: 'DELETE',
+  }),
 };
 
 // Artist APIs
