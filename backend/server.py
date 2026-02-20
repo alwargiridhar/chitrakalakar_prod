@@ -187,6 +187,16 @@ class VoucherApply(BaseModel):
     voucher_code: str
     plan_id: str
 
+# Featured Request Models
+class FeaturedRequest(BaseModel):
+    payment_reference: Optional[str] = None
+    duration_days: int = 5
+
+class FeaturedRequestApproval(BaseModel):
+    request_id: str
+    approved: bool
+    rejection_reason: Optional[str] = None
+
 # Community Models
 class CommunityCreate(BaseModel):
     name: str
