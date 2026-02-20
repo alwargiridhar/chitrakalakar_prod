@@ -272,6 +272,28 @@ function AdminDashboard() {
     fetchData();
   };
 
+  // === FEATURED REQUEST HANDLERS ===
+  const handleApproveFeaturedRequest = async (requestId, approved, rejectionReason = null) => {
+    try {
+      await adminAPI.approveFeaturedRequest(requestId, approved, rejectionReason);
+      alert(approved ? 'Featured request approved!' : 'Featured request rejected.');
+      fetchData();
+    } catch (error) {
+      alert(error.message || 'Failed to process request');
+    }
+  };
+
+  const handleRemoveFeaturedArtist = async (artistId) => {
+    if (!window.confirm('Remove this artist from featured?')) return;
+    try {
+      await adminAPI.removeFeaturedArtist(artistId);
+      alert('Artist removed from featured.');
+      fetchData();
+    } catch (error) {
+      alert(error.message || 'Failed to remove artist');
+    }
+  };
+
   // === PRICING PLAN HANDLERS ===
   const handleUpdatePlan = (planId, updates) => {
     setPricingPlans(plans => 
