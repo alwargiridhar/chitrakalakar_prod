@@ -226,10 +226,14 @@ function HomePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {featuredArtists.map((artist) => (
-                <div key={artist.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-shadow">
+                <Link 
+                  key={artist.id} 
+                  to={artist.artist_id ? `/artist/${artist.artist_id}` : `/featured-artist/${artist.id}`}
+                  className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-shadow group"
+                >
                   <div className="relative h-48 bg-gradient-to-br from-orange-100 to-yellow-100 flex items-center justify-center">
                     {artist.avatar ? (
-                      <img src={artist.avatar} alt={artist.name} className="w-full h-full object-cover" />
+                      <img src={artist.avatar} alt={artist.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     ) : (
                       <span className="text-6xl">👤</span>
                     )}
@@ -239,17 +243,20 @@ function HomePage() {
                         <span className="font-semibold text-sm">{artist.rating}</span>
                       </div>
                     )}
+                    <div className="absolute top-3 left-3 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
+                      ⭐ Featured
+                    </div>
                   </div>
                   <div className="p-4">
-                    <h3 className="font-bold text-lg text-gray-900">{artist.name}</h3>
-                    <p className="text-sm text-orange-500 font-semibold mb-2">{artist.category || 'Artist'}</p>
+                    <h3 className="font-bold text-lg text-gray-900 group-hover:text-orange-500 transition-colors">{artist.name}</h3>
+                    <p className="text-sm text-orange-500 font-semibold mb-2">{artist.category || (artist.categories || [])[0] || 'Artist'}</p>
                     <div className="flex items-center gap-1 text-xs text-gray-500 mb-4">
                       <span>📍</span>
                       {artist.location || 'India'}
                     </div>
-                    <p className="text-sm text-gray-500 mb-4">{artist.completed_projects || 0} projects completed</p>
+                    <p className="text-sm text-gray-500 mb-4">{artist.completed_projects || artist.artworks?.length || 0} artworks</p>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
 
