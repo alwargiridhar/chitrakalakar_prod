@@ -1582,12 +1582,18 @@ async def get_admin_featured_artists(admin: dict = Depends(require_admin)):
     """Get all featured artists for admin"""
     supabase = get_supabase_client()
     
-    contemporary = supabase.table('featured_artists').select('*').eq('type', 'contemporary').execute()
-    registered = supabase.table('featured_artists').select('*').eq('type', 'registered').execute()
+    # Get all featured artists
+    all_featured = supabase.table('featured_artists').select('*').execute()
+    
+    contemporary = [a for a in (all_featured.data or []) if a.get('type') == 'contemporary']
+    registered = [a for a in (all_featured.data or []) if a.get('type') == 'registered']
+    paid = [a for a in (all_featured.data or []) if a.get('type') == 'paid']
     
     return {
-        "contemporary": contemporary.data or [],
-        "registered": registered.data or []
+        "contemporary": contemporary,
+        "registered": registered,
+        "paid": paid,
+        "all": all_featured.data or []
     }
 
 @app.post("/api/admin/feature-contemporary-artist")
