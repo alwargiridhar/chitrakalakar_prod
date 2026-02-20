@@ -801,11 +801,12 @@ function AdminDashboard() {
                 <p className="text-sm text-gray-500">All currently featured artists - paid ones expire automatically</p>
               </div>
               <div className="p-6">
-                {(featuredArtists.registered?.length === 0 && featuredArtists.contemporary?.length === 0) ? (
+                {(!featuredArtists.all || featuredArtists.all.length === 0) && 
+                 (featuredArtists.registered?.length === 0 && featuredArtists.contemporary?.length === 0) ? (
                   <p className="text-gray-500 text-center py-4">No artists currently featured</p>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[...(featuredArtists.registered || []), ...(featuredArtists.contemporary || [])].map((artist) => (
+                    {(featuredArtists.all || [...(featuredArtists.registered || []), ...(featuredArtists.contemporary || [])]).map((artist) => (
                       <div key={artist.id} className="border border-yellow-300 bg-yellow-50 rounded-lg p-4">
                         <div className="flex items-start gap-3">
                           <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
@@ -818,18 +819,19 @@ function AdminDashboard() {
                           <div className="flex-1">
                             <h3 className="font-semibold text-gray-900">{artist.name}</h3>
                             <p className="text-xs text-orange-500">{(artist.categories || []).slice(0, 2).join(', ')}</p>
+                            <p className="text-xs text-gray-500 mt-1">Type: {artist.type || 'manual'}</p>
                             {artist.expires_at && (
                               <p className="text-xs text-red-500 mt-1">
                                 Expires: {new Date(artist.expires_at).toLocaleDateString()}
                               </p>
                             )}
                             {artist.type === 'paid' && (
-                              <span className="inline-block mt-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">Paid</span>
+                              <span className="inline-block mt-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">Paid ₹{artist.paid_amount || 100}</span>
                             )}
                           </div>
                           <button
                             onClick={() => handleRemoveFeaturedArtist(artist.artist_id || artist.id)}
-                            className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200"
+                            className="px-3 py-1.5 bg-red-500 text-white rounded text-sm hover:bg-red-600"
                           >
                             Remove
                           </button>
