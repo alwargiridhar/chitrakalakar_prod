@@ -229,6 +229,7 @@
     <script>
       // PWA Installation Logic
       let deferredPrompt;
+      window.deferredPrompt = null; // Expose globally for React components
       let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
       let isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
       
@@ -241,6 +242,7 @@
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
+        window.deferredPrompt = e; // Expose globally
         
         // Show install banner after 5 seconds
         setTimeout(() => {
