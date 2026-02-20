@@ -77,6 +77,7 @@ function App() {
           <Route path="/communities" element={<Layout><CommunitiesPage /></Layout>} />
           <Route path="/community/:id" element={<Layout><CommunityDetailPage /></Layout>} />
           <Route path="/install" element={<Layout><InstallAppPage /></Layout>} />
+          <Route path="/download" element={<Layout><DownloadAppPage /></Layout>} />
           <Route path="*" element={<Layout><NotFoundPage /></Layout>} />
         </Routes>
         <Chatbot />
