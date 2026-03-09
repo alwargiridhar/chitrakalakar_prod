@@ -80,11 +80,11 @@ function ArtClassesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-gray-50 py-8 sm:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Find Art Classes</h1>
-          <p className="text-xl text-gray-600">
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">Find Art Classes</h1>
+          <p className="text-base sm:text-xl text-gray-600">
             Connect with talented artists for personalized art classes
           </p>
           <p className="text-sm text-orange-500 mt-2">
@@ -93,7 +93,7 @@ function ArtClassesPage() {
         </div>
 
         {step === 'form' && (
-          <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8">
+          <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-5 sm:p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Submit Your Enquiry</h2>
 
             {error && (
@@ -126,7 +126,7 @@ function ArtClassesPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Your Skill Level *
                 </label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {['beginner', 'intermediate', 'advanced'].map(level => (
                     <button
                       key={level}
@@ -149,7 +149,7 @@ function ArtClassesPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Class Type *
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, class_type: 'online' })}
@@ -199,7 +199,7 @@ function ArtClassesPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Budget Per Session *
                 </label>
-                <div className={`grid gap-3 ${formData.class_type === 'offline' ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                <div className={`grid gap-3 ${formData.class_type === 'offline' ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
                   {(formData.class_type === 'online' 
                     ? [
                         { label: '₹250-350', value: '250-350' },
@@ -274,7 +274,7 @@ function ArtClassesPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
               {matchedArtists.map(artist => (
                 <div key={artist.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
                   <div className="h-48 bg-gradient-to-br from-orange-100 to-yellow-100 flex items-center justify-center relative">

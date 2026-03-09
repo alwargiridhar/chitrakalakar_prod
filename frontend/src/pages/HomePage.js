@@ -59,17 +59,17 @@ function HomePage() {
   return (
     <div className="w-full">
       {/* Hero Section */}
-      <section className="relative min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50 overflow-hidden py-12 md:py-0">
+      <section className="relative bg-gradient-to-br from-gray-50 via-white to-orange-50 overflow-hidden py-8 sm:py-10 lg:py-0">
         <div className="absolute top-0 right-0 -z-10 w-96 h-96 bg-orange-500 opacity-5 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 left-0 -z-10 w-96 h-96 bg-yellow-500 opacity-5 rounded-full blur-3xl"></div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-center min-h-[calc(100vh-64px)]">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-start lg:justify-center min-h-auto lg:min-h-[calc(100vh-64px)]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 items-start lg:items-center">
+            <div className="space-y-5 sm:space-y-6 lg:space-y-8">
               <div>
-                <p className="text-orange-500 font-semibold text-lg mb-2">Welcome to {BRAND_NAME}</p>
-                <h1 className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight mb-4">{BRAND_TAGLINE}</h1>
-                <p className="text-xl text-gray-600 leading-relaxed">
+                <p className="text-orange-500 font-semibold text-base sm:text-lg mb-2">Welcome to {BRAND_NAME}</p>
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-3 sm:mb-4">{BRAND_TAGLINE}</h1>
+                <p className="text-base sm:text-lg lg:text-xl text-gray-600 leading-relaxed">
                   Connect with talented artisans to commission beautiful artwork, discover exhibitions, and celebrate creativity.
                 </p>
               </div>
@@ -87,18 +87,18 @@ function HomePage() {
               </div>
 
               {/* Real Stats */}
-              <div className="grid grid-cols-3 gap-4 pt-8 border-t border-gray-200">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-200">
                 <div>
-                  <p className="text-3xl font-bold text-orange-500">{stats.total_artists || 0}</p>
-                  <p className="text-sm text-gray-500">Talented Artists</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-orange-500">{stats.total_artists || 0}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Talented Artists</p>
                 </div>
                 <div>
-                  <p className="text-3xl font-bold text-orange-500">{stats.completed_projects || 0}</p>
-                  <p className="text-sm text-gray-500">Completed Projects</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-orange-500">{stats.completed_projects || 0}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Completed Projects</p>
                 </div>
                 <div>
-                  <p className="text-3xl font-bold text-orange-500">{stats.satisfaction_rate || 0}%</p>
-                  <p className="text-sm text-gray-500">Satisfaction Rate</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-orange-500">{stats.satisfaction_rate || 0}%</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Satisfaction Rate</p>
                 </div>
               </div>
             </div>
@@ -127,21 +127,21 @@ function HomePage() {
       </section>
 
       {/* Mobile Artist of the Day */}
-      <section className="lg:hidden py-8 bg-gray-50">
+      <section className="lg:hidden py-6 bg-gray-50">
         <div className="max-w-lg mx-auto px-4">
           <ArtistOfTheDay />
         </div>
       </section>
 
       {/* How It Works */}
-      <section className="py-12 bg-white">
+      <section className="py-10 sm:py-12 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
+          <div className="text-center mb-8 sm:mb-10">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">How {BRAND_NAME} Works</h2>
             <p className="text-lg text-gray-600">Simple steps to get started with your art journey</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
             {howItWorks.map((item) => (
               <div key={item.step} className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg transition-shadow">
                 <div className="flex items-center justify-center mb-4">
@@ -161,15 +161,15 @@ function HomePage() {
       </section>
 
       {/* Join the Community Section */}
-      <section className="py-12 bg-gradient-to-br from-purple-50 to-orange-50">
+      <section className="py-10 sm:py-12 bg-gradient-to-br from-purple-50 to-orange-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Join the Community</h2>
-            <p className="text-xl text-gray-600">Connect with fellow artists from different locations and art styles</p>
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">Join the Community</h2>
+            <p className="text-base sm:text-xl text-gray-600">Connect with fellow artists from different locations and art styles</p>
           </div>
           
           {communities.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
               {communities.slice(0, 6).map((community) => (
                 <div key={community.id} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-lg transition-shadow" data-testid={`community-card-${community.id}`}>
                   <div className="flex items-center gap-4 mb-4">
@@ -212,19 +212,19 @@ function HomePage() {
 
       {/* Featured Artists - Only show if there are approved artists */}
       {featuredArtists.length > 0 && (
-        <section className="py-20 bg-gradient-to-b from-gray-100 to-white">
+        <section className="py-10 sm:py-14 lg:py-20 bg-gradient-to-b from-gray-100 to-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center mb-12">
+            <div className="flex justify-between items-center mb-8 sm:mb-12">
               <div>
-                <h2 className="text-4xl font-bold text-gray-900 mb-2">Featured Artists</h2>
-                <p className="text-lg text-gray-600">Discover extraordinary talent from our community</p>
+                <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Featured Artists</h2>
+                <p className="text-base sm:text-lg text-gray-600">Discover extraordinary talent from our community</p>
               </div>
               <Link to="/artists" className="hidden md:flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
                 View All Artists →
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-5 sm:gap-6">
               {featuredArtists.map((artist) => (
                 <Link 
                   key={artist.id} 
@@ -273,17 +273,17 @@ function HomePage() {
       )}
 
       {/* Art Categories */}
-      <section className="py-20 bg-white">
+      <section className="py-10 sm:py-14 lg:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Art Categories</h2>
-            <p className="text-xl text-gray-600">Explore diverse art forms and mediums</p>
+          <div className="text-center mb-8 sm:mb-12 lg:mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">Art Categories</h2>
+            <p className="text-base sm:text-xl text-gray-600">Explore diverse art forms and mediums</p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
             {ART_CATEGORIES.map((category, index) => (
-              <div key={index} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-orange-500 transition-all cursor-pointer">
-                <p className="text-center font-semibold text-gray-900">{category}</p>
+              <div key={index} className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 hover:shadow-lg hover:border-orange-500 transition-all cursor-pointer">
+                <p className="text-center text-sm sm:text-base font-semibold text-gray-900">{category}</p>
               </div>
             ))}
           </div>
@@ -292,19 +292,19 @@ function HomePage() {
 
       {/* Exhibitions - Only show if there are approved exhibitions */}
       {exhibitions.length > 0 && (
-        <section className="py-20 bg-gray-100">
+        <section className="py-10 sm:py-14 lg:py-20 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center mb-12">
+            <div className="flex justify-between items-center mb-8 sm:mb-12">
               <div>
-                <h2 className="text-4xl font-bold text-gray-900 mb-2">Virtual Exhibitions</h2>
-                <p className="text-lg text-gray-600">Explore curated art exhibitions from talented artists</p>
+                <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Virtual Exhibitions</h2>
+                <p className="text-base sm:text-lg text-gray-600">Explore curated art exhibitions from talented artists</p>
               </div>
               <Link to="/exhibitions" className="hidden md:flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-white">
                 View All Exhibitions →
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
               {exhibitions.map((exhibition) => (
                 <div key={exhibition.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-shadow">
                   <div className="h-40 bg-gradient-to-br from-orange-500 to-yellow-500 relative flex items-center justify-center">
@@ -337,10 +337,10 @@ function HomePage() {
       )}
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-orange-500 via-yellow-500 to-orange-600 text-white">
+      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-r from-orange-500 via-yellow-500 to-orange-600 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to Create or Commission?</h2>
-          <p className="text-xl mb-12 opacity-90">Join our thriving community of artists and art enthusiasts today.</p>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6">Ready to Create or Commission?</h2>
+          <p className="text-base sm:text-xl mb-8 sm:mb-12 opacity-90">Join our thriving community of artists and art enthusiasts today.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/signup" className="px-8 py-3 bg-white text-orange-500 rounded-lg font-semibold hover:bg-gray-100">
               Create Free Account

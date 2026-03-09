@@ -97,7 +97,7 @@ function ArtistsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-[#f97316] via-[#f59e0b] to-[#eab308] text-white py-14">
+      <div className="bg-gradient-to-r from-[#f97316] via-[#f59e0b] to-[#eab308] text-white py-10 sm:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center" data-testid="artists-hero-section">
           <h1 className="text-4xl sm:text-5xl font-bold mb-4" data-testid="artists-hero-title">Our Artists</h1>
           <p className="text-base sm:text-lg opacity-95 max-w-3xl mx-auto" data-testid="artists-hero-subtitle">
@@ -106,7 +106,7 @@ function ArtistsPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="mb-6" data-testid="featured-artists-count">
           <h2 className="text-2xl font-semibold text-gray-900">Featured Artist Spotlight</h2>
           <p className="text-sm text-gray-600 mt-1">
@@ -117,7 +117,7 @@ function ArtistsPage() {
         {/* Featured Spotlight Layout */}
         <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-7 shadow-sm" data-testid="featured-artist-spotlight-card">
           {spotlightArtist ? (
-            <div className="grid lg:grid-cols-5 gap-7 items-start">
+            <div className="grid lg:grid-cols-5 gap-5 sm:gap-7 items-start">
               <div className="lg:col-span-2" data-testid="featured-artist-profile-block">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-24 h-24 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200" data-testid="featured-artist-avatar-wrap">
@@ -176,7 +176,7 @@ function ArtistsPage() {
                 </div>
 
                 {spotlightArtworks.length > 0 ? (
-                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4" data-testid="featured-artist-most-viewed-grid">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4" data-testid="featured-artist-most-viewed-grid">
                     {spotlightArtworks.map((artwork) => (
                       <Link
                         key={artwork.id}
@@ -244,7 +244,7 @@ function ArtistsPage() {
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" data-testid="registered-artists-grid">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5" data-testid="registered-artists-grid">
               {artists.map((artist) => (
                 <Link
                   key={artist.id}

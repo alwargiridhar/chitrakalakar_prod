@@ -100,19 +100,19 @@ function PaintingsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white py-12">
+      <div className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white py-10 sm:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl font-bold mb-4">Paintings Marketplace</h1>
-          <p className="text-xl opacity-90">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4">Paintings Marketplace</h1>
+          <p className="text-base sm:text-xl opacity-90">
             Discover and collect beautiful artworks from talented artists
           </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6 sm:mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Category Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
@@ -177,7 +177,7 @@ function PaintingsPage() {
             <p className="text-gray-500">Try adjusting your filters or check back later</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 sm:gap-6">
             {filteredPaintings.map(painting => (
               <Link 
                 key={painting.id} 
