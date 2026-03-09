@@ -64,6 +64,7 @@ Configured in backend upload flow:
 - `commission-deliveries`
 
 Required env vars:
-- `AWS_BUCKET_ARTIST_ARTWORKS`
+- `AWS_BUCKET_ARTWORKS` (preferred)
+- `AWS_BUCKET_ARTIST_ARTWORKS` (legacy fallback)
 - `AWS_BUCKET_COMMISSION_REFERENCES`
 - `AWS_BUCKET_COMMISSION_DELIVERIES`

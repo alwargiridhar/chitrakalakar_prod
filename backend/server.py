@@ -583,14 +583,15 @@ def _get_commission_updates(supabase, commission_id: str):
 
 
 def _resolve_upload_bucket(bucket_key: Optional[str]):
+    artworks_bucket = os.environ.get("AWS_BUCKET_ARTWORKS") or os.environ.get("AWS_BUCKET_ARTIST_ARTWORKS")
     mapping = {
-        "artist-artworks": os.environ.get("AWS_BUCKET_ARTIST_ARTWORKS"),
+        "artist-artworks": artworks_bucket,
+        "artworks": artworks_bucket,
         "commission-references": os.environ.get("AWS_BUCKET_COMMISSION_REFERENCES"),
         "commission-deliveries": os.environ.get("AWS_BUCKET_COMMISSION_DELIVERIES"),
         "avatars": os.environ.get("AWS_BUCKET_AVATARS"),
         "communities": os.environ.get("AWS_BUCKET_COMMUNITIES"),
         "exhibitions": os.environ.get("AWS_BUCKET_EXHIBITIONS"),
-        "artworks": os.environ.get("AWS_BUCKET_ARTIST_ARTWORKS"),
     }
 
     if not bucket_key:
@@ -4037,7 +4038,7 @@ async def get_upload_url(
         bucket_name = _resolve_upload_bucket(body.bucket_key)
 
         file_token = f"{uuid.uuid4()}.{ext}"
-        if body.bucket_key == "artist-artworks":
+        if body.bucket_key in ["artist-artworks", "artworks"]:
             key = f"{user['id']}/{uuid.uuid4()}/{file_token}"
         elif body.bucket_key in ["commission-references", "commission-deliveries"]:
             parent = body.entity_id or user["id"]

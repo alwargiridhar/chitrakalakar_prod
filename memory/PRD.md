@@ -88,3 +88,9 @@ Adjust commission feature to existing framework without breaking existing Supaba
 - Optimized whitespace and vertical rhythm for Home/Landing page across small screens by reducing oversized mobile paddings and removing forced full-screen hero behavior on mobile.
 - Updated responsive breakpoints to keep layouts balanced and mostly single-column on tablets (per preference), while preserving richer multi-column desktop layouts.
 - Applied responsive spacing/grid improvements on `/artists`, `/paintings`, and `/art-classes` for better content density and visual consistency.
+
+
+## Latest Micro-Update (Bucket Key Alignment)
+- Updated upload bucket key mapping to support **artworks** as the primary key, with backward compatibility for `artist-artworks`.
+- Added backend env support for `AWS_BUCKET_ARTWORKS` (preferred) and fallback to `AWS_BUCKET_ARTIST_ARTWORKS`.
+- Updated frontend bucket constant to use `artworks` for artist uploads.
