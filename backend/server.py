@@ -593,16 +593,13 @@ def _resolve_upload_bucket(bucket_key: Optional[str]):
         "artworks": os.environ.get("AWS_BUCKET_ARTIST_ARTWORKS"),
     }
 
-    if bucket_key:
-        selected = mapping.get(bucket_key)
-        if not selected:
-            raise HTTPException(status_code=500, detail=f"Bucket not configured for {bucket_key}")
-        return selected
+    if not bucket_key:
+        raise HTTPException(status_code=400, detail="bucket_key is required")
 
-    fallback = os.environ.get("AWS_S3_BUCKET") or os.environ.get("AWS_BUCKET_NAME")
-    if not fallback:
-        raise HTTPException(status_code=500, detail="AWS bucket is not configured")
-    return fallback
+    selected = mapping.get(bucket_key)
+    if not selected:
+        raise HTTPException(status_code=500, detail=f"Bucket not configured for {bucket_key}")
+    return selected
 
 
 def _compute_commission_display_status(request_row: dict, deal_row: Optional[dict]) -> str:
@@ -1798,12 +1795,12 @@ async def get_commission_config():
 @app.get("/api/public/commission/matching-artists")
 async def get_matching_artists(category: str, budget: float):
     """Discover artists by category + budget with contact-hidden cards."""
+    if category not in COMMISSION_ART_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Invalid artwork category")
+
     supabase = get_supabase_client()
     if not supabase:
         return {"artists": []}
-
-    if category not in COMMISSION_ART_CATEGORIES:
-        raise HTTPException(status_code=400, detail="Invalid artwork category")
 
     artists = _get_commission_matching_artists_sync(supabase, category, budget)
     return {"artists": artists}

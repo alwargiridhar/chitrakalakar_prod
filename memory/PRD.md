@@ -1,64 +1,58 @@
-# PRD - ChitraKalakar Commissioning Feature
+# PRD - Commissioning Flow (Adjusted to Existing Supabase/S3 Format)
 
 ## Original Problem Statement
-Implement commissioning artwork flow in existing chitrakalakar framework: interactive price calculator (medium/size/skill/detail/subjects), request submission with reference upload + instructions + deadline + framing, admin intake (DB + dashboard + email notification), artist WIP status updates, and user dashboard tracking with statuses: Requested → Accepted → In Progress → WIP Shared → Completed → Delivered. Also provide required tables and image bucket/folder strategy, and pricing matrix coverage for existing artwork categories.
+Adjust commission feature to existing framework without breaking existing Supabase/S3 setup, align pricing by category, support artist matching by budget/category, requests to max 3 artists, first-accept lock, negotiation model, role/RBAC alignment, and strict separate S3 buckets.
 
 ## Architecture Decisions
-- Continued with existing stack: React frontend + FastAPI backend + Supabase/Postgres data model patterns + existing signed upload API.
-- Added commission domain in backend (`commissions`, `commission_updates`) with status timeline.
-- Reused existing upload route and introduced dedicated folders (`commission-refs`, `commission-wips`) to support user references and artist WIP images.
-- Added optional SMTP-based admin email notification on commission creation (env-driven, non-breaking if missing).
-- Added dedicated pages for request flow and role-based commission management routes.
+- Kept existing core tables untouched; implemented additive schema only.
+- Aligned roles to existing `profiles.role` model (`admin`, `artist`, `user` as buyer).
+- Switched commission domain data model to requested names:
+  - `artist_categories`, `commission_requests`, `artist_requests`, `commission_deals`
+  - plus `commission_updates` for timeline tracking UI.
+- Enforced strict bucket-key upload contract for separate S3 buckets:
+  - `artist-artworks`, `commission-references`, `commission-deliveries`.
+- Pricing moved to category-based matrix with mixed models (`sqft` and `flat`).
 
 ## What Has Been Implemented
-1. Backend APIs
-- Added calculator config endpoint: `GET /api/public/commission-config`
-- Added commission APIs:
-  - `POST /api/commissions`
-  - `GET /api/user/commissions`
-  - `GET /api/artist/commissions`
-  - `GET /api/admin/commissions`
+- Backend:
+  - Category-wise pricing engine (flat model ignores width/height for Digital/Illustrations/Sculpture/Photography).
+  - `GET /api/public/commission-config`
+  - `GET /api/public/commission/matching-artists`
+  - `POST /api/commissions` (max 3 artist requests)
+  - `GET /api/user/commissions`, `GET /api/artist/commissions`, `GET /api/admin/commissions`
   - `POST /api/artist/commissions/{commission_id}/update`
   - `POST /api/admin/commissions/action`
-- Added server-side pricing logic for all required mediums and multipliers.
-- Added admin email notification trigger for new commission requests.
-
-2. Frontend Features
-- New page: `/commission/request` (interactive price calculator + request form)
-- New page: `/user-dashboard/commissions` (user tracking view)
-- New page: `/dashboard/commissions` (artist queue + WIP uploader)
-- New page: `/admin/commissions` (admin intake + assign/status actions)
-- Added status timeline component and WIP uploader component.
-- Updated artist detail CTA to open commission request with preferred artist context.
-- Added navigation/menu links to commission flows by role.
-- Added required `data-testid` attributes across newly added interactive/critical UI elements.
-
-3. Data/Infra Documentation
-- Added SQL migration: `/app/scripts/commissioning_feature_migration.sql`
-- Added setup doc: `/app/docs/COMMISSIONING_SETUP.md`
-  - Tables to add
-  - Bucket/folder plan
-  - Existing framework categories
-  - Pricing matrix applied for all categories
+  - `POST /api/artist/commission-requests/{artist_request_id}/respond` (accept/counter/reject)
+  - Upload endpoint now requires `bucket_key` and resolves strict separate bucket envs.
+- Frontend:
+  - Updated commission request form with budget, negotiation model, pricing type, matching artists, max-3 selection.
+  - Artist queue now supports accept/counter/reject for pending requests.
+  - Updated pricing UI with category pricing model labels.
+  - Updated upload client to send `bucket_key`.
+- SQL + Docs:
+  - `/app/scripts/commissioning_feature_migration.sql` rewritten to additive/non-breaking schema.
+  - `/app/docs/COMMISSIONING_SETUP.md` rewritten to reflect requested table names and bucket policy.
 
 ## Prioritized Backlog
 ### P0
-- Run `/app/scripts/commissioning_feature_migration.sql` on production Supabase.
-- Confirm SMTP env variables for real admin email delivery:
-  - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `ADMIN_NOTIFICATION_FROM_EMAIL`
-- Verify authenticated flows end-to-end with real role accounts (user/artist/admin).
+- Run migration SQL in production Supabase.
+- Set required envs:
+  - `AWS_BUCKET_ARTIST_ARTWORKS`
+  - `AWS_BUCKET_COMMISSION_REFERENCES`
+  - `AWS_BUCKET_COMMISSION_DELIVERIES`
+- Seed `artist_categories` ranges for active artists.
 
 ### P1
-- Add dashboard count widgets for commissions inside existing monolithic dashboard tabs.
-- Add status transition guardrails (prevent invalid jump transitions by role).
-- Add file upload retry/error-state UX for reference and WIP images.
+- Add authenticated e2e validation for upload presign + artist accept/counter/reject flows.
+- Add UI for buyer to review counter offers and accept/reject them.
+- Add stricter status transition guards by role.
 
 ### P2
-- Add commission chat/thread between user and artist.
-- Add SLA alerts and overdue deadline highlighting.
-- Add downloadable commission transcript/report per order.
+- Escrow/payment linkage for locked deals.
+- Reputation scoring from completion/delivery/reviews.
+- SLA alerts for overdue deliveries.
 
 ## Next Tasks
-- Execute DB migration + storage setup in production.
-- Validate role-specific journeys with real test users.
-- Tune admin workflow for assignment and approvals based on team process.
+1. Apply migration and seed artist category pricing data.
+2. Configure strict S3 bucket envs and verify upload path for all media.
+3. Run authenticated user+artist+admin scenario tests end-to-end.
