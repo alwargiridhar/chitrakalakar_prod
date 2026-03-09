@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export const uploadFile = async ({ file, folder }) => {
+export const uploadFile = async ({ file, folder, bucketKey, entityId = null }) => {
   const { data } = await supabase.auth.getSession();
   const token = data?.session?.access_token;
   if (!token) throw new Error('Not authenticated');
@@ -17,6 +17,8 @@ export const uploadFile = async ({ file, folder }) => {
         filename: file.name,
         content_type: file.type,
         folder,
+        bucket_key: bucketKey,
+        entity_id: entityId,
       }),
     }
   );

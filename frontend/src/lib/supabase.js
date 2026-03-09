@@ -33,8 +33,10 @@ export const isSupabaseConfigured = isValidConfig;
  */
 export const BUCKETS = {
   AVATARS: 'avatars',
-  ARTWORKS: 'artworks',
+  ARTWORKS: 'artist-artworks',
   EXHIBITIONS: 'exhibitions',
-  COMMISSION_REFS: 'commission-refs',
-  COMMISSION_WIPS: 'commission-wips',
+  COMMISSION_REFERENCES: 'commission-references',
+  COMMISSION_DELIVERIES: 'commission-deliveries',
+  COMMISSION_REFS: 'commission-references',
+  COMMISSION_WIPS: 'commission-deliveries',
 };

@@ -11,6 +11,7 @@ function ArtistCommissionsPage() {
   const navigate = useNavigate();
   const [commissions, setCommissions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [counterOffers, setCounterOffers] = useState({});
 
   const fetchCommissions = async () => {
     try {
@@ -37,6 +38,18 @@ function ArtistCommissionsPage() {
       await fetchCommissions();
     } catch (error) {
       alert(error.message || 'Failed to post update');
+    }
+  };
+
+  const handleRespond = async (artistRequestId, action, counterOffer = null) => {
+    try {
+      await commissionAPI.respondToArtistRequest(artistRequestId, {
+        action,
+        counter_offer: counterOffer,
+      });
+      await fetchCommissions();
+    } catch (error) {
+      alert(error.message || 'Failed to respond to request');
     }
   };
 
@@ -74,7 +87,52 @@ function ArtistCommissionsPage() {
 
                 <div className="grid lg:grid-cols-2 gap-5 mt-5">
                   <CommissionStatusTimeline status={commission.status} updates={commission.updates || []} />
-                  <WIPUploader commission={commission} onSubmit={(payload) => handleUpdate(commission.id, payload)} />
+                  <div>
+                    {commission.artist_request_status === 'pending' ? (
+                      <div className="border border-gray-200 rounded-xl p-4 bg-gray-50" data-testid={`artist-commission-response-${commission.id}`}>
+                        <p className="text-sm text-gray-700 mb-3" data-testid={`artist-commission-response-note-${commission.id}`}>
+                          This request is pending. Accept to lock this commission.
+                        </p>
+                        <div className="grid grid-cols-3 gap-2 mb-3">
+                          <button
+                            type="button"
+                            className="px-3 py-2 rounded-lg bg-green-600 text-white text-sm"
+                            onClick={() => handleRespond(commission.artist_request_id, 'accept_offer')}
+                            data-testid={`artist-commission-accept-button-${commission.id}`}
+                          >
+                            Accept
+                          </button>
+                          <button
+                            type="button"
+                            className="px-3 py-2 rounded-lg bg-gray-800 text-white text-sm"
+                            onClick={() => handleRespond(commission.artist_request_id, 'counter_offer', Number(counterOffers[commission.id] || 0))}
+                            data-testid={`artist-commission-counter-button-${commission.id}`}
+                          >
+                            Counter
+                          </button>
+                          <button
+                            type="button"
+                            className="px-3 py-2 rounded-lg bg-red-500 text-white text-sm"
+                            onClick={() => handleRespond(commission.artist_request_id, 'reject')}
+                            data-testid={`artist-commission-reject-button-${commission.id}`}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                        <input
+                          type="number"
+                          min="1000"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          placeholder="Counter offer amount"
+                          value={counterOffers[commission.id] || ''}
+                          onChange={(e) => setCounterOffers((prev) => ({ ...prev, [commission.id]: e.target.value }))}
+                          data-testid={`artist-commission-counter-input-${commission.id}`}
+                        />
+                      </div>
+                    ) : (
+                      <WIPUploader commission={commission} onSubmit={(payload) => handleUpdate(commission.id, payload)} />
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

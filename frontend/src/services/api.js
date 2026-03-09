@@ -101,6 +101,10 @@ export const publicAPI = {
   getCommunityDetail: (communityId) => apiCall(`/public/community/${communityId}`),
   getArtistOfTheDay: () => apiCall('/public/artist-of-the-day'),
   getCommissionConfig: () => apiCall('/public/commission-config'),
+  getCommissionMatchingArtists: (category, budget) => {
+    const params = new URLSearchParams({ category, budget: String(budget) });
+    return apiCall(`/public/commission/matching-artists?${params.toString()}`);
+  },
 };
 
 // Community APIs
@@ -232,6 +236,10 @@ export const commissionAPI = {
   getArtistCommissions: () => apiCall('/artist/commissions'),
   getAdminCommissions: () => apiCall('/admin/commissions'),
   updateByArtist: (commissionId, data) => apiCall(`/artist/commissions/${commissionId}/update`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  respondToArtistRequest: (artistRequestId, data) => apiCall(`/artist/commission-requests/${artistRequestId}/respond`, {
     method: 'POST',
     body: JSON.stringify(data),
   }),

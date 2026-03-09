@@ -35,8 +35,8 @@ export default function WIPUploader({ commission, onSubmit }) {
 
       <div className="mt-3" data-testid={`wip-image-upload-wrapper-${commission.id}`}>
         <ImageUpload
-          bucket={BUCKETS.COMMISSION_WIPS}
-          folder="commission-wips"
+          bucket={BUCKETS.COMMISSION_DELIVERIES}
+          folder="commission-deliveries"
           label="Upload WIP Image"
           onUpload={(url) => setForm((p) => ({ ...p, image_url: url }))}
         />

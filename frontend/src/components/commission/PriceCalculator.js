@@ -1,10 +1,11 @@
 import React from 'react';
 import { ART_CATEGORIES } from '../../utils/branding';
-import { DETAIL_MULTIPLIERS, MEDIUM_PRICING, formatINR } from './pricing';
+import { CATEGORY_PRICING, DETAIL_MULTIPLIERS, MEDIUM_PRICING, PRICING_MODELS, formatINR } from './pricing';
 
 export default function PriceCalculator({ formData, setFormData, estimate }) {
   const mediums = Object.keys(MEDIUM_PRICING);
   const detailLevels = Object.keys(DETAIL_MULTIPLIERS);
+  const selectedCategoryPricing = CATEGORY_PRICING[formData.art_category] || CATEGORY_PRICING[ART_CATEGORIES[0]];
 
   return (
     <div className="bg-white border border-gray-200 rounded-3xl p-6 lg:p-8 shadow-sm" data-testid="commission-price-calculator">
@@ -57,7 +58,12 @@ export default function PriceCalculator({ formData, setFormData, estimate }) {
           </div>
         </div>
 
-        <p className="text-sm text-gray-600" data-testid="commission-square-feet-value">Square Feet: <span className="font-semibold text-gray-900">{estimate.sqft}</span></p>
+        <p className="text-sm text-gray-600" data-testid="commission-square-feet-value">
+          Square Feet: <span className="font-semibold text-gray-900">{estimate.sqft}</span>
+        </p>
+        <p className="text-xs text-gray-500" data-testid="commission-pricing-model-value">
+          Pricing Model: {PRICING_MODELS[selectedCategoryPricing.model]} {selectedCategoryPricing.model === 'flat' ? '(size ignored)' : ''}
+        </p>
 
         <div>
           <label className="text-sm font-medium text-gray-700 block mb-2" data-testid="commission-medium-label">Medium</label>

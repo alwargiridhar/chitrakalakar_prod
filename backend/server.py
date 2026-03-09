@@ -97,6 +97,8 @@ class UploadUrlRequest(BaseModel):
     filename: str
     content_type: str
     folder: str
+    bucket_key: Optional[str] = None
+    entity_id: Optional[str] = None
 
 class ArtworkCreate(BaseModel):
     # Basic Artwork Information (Required)
@@ -315,13 +317,17 @@ class CartItemRequest(BaseModel):
 
 class CommissionCreate(BaseModel):
     art_category: str
-    preferred_artist_id: Optional[str] = None
     medium: str
     width_ft: float = Field(gt=0)
     height_ft: float = Field(gt=0)
+    budget: float = Field(gt=0)
     skill_level: str  # Average / Advanced
     detail_level: str = "Basic"
     subjects: int = Field(default=1, ge=1)
+    pricing_type: str = "fixed"  # fixed | negotiable
+    offer_price: Optional[float] = None
+    negotiation_allowed: bool = False
+    selected_artist_ids: List[str] = []
     reference_image_urls: List[str] = []
     special_instructions: Optional[str] = None
     deadline: Optional[str] = None
@@ -342,6 +348,11 @@ class CommissionAdminAction(BaseModel):
     admin_note: Optional[str] = None
 
 
+class ArtistRequestResponse(BaseModel):
+    action: str  # accept_offer | counter_offer | reject
+    counter_offer: Optional[float] = None
+
+
 COMMISSION_STATUSES = [
     "Requested",
     "Accepted",
@@ -350,6 +361,86 @@ COMMISSION_STATUSES = [
     "Completed",
     "Delivered",
 ]
+
+COMMISSION_STATUS_TO_DEAL = {
+    "Requested": "accepted",
+    "Accepted": "accepted",
+    "In Progress": "in_progress",
+    "WIP Shared": "wip_shared",
+    "Completed": "completed",
+    "Delivered": "delivered",
+}
+
+DEAL_TO_COMMISSION_STATUS = {
+    "accepted": "Accepted",
+    "in_progress": "In Progress",
+    "wip_shared": "WIP Shared",
+    "completed": "Completed",
+    "delivered": "Delivered",
+}
+
+COMMISSION_CATEGORY_PRICING = {
+    "Acrylic Colors": {
+        "model": "sqft",
+        "average": {"min": 1500, "max": 4000},
+        "advanced": {"min": 4000, "max": 10000},
+    },
+    "Watercolors": {
+        "model": "sqft",
+        "average": {"min": 1200, "max": 3000},
+        "advanced": {"min": 3000, "max": 6000},
+    },
+    "Pencil & Pen Work": {
+        "model": "sqft",
+        "average": {"min": 800, "max": 2000},
+        "advanced": {"min": 2000, "max": 5000},
+    },
+    "Pastels": {
+        "model": "sqft",
+        "average": {"min": 1200, "max": 3500},
+        "advanced": {"min": 3500, "max": 7000},
+    },
+    "Indian Ink": {
+        "model": "sqft",
+        "average": {"min": 1000, "max": 2500},
+        "advanced": {"min": 2500, "max": 5500},
+    },
+    "Illustrations": {
+        "model": "flat",
+        "average": {"min": 2000, "max": 8000},
+        "advanced": {"min": 8000, "max": 25000},
+    },
+    "Visual Art": {
+        "model": "sqft",
+        "average": {"min": 2000, "max": 7000},
+        "advanced": {"min": 7000, "max": 18000},
+    },
+    "Digital Art": {
+        "model": "flat",
+        "average": {"min": 1000, "max": 6000},
+        "advanced": {"min": 6000, "max": 20000},
+    },
+    "Mixed Media": {
+        "model": "sqft",
+        "average": {"min": 2500, "max": 8000},
+        "advanced": {"min": 8000, "max": 20000},
+    },
+    "Sculpture": {
+        "model": "flat",
+        "average": {"min": 10000, "max": 80000},
+        "advanced": {"min": 80000, "max": 400000},
+    },
+    "Photography": {
+        "model": "flat",
+        "average": {"min": 2000, "max": 15000},
+        "advanced": {"min": 15000, "max": 100000},
+    },
+    "Printmaking": {
+        "model": "sqft",
+        "average": {"min": 1500, "max": 5000},
+        "advanced": {"min": 5000, "max": 12000},
+    },
+}
 
 COMMISSION_MEDIUM_PRICING = {
     "Pencil / Charcoal": {
@@ -420,20 +511,26 @@ def _normalize_detail_level(value: str) -> str:
 
 
 def calculate_commission_estimate(payload: CommissionCreate) -> Dict[str, float]:
-    medium_pricing = COMMISSION_MEDIUM_PRICING.get(payload.medium)
-    if not medium_pricing:
-        raise HTTPException(status_code=400, detail="Invalid medium")
+    category_pricing = COMMISSION_CATEGORY_PRICING.get(payload.art_category)
+    if not category_pricing:
+        raise HTTPException(status_code=400, detail="Invalid artwork category")
 
     skill_level = _normalize_skill_level(payload.skill_level)
     detail_level = _normalize_detail_level(payload.detail_level)
-    price_band = medium_pricing[skill_level]
+    price_band = category_pricing[skill_level]
+    pricing_model = category_pricing["model"]
 
     sqft = payload.width_ft * payload.height_ft
     detail_multiplier = COMMISSION_DETAIL_MULTIPLIERS[detail_level]
     subject_multiplier = 1 + max(0, payload.subjects - 1) * 0.15
 
-    min_price = sqft * price_band["min"] * detail_multiplier * subject_multiplier
-    max_price = sqft * price_band["max"] * detail_multiplier * subject_multiplier
+    if pricing_model == "flat":
+        # For digital/photo/sculpture style categories: ignore width/height by requirement
+        min_price = price_band["min"] * detail_multiplier * subject_multiplier
+        max_price = price_band["max"] * detail_multiplier * subject_multiplier
+    else:
+        min_price = sqft * price_band["min"] * detail_multiplier * subject_multiplier
+        max_price = sqft * price_band["max"] * detail_multiplier * subject_multiplier
     avg_price = (min_price + max_price) / 2
 
     return {
@@ -443,6 +540,7 @@ def calculate_commission_estimate(payload: CommissionCreate) -> Dict[str, float]
         "average_price": round(avg_price, 2),
         "normalized_skill": "Average" if skill_level == "average" else "Advanced",
         "normalized_detail": detail_level,
+        "pricing_model": pricing_model,
     }
 
 
@@ -482,6 +580,105 @@ def _get_commission_updates(supabase, commission_id: str):
         .execute()
     )
     return updates.data or []
+
+
+def _resolve_upload_bucket(bucket_key: Optional[str]):
+    mapping = {
+        "artist-artworks": os.environ.get("AWS_BUCKET_ARTIST_ARTWORKS"),
+        "commission-references": os.environ.get("AWS_BUCKET_COMMISSION_REFERENCES"),
+        "commission-deliveries": os.environ.get("AWS_BUCKET_COMMISSION_DELIVERIES"),
+        "avatars": os.environ.get("AWS_BUCKET_AVATARS"),
+        "communities": os.environ.get("AWS_BUCKET_COMMUNITIES"),
+        "exhibitions": os.environ.get("AWS_BUCKET_EXHIBITIONS"),
+        "artworks": os.environ.get("AWS_BUCKET_ARTIST_ARTWORKS"),
+    }
+
+    if bucket_key:
+        selected = mapping.get(bucket_key)
+        if not selected:
+            raise HTTPException(status_code=500, detail=f"Bucket not configured for {bucket_key}")
+        return selected
+
+    fallback = os.environ.get("AWS_S3_BUCKET") or os.environ.get("AWS_BUCKET_NAME")
+    if not fallback:
+        raise HTTPException(status_code=500, detail="AWS bucket is not configured")
+    return fallback
+
+
+def _compute_commission_display_status(request_row: dict, deal_row: Optional[dict]) -> str:
+    if deal_row and deal_row.get("status"):
+        return DEAL_TO_COMMISSION_STATUS.get(deal_row["status"], "Accepted")
+
+    request_status = request_row.get("status", "pending")
+    if request_status == "locked":
+        return "Accepted"
+    if request_status == "closed":
+        return "Delivered"
+    return "Requested"
+
+
+def _commission_public_artist_profile(profile: dict, category_row: dict, artworks: list):
+    return {
+        "id": profile.get("id"),
+        "name": profile.get("full_name"),
+        "rating": profile.get("rating") or 0,
+        "delivery_days": profile.get("delivery_days") or 14,
+        "negotiation_allowed": bool(profile.get("negotiation_allowed")),
+        "availability_status": profile.get("availability_status") or "available",
+        "commission_price_range": {
+            "min": category_row.get("min_price"),
+            "max": category_row.get("max_price"),
+            "pricing_model": category_row.get("pricing_model"),
+        },
+        "artworks": artworks,
+    }
+
+
+def _get_commission_matching_artists_sync(supabase, category: str, budget: float):
+    matching_categories = (
+        supabase.table("artist_categories")
+        .select("*")
+        .eq("category", category)
+        .lte("min_price", budget)
+        .gte("max_price", budget)
+        .execute()
+    )
+
+    artists = []
+    for category_row in (matching_categories.data or []):
+        artist_id = category_row.get("artist_id")
+        if not artist_id:
+            continue
+
+        profile = (
+            supabase.table("profiles")
+            .select("id, full_name, role, is_approved, is_active, rating, delivery_days, negotiation_allowed, availability_status")
+            .eq("id", artist_id)
+            .single()
+            .execute()
+        )
+        if not profile.data:
+            continue
+
+        availability = (profile.data.get("availability_status") or "available").lower()
+        if profile.data.get("role") != "artist" or not profile.data.get("is_active", True) or not profile.data.get("is_approved", False):
+            continue
+        if availability in ["busy", "not_accepting"]:
+            continue
+
+        artworks = (
+            supabase.table("artworks")
+            .select("id, title, category, image")
+            .eq("artist_id", artist_id)
+            .eq("is_approved", True)
+            .order("created_at", desc=True)
+            .limit(3)
+            .execute()
+        )
+
+        artists.append(_commission_public_artist_profile(profile.data, category_row, artworks.data or []))
+
+    return artists[:10]
 
 # ============ HEALTH CHECK ============
 
@@ -1588,17 +1785,28 @@ async def reveal_artist_contact(request: RevealContactRequest, user: dict = Depe
 
 @app.get("/api/public/commission-config")
 async def get_commission_config():
-    """Get commission calculator configuration for all artwork categories."""
-    category_pricing = {
-        category: COMMISSION_MEDIUM_PRICING for category in COMMISSION_ART_CATEGORIES
-    }
+    """Get commission calculator configuration aligned to existing categories + pricing models."""
     return {
         "categories": COMMISSION_ART_CATEGORIES,
         "medium_pricing": COMMISSION_MEDIUM_PRICING,
+        "category_pricing": COMMISSION_CATEGORY_PRICING,
         "detail_multipliers": COMMISSION_DETAIL_MULTIPLIERS,
         "statuses": COMMISSION_STATUSES,
-        "category_pricing": category_pricing,
     }
+
+
+@app.get("/api/public/commission/matching-artists")
+async def get_matching_artists(category: str, budget: float):
+    """Discover artists by category + budget with contact-hidden cards."""
+    supabase = get_supabase_client()
+    if not supabase:
+        return {"artists": []}
+
+    if category not in COMMISSION_ART_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Invalid artwork category")
+
+    artists = _get_commission_matching_artists_sync(supabase, category, budget)
+    return {"artists": artists}
 
 
 @app.post("/api/commissions")
@@ -1607,25 +1815,19 @@ async def create_commission_request(
     background_tasks: BackgroundTasks,
     user: dict = Depends(require_user),
 ):
-    """Create a commission request with live-calculated pricing and notify admins."""
+    """Create commission request and send to up to 3 selected/matched artists."""
     supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Supabase not configured")
 
     if payload.art_category not in COMMISSION_ART_CATEGORIES:
         raise HTTPException(status_code=400, detail="Invalid artwork category")
+    if payload.pricing_type not in ["fixed", "negotiable"]:
+        raise HTTPException(status_code=400, detail="pricing_type must be fixed or negotiable")
+    if len(payload.selected_artist_ids) > 3:
+        raise HTTPException(status_code=400, detail="You can send request to maximum 3 artists")
 
     estimate = calculate_commission_estimate(payload)
-
-    artist_id = payload.preferred_artist_id
-    if artist_id:
-        artist = (
-            supabase.table("profiles")
-            .select("id, role, is_approved, is_active")
-            .eq("id", artist_id)
-            .single()
-            .execute()
-        )
-        if not artist.data or artist.data.get("role") != "artist":
-            raise HTTPException(status_code=404, detail="Preferred artist not found")
 
     requester_profile = (
         supabase.table("profiles")
@@ -1637,40 +1839,70 @@ async def create_commission_request(
 
     commission_doc = {
         "user_id": user["id"],
-        "artist_id": artist_id,
-        "art_category": payload.art_category,
+        "category": payload.art_category,
         "medium": payload.medium,
-        "width_ft": payload.width_ft,
-        "height_ft": payload.height_ft,
-        "square_feet": estimate["square_feet"],
+        "description": payload.special_instructions,
+        "reference_image": payload.reference_image_urls[0] if payload.reference_image_urls else None,
+        "reference_images": payload.reference_image_urls,
+        "width": payload.width_ft,
+        "height": payload.height_ft,
+        "budget": payload.budget,
+        "deadline": payload.deadline,
+        "negotiation_allowed": payload.negotiation_allowed,
+        "pricing_type": payload.pricing_type,
+        "offer_price": payload.offer_price,
         "skill_level": estimate["normalized_skill"],
         "detail_level": estimate["normalized_detail"],
         "subjects": payload.subjects,
         "price_min": estimate["min_price"],
         "price_max": estimate["max_price"],
         "estimated_price": estimate["average_price"],
-        "reference_image_urls": payload.reference_image_urls,
-        "special_instructions": payload.special_instructions,
-        "deadline": payload.deadline,
         "framing_option": payload.framing_option,
         "contact_name": (requester_profile.data or {}).get("full_name"),
         "contact_email": (requester_profile.data or {}).get("email"),
         "contact_phone": payload.contact_phone or (requester_profile.data or {}).get("phone"),
-        "status": "Requested",
+        "status": "pending",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
-    created = supabase.table("commissions").insert(commission_doc).execute()
+    created = supabase.table("commission_requests").insert(commission_doc).execute()
     if not created.data:
         raise HTTPException(status_code=500, detail="Failed to create commission request")
 
     commission = created.data[0]
 
+    artists_to_notify = payload.selected_artist_ids
+    if not artists_to_notify:
+        matches = _get_commission_matching_artists_sync(supabase, payload.art_category, payload.budget)
+        artists_to_notify = [artist["id"] for artist in matches[:3]]
+
+    for artist_id in artists_to_notify[:3]:
+        existing = (
+            supabase.table("artist_requests")
+            .select("id")
+            .eq("commission_id", commission["id"])
+            .eq("artist_id", artist_id)
+            .execute()
+        )
+        if existing.data:
+            continue
+
+        supabase.table("artist_requests").insert(
+            {
+                "commission_id": commission["id"],
+                "artist_id": artist_id,
+                "offer_price": payload.offer_price,
+                "pricing_type": payload.pricing_type,
+                "status": "pending",
+                "sent_at": datetime.now(timezone.utc).isoformat(),
+            }
+        ).execute()
+
     supabase.table("commission_updates").insert(
         {
             "commission_id": commission["id"],
-            "artist_id": artist_id,
+            "artist_id": artists_to_notify[0] if artists_to_notify else None,
             "note": "Commission request submitted",
             "previous_status": None,
             "new_status": "Requested",
@@ -1695,13 +1927,16 @@ async def create_commission_request(
         f"Category: {payload.art_category}\n"
         f"Medium: {payload.medium}\n"
         f"Estimated Range: ₹{estimate['min_price']} - ₹{estimate['max_price']}\n"
-        f"Status: Requested\n"
+        f"Budget: ₹{payload.budget}\n"
+        f"Pricing Type: {payload.pricing_type}\n"
+        f"Status: pending\n"
     )
     background_tasks.add_task(_send_commission_admin_email, admin_emails, email_subject, email_body)
 
     return {
         "success": True,
         "commission": commission,
+        "artist_requests_sent": len(artists_to_notify[:3]),
         "estimated": {
             "minimum": estimate["min_price"],
             "maximum": estimate["max_price"],
@@ -1713,9 +1948,12 @@ async def create_commission_request(
 @app.get("/api/user/commissions")
 async def get_user_commissions(user: dict = Depends(require_user)):
     supabase = get_supabase_client()
+    if not supabase:
+        return {"commissions": []}
+
     commissions = (
-        supabase.table("commissions")
-        .select("*, profiles!artist_id(full_name, avatar)")
+        supabase.table("commission_requests")
+        .select("*")
         .eq("user_id", user["id"])
         .order("created_at", desc=True)
         .execute()
@@ -1723,9 +1961,52 @@ async def get_user_commissions(user: dict = Depends(require_user)):
 
     enriched = []
     for commission in (commissions.data or []):
+        deal = (
+            supabase.table("commission_deals")
+            .select("*")
+            .eq("commission_id", commission["id"])
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        deal_row = deal.data[0] if deal.data else None
+
+        active_artist_id = deal_row.get("artist_id") if deal_row else None
+        if not active_artist_id:
+            first_request = (
+                supabase.table("artist_requests")
+                .select("artist_id")
+                .eq("commission_id", commission["id"])
+                .in_("status", ["accepted", "pending"])
+                .order("sent_at", desc=False)
+                .limit(1)
+                .execute()
+            )
+            active_artist_id = first_request.data[0]["artist_id"] if first_request.data else None
+
+        artist_profile = None
+        if active_artist_id:
+            artist_profile = (
+                supabase.table("profiles")
+                .select("id, full_name, avatar")
+                .eq("id", active_artist_id)
+                .single()
+                .execute()
+            )
+
         item = {
-            **commission,
-            "artist": commission.get("profiles"),
+            "id": commission.get("id"),
+            "art_category": commission.get("category"),
+            "medium": commission.get("medium"),
+            "width_ft": commission.get("width"),
+            "height_ft": commission.get("height"),
+            "price_min": commission.get("price_min"),
+            "price_max": commission.get("price_max"),
+            "status": _compute_commission_display_status(commission, deal_row),
+            "artist": artist_profile.data if artist_profile and artist_profile.data else None,
+            "reference_image_urls": commission.get("reference_images") or [],
+            "special_instructions": commission.get("description"),
+            "deadline": commission.get("deadline"),
             "updates": _get_commission_updates(supabase, commission["id"]),
         }
         enriched.append(item)
@@ -1736,19 +2017,63 @@ async def get_user_commissions(user: dict = Depends(require_user)):
 @app.get("/api/artist/commissions")
 async def get_artist_commissions(artist: dict = Depends(require_artist)):
     supabase = get_supabase_client()
-    commissions = (
-        supabase.table("commissions")
-        .select("*, profiles!user_id(full_name, email, phone)")
+    if not supabase:
+        return {"commissions": []}
+
+    artist_requests = (
+        supabase.table("artist_requests")
+        .select("*")
         .eq("artist_id", artist["id"])
-        .order("created_at", desc=True)
+        .order("sent_at", desc=True)
         .execute()
     )
 
     enriched = []
-    for commission in (commissions.data or []):
+    for request_row in (artist_requests.data or []):
+        commission_res = (
+            supabase.table("commission_requests")
+            .select("*")
+            .eq("id", request_row["commission_id"])
+            .single()
+            .execute()
+        )
+        if not commission_res.data:
+            continue
+        commission = commission_res.data
+
+        requester_profile = (
+            supabase.table("profiles")
+            .select("id, full_name, email, phone")
+            .eq("id", commission["user_id"])
+            .single()
+            .execute()
+        )
+
+        deal = (
+            supabase.table("commission_deals")
+            .select("*")
+            .eq("commission_id", commission["id"])
+            .eq("artist_id", artist["id"])
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        deal_row = deal.data[0] if deal.data else None
+
         item = {
-            **commission,
-            "requester": commission.get("profiles"),
+            "id": commission.get("id"),
+            "artist_request_id": request_row.get("id"),
+            "artist_request_status": request_row.get("status"),
+            "art_category": commission.get("category"),
+            "medium": commission.get("medium"),
+            "width_ft": commission.get("width"),
+            "height_ft": commission.get("height"),
+            "price_min": commission.get("price_min"),
+            "price_max": commission.get("price_max"),
+            "status": _compute_commission_display_status(commission, deal_row),
+            "requester": requester_profile.data if requester_profile else None,
+            "special_instructions": commission.get("description"),
+            "deadline": commission.get("deadline"),
             "updates": _get_commission_updates(supabase, commission["id"]),
         }
         enriched.append(item)
@@ -1759,8 +2084,11 @@ async def get_artist_commissions(artist: dict = Depends(require_artist)):
 @app.get("/api/admin/commissions")
 async def get_admin_commissions(admin: dict = Depends(require_admin)):
     supabase = get_supabase_client()
+    if not supabase:
+        return {"commissions": []}
+
     commissions = (
-        supabase.table("commissions")
+        supabase.table("commission_requests")
         .select("*")
         .order("created_at", desc=True)
         .execute()
@@ -1777,19 +2105,44 @@ async def get_admin_commissions(admin: dict = Depends(require_admin)):
         )
 
         artist_profile = None
-        if commission.get("artist_id"):
+        artist_requests = (
+            supabase.table("artist_requests")
+            .select("artist_id, status")
+            .eq("commission_id", commission["id"])
+            .execute()
+        )
+
+        accepted_request = next((r for r in (artist_requests.data or []) if r.get("status") == "accepted"), None)
+        active_artist_id = accepted_request.get("artist_id") if accepted_request else None
+        if active_artist_id:
             artist_profile = (
                 supabase.table("profiles")
                 .select("id, full_name, email")
-                .eq("id", commission["artist_id"])
+                .eq("id", active_artist_id)
                 .single()
                 .execute()
             )
 
+        deal = (
+            supabase.table("commission_deals")
+            .select("*")
+            .eq("commission_id", commission["id"])
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        deal_row = deal.data[0] if deal.data else None
+
         item = {
-            **commission,
+            "id": commission.get("id"),
+            "art_category": commission.get("category"),
+            "medium": commission.get("medium"),
+            "budget": commission.get("budget"),
+            "deadline": commission.get("deadline"),
+            "status": _compute_commission_display_status(commission, deal_row),
             "user": user_profile.data if user_profile else None,
             "artist": artist_profile.data if artist_profile else None,
+            "artist_requests": artist_requests.data or [],
             "updates": _get_commission_updates(supabase, commission["id"]),
         }
         enriched.append(item)
@@ -1804,34 +2157,59 @@ async def update_commission_by_artist(
     artist: dict = Depends(require_artist),
 ):
     supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Supabase not configured")
 
-    commission_res = (
-        supabase.table("commissions")
+    deal_res = (
+        supabase.table("commission_deals")
         .select("*")
-        .eq("id", commission_id)
         .eq("artist_id", artist["id"])
-        .single()
+        .eq("commission_id", commission_id)
+        .order("created_at", desc=True)
+        .limit(1)
         .execute()
     )
 
+    if not deal_res.data:
+        raise HTTPException(status_code=404, detail="Commission deal not found for this artist")
+
+    commission_res = (
+        supabase.table("commission_requests")
+        .select("*")
+        .eq("id", commission_id)
+        .single()
+        .execute()
+    )
     if not commission_res.data:
         raise HTTPException(status_code=404, detail="Commission not found")
 
     if payload.status not in COMMISSION_STATUSES:
         raise HTTPException(status_code=400, detail="Invalid commission status")
 
-    current_status = commission_res.data.get("status")
+    current_status = _compute_commission_display_status(commission_res.data, deal_res.data[0])
     if current_status == "Delivered":
         raise HTTPException(status_code=400, detail="Delivered commission cannot be updated")
 
+    deal_status = COMMISSION_STATUS_TO_DEAL.get(payload.status, "in_progress")
     update_doc = {
-        "status": payload.status,
+        "status": deal_status,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     if payload.image_url:
-        update_doc["latest_wip_image"] = payload.image_url
+        update_doc["latest_update_image"] = payload.image_url
+    if payload.note:
+        update_doc["latest_update_note"] = payload.note
 
-    supabase.table("commissions").update(update_doc).eq("id", commission_id).execute()
+    supabase.table("commission_deals").update(update_doc).eq("id", deal_res.data[0]["id"]).execute()
+
+    request_update = {
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    if payload.status == "Delivered":
+        request_update["status"] = "closed"
+    elif payload.status in ["Accepted", "In Progress", "WIP Shared", "Completed"]:
+        request_update["status"] = "locked"
+    supabase.table("commission_requests").update(request_update).eq("id", commission_id).execute()
 
     status_update = {
         "commission_id": commission_id,
@@ -1857,8 +2235,11 @@ async def admin_action_on_commission(
     admin: dict = Depends(require_admin),
 ):
     supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Supabase not configured")
+
     commission_res = (
-        supabase.table("commissions")
+        supabase.table("commission_requests")
         .select("*")
         .eq("id", payload.commission_id)
         .single()
@@ -1867,7 +2248,7 @@ async def admin_action_on_commission(
     if not commission_res.data:
         raise HTTPException(status_code=404, detail="Commission not found")
 
-    update_doc = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    request_update = {"updated_at": datetime.now(timezone.utc).isoformat()}
 
     if payload.artist_id:
         artist = (
@@ -1879,31 +2260,176 @@ async def admin_action_on_commission(
         )
         if not artist.data or artist.data.get("role") != "artist":
             raise HTTPException(status_code=404, detail="Artist not found")
-        update_doc["artist_id"] = payload.artist_id
+
+        existing_artist_request = (
+            supabase.table("artist_requests")
+            .select("id")
+            .eq("commission_id", payload.commission_id)
+            .eq("artist_id", payload.artist_id)
+            .execute()
+        )
+        if not existing_artist_request.data:
+            supabase.table("artist_requests").insert(
+                {
+                    "commission_id": payload.commission_id,
+                    "artist_id": payload.artist_id,
+                    "status": "pending",
+                    "sent_at": datetime.now(timezone.utc).isoformat(),
+                }
+            ).execute()
 
     if payload.status:
         if payload.status not in COMMISSION_STATUSES:
             raise HTTPException(status_code=400, detail="Invalid commission status")
-        update_doc["status"] = payload.status
+        if payload.status in ["Accepted", "In Progress", "WIP Shared", "Completed", "Delivered"]:
+            request_update["status"] = "locked" if payload.status != "Delivered" else "closed"
 
     if payload.admin_note:
-        update_doc["admin_note"] = payload.admin_note
+        request_update["admin_note"] = payload.admin_note
 
-    supabase.table("commissions").update(update_doc).eq("id", payload.commission_id).execute()
+    supabase.table("commission_requests").update(request_update).eq("id", payload.commission_id).execute()
+
+    if payload.status and payload.artist_id:
+        existing_deal = (
+            supabase.table("commission_deals")
+            .select("id")
+            .eq("commission_id", payload.commission_id)
+            .eq("artist_id", payload.artist_id)
+            .execute()
+        )
+        deal_status = COMMISSION_STATUS_TO_DEAL.get(payload.status, "accepted")
+        deal_payload = {
+            "commission_id": payload.commission_id,
+            "artist_id": payload.artist_id,
+            "status": deal_status,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if existing_deal.data:
+            supabase.table("commission_deals").update(deal_payload).eq("id", existing_deal.data[0]["id"]).execute()
+        else:
+            deal_payload["created_at"] = datetime.now(timezone.utc).isoformat()
+            supabase.table("commission_deals").insert(deal_payload).execute()
 
     if payload.status:
         supabase.table("commission_updates").insert(
             {
                 "commission_id": payload.commission_id,
-                "artist_id": payload.artist_id or commission_res.data.get("artist_id"),
+                "artist_id": payload.artist_id,
                 "note": payload.admin_note,
-                "previous_status": commission_res.data.get("status"),
+                "previous_status": _compute_commission_display_status(commission_res.data, None),
                 "new_status": payload.status,
                 "created_at": datetime.now(timezone.utc).isoformat(),
             }
         ).execute()
 
     return {"success": True, "message": "Commission updated by admin"}
+
+
+@app.post("/api/artist/commission-requests/{artist_request_id}/respond")
+async def respond_to_artist_request(
+    artist_request_id: str,
+    payload: ArtistRequestResponse,
+    artist: dict = Depends(require_artist),
+):
+    """Artist can accept/counter/reject an incoming commission request."""
+    supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Supabase not configured")
+
+    if payload.action not in ["accept_offer", "counter_offer", "reject"]:
+        raise HTTPException(status_code=400, detail="Invalid action")
+
+    request_res = (
+        supabase.table("artist_requests")
+        .select("*")
+        .eq("id", artist_request_id)
+        .eq("artist_id", artist["id"])
+        .single()
+        .execute()
+    )
+    if not request_res.data:
+        raise HTTPException(status_code=404, detail="Artist request not found")
+
+    artist_request = request_res.data
+    commission_id = artist_request["commission_id"]
+
+    if payload.action == "reject":
+        supabase.table("artist_requests").update({"status": "rejected"}).eq("id", artist_request_id).execute()
+        return {"success": True, "message": "Request rejected"}
+
+    if payload.action == "counter_offer":
+        if not payload.counter_offer or payload.counter_offer <= 0:
+            raise HTTPException(status_code=400, detail="counter_offer is required")
+        supabase.table("artist_requests").update(
+            {"status": "pending", "counter_offer": payload.counter_offer}
+        ).eq("id", artist_request_id).execute()
+        return {"success": True, "message": "Counter offer sent"}
+
+    # accept_offer flow
+    existing_accepted = (
+        supabase.table("artist_requests")
+        .select("id")
+        .eq("commission_id", commission_id)
+        .eq("status", "accepted")
+        .execute()
+    )
+    if existing_accepted.data and existing_accepted.data[0]["id"] != artist_request_id:
+        raise HTTPException(status_code=400, detail="Another artist already accepted this commission")
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    supabase.table("artist_requests").update(
+        {"status": "accepted", "accepted_at": now_iso}
+    ).eq("id", artist_request_id).execute()
+
+    supabase.table("artist_requests").update(
+        {"status": "expired"}
+    ).eq("commission_id", commission_id).neq("id", artist_request_id).eq("status", "pending").execute()
+
+    final_price = payload.counter_offer or artist_request.get("offer_price")
+    if not final_price:
+        commission_req = (
+            supabase.table("commission_requests")
+            .select("estimated_price")
+            .eq("id", commission_id)
+            .single()
+            .execute()
+        )
+        final_price = (commission_req.data or {}).get("estimated_price")
+
+    existing_deal = (
+        supabase.table("commission_deals")
+        .select("id")
+        .eq("commission_id", commission_id)
+        .execute()
+    )
+
+    deal_payload = {
+        "commission_id": commission_id,
+        "artist_id": artist["id"],
+        "final_price": final_price,
+        "status": "accepted",
+        "updated_at": now_iso,
+    }
+    if existing_deal.data:
+        supabase.table("commission_deals").update(deal_payload).eq("id", existing_deal.data[0]["id"]).execute()
+    else:
+        deal_payload["created_at"] = now_iso
+        supabase.table("commission_deals").insert(deal_payload).execute()
+
+    supabase.table("commission_requests").update({"status": "locked", "updated_at": now_iso}).eq("id", commission_id).execute()
+
+    supabase.table("commission_updates").insert(
+        {
+            "commission_id": commission_id,
+            "artist_id": artist["id"],
+            "note": "Artist accepted the commission",
+            "previous_status": "Requested",
+            "new_status": "Accepted",
+            "created_at": now_iso,
+        }
+    ).execute()
+
+    return {"success": True, "message": "Commission accepted and locked"}
 
 # ============ USER ROUTES ============
 
@@ -3479,12 +4005,16 @@ async def get_upload_url(
         region = os.environ.get("AWS_REGION", "ap-south-1")
         
         ext = body.filename.split('.')[-1]
-        key = f"{body.folder}/{user['id']}/{uuid.uuid4()}.{ext}"
+        bucket_name = _resolve_upload_bucket(body.bucket_key)
 
-        bucket_name = os.environ.get("AWS_S3_BUCKET") or os.environ.get("AWS_BUCKET_NAME")
-        
-        if not bucket_name:
-            raise HTTPException(status_code=500, detail="AWS_S3_BUCKET not configured")
+        file_token = f"{uuid.uuid4()}.{ext}"
+        if body.bucket_key == "artist-artworks":
+            key = f"{user['id']}/{uuid.uuid4()}/{file_token}"
+        elif body.bucket_key in ["commission-references", "commission-deliveries"]:
+            parent = body.entity_id or user["id"]
+            key = f"{parent}/{file_token}"
+        else:
+            key = f"{body.folder}/{user['id']}/{file_token}"
         
         upload_url = s3.generate_presigned_url(
             "put_object",

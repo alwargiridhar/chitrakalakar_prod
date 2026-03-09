@@ -1,74 +1,69 @@
-# Commissioning Feature - Tables, Buckets, and Pricing Matrix
+# Commissioning Setup (Adjusted to Existing Supabase Format)
 
-## Tables Added
+Run SQL: `/app/scripts/commissioning_feature_migration.sql`
 
-Run: `/app/scripts/commissioning_feature_migration.sql`
+## Non-Breaking Strategy
+- Existing tables are not renamed or dropped.
+- Existing schema remains compatible.
+- Only additive columns/tables are introduced.
+- Existing role model continues via `profiles.role` (`admin`, `artist`, `user` where `user` acts as buyer).
 
-### 1) `commissions`
-- Stores each commission request from user
-- Includes calculator inputs (category, medium, dimensions, skill, detail, subjects)
-- Stores computed `price_min`, `price_max`, `estimated_price`
-- Stores workflow status:
-  - `Requested` → `Accepted` → `In Progress` → `WIP Shared` → `Completed` → `Delivered`
+## Tables in Commission Workflow
 
-### 2) `commission_updates`
-- Stores status timeline entries and WIP update logs
-- Supports artist note + optional image per update
-- Drives user dashboard tracking timeline
+### 1) `artist_categories`
+- Artist-wise category pricing bands for matching query.
+- Columns: `artist_id`, `category`, `min_price`, `max_price`, `pricing_model`.
 
-## Buckets / Storage Structure
+### 2) `commission_requests`
+- User commission intake table.
+- Includes category, medium, description, refs, size, budget, deadline, negotiation flags, pricing_type, offer_price.
+- Tracks request lifecycle status (`pending` / `locked` / `closed`).
 
-### Existing S3 signed URL setup (recommended for current backend)
-Use folder-based separation inside current upload bucket:
+### 3) `artist_requests`
+- One row per artist request sent by buyer/system.
+- Enforces max-one row per artist per commission.
+- Status: `pending`, `accepted`, `rejected`, `expired`.
 
-- `commission-refs/{user_id}/...`
-  - User reference images
-- `commission-wips/{artist_id}/...`
-  - Artist work-in-progress images
+### 4) `commission_deals`
+- Locked deal after first artist acceptance.
+- Stores `final_price`, `delivery_date`, status, latest update note/image.
 
-### If separate buckets are preferred
-- `chitrakalakar-commission-refs` (private recommended)
-- `chitrakalakar-commission-wips` (public read)
+### 5) `commission_updates`
+- Timeline entries for dashboard tracking (`Requested → Accepted → In Progress → WIP Shared → Completed → Delivered`).
 
-## Artwork Categories in Current Framework
+## Additive Profile Fields
+Added safely to existing `profiles`:
+- `rating`
+- `delivery_days`
+- `negotiation_allowed`
+- `availability_status` (`available`, `busy`, `not_accepting`)
 
-- Acrylic Colors
-- Watercolors
-- Pencil & Pen Work
-- Pastels
-- Indian Ink
-- Illustrations
-- Visual Art
-- Digital Art
-- Mixed Media
-- Sculpture
-- Photography
-- Printmaking
+## Pricing Matrix by Category (Corrected)
 
-## Pricing Matrix (applies to all categories above)
+| Category | Average Artist | Advanced Artist | Pricing Model |
+|---|---:|---:|---|
+| Acrylic Colors | ₹1,500 – ₹4,000 / sq ft | ₹4,000 – ₹10,000 / sq ft | sqft |
+| Watercolors | ₹1,200 – ₹3,000 / sq ft | ₹3,000 – ₹6,000 / sq ft | sqft |
+| Pencil & Pen Work | ₹800 – ₹2,000 / sq ft | ₹2,000 – ₹5,000 / sq ft | sqft |
+| Pastels | ₹1,200 – ₹3,500 / sq ft | ₹3,500 – ₹7,000 / sq ft | sqft |
+| Indian Ink | ₹1,000 – ₹2,500 / sq ft | ₹2,500 – ₹5,500 / sq ft | sqft |
+| Illustrations | ₹2,000 – ₹8,000 / artwork | ₹8,000 – ₹25,000 | flat |
+| Visual Art | ₹2,000 – ₹7,000 / sq ft | ₹7,000 – ₹18,000 | sqft |
+| Digital Art | ₹1,000 – ₹6,000 / artwork | ₹6,000 – ₹20,000 | flat |
+| Mixed Media | ₹2,500 – ₹8,000 / sq ft | ₹8,000 – ₹20,000 | sqft |
+| Sculpture | ₹10,000 – ₹80,000 | ₹80,000 – ₹4,00,000 | flat |
+| Photography | ₹2,000 – ₹15,000 | ₹15,000 – ₹1,00,000 | flat |
+| Printmaking | ₹1,500 – ₹5,000 / sq ft | ₹5,000 – ₹12,000 | sqft |
 
-### Medium-wise range per sq.ft
+> For flat categories, estimator ignores width/height as requested.
 
-1. Pencil / Charcoal
-   - Average: ₹800 – ₹2,000
-   - Advanced: ₹2,000 – ₹5,000
+## S3 Buckets (Strict Separate Buckets)
+Configured in backend upload flow:
+- `artist-artworks`
+- `commission-references`
+- `commission-deliveries`
 
-2. Watercolor
-   - Average: ₹1,200 – ₹3,000
-   - Advanced: ₹3,000 – ₹6,000
-
-3. Acrylic on Canvas
-   - Average: ₹1,500 – ₹4,000
-   - Advanced: ₹4,000 – ₹10,000
-
-4. Oil on Canvas
-   - Average: ₹2,500 – ₹6,000
-   - Advanced: ₹6,000 – ₹15,000
-
-5. Hyper-Realism / Museum Replica
-   - Average: ₹5,000 – ₹12,000
-   - Advanced: ₹12,000 – ₹30,000
-
-### Multipliers
-- Detail: Basic (1x), Detailed (1.25x), Hyper Realistic (1.5x)
-- Subjects: add 15% per extra subject
+Required env vars:
+- `AWS_BUCKET_ARTIST_ARTWORKS`
+- `AWS_BUCKET_COMMISSION_REFERENCES`
+- `AWS_BUCKET_COMMISSION_DELIVERIES`

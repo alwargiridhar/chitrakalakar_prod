@@ -15,7 +15,8 @@ export function ImageUpload({
   folder,
   onUpload,
   currentImage,
-  label = "Upload Image"
+  label = "Upload Image",
+  entityId = null,
 }) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(currentImage || null);
@@ -62,11 +63,12 @@ export function ImageUpload({
        * `bucket` is now used as an S3 FOLDER name
        * (avatars / artworks / exhibitions)
        */
-     const imageUrl = await uploadFile({
-       file: compressedFile,
-       bucket: bucket,          // chitrakalakar-uploads
-       folder: folder,          // avatars / artworks
-     });
+      const imageUrl = await uploadFile({
+        file: compressedFile,
+        bucketKey: bucket,
+        folder,
+        entityId,
+      });
 
       setPreview(imageUrl);
       onUpload(imageUrl);
