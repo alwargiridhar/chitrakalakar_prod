@@ -1,0 +1,201 @@
+{
+  "project_name": "Chitrakalakar - Art Commissioning Feature",
+  "theme": {
+    "mode": "light",
+    "primary_color": "#1A1A1A",
+    "secondary_color": "#FAFAFA",
+    "accent_color": "#D4AF37",
+    "fonts": {
+      "heading": "Playfair Display",
+      "body": "Manrope"
+    }
+  },
+  "typography": {
+    "headings": {
+      "font_family": "Playfair Display, serif",
+      "weights": {
+        "regular": 400,
+        "bold": 700
+      },
+      "sizes": {
+        "h1": "text-5xl md:text-6xl tracking-tight",
+        "h2": "text-4xl md:text-5xl tracking-tight",
+        "h3": "text-2xl md:text-3xl font-medium"
+      }
+    },
+    "body": {
+      "font_family": "Manrope, sans-serif",
+      "weights": {
+        "regular": 400,
+        "medium": 500
+      },
+      "sizes": {
+        "base": "text-base leading-relaxed",
+        "sm": "text-sm text-gray-600"
+      }
+    }
+  },
+  "colors": {
+    "palette": {
+      "neutral": {
+        "50": "#FAFAFA",
+        "100": "#F5F5F0",
+        "200": "#E5E5E5",
+        "900": "#1A1A1A"
+      },
+      "brand": {
+        "gold": "#D4AF37",
+        "gold_dim": "#C5A065",
+        "charcoal": "#1A1A1A"
+      },
+      "status": {
+        "info": "#E0F2FE",
+        "success": "#DCFCE7",
+        "warning": "#FEF3C7",
+        "error": "#FEE2E2"
+      }
+    },
+    "usage": {
+      "background": "bg-[#FAFAFA]",
+      "surface": "bg-white",
+      "text_primary": "text-[#1A1A1A]",
+      "text_secondary": "text-gray-500",
+      "border": "border-gray-200",
+      "primary_button": "bg-[#1A1A1A] text-white hover:bg-black",
+      "accent_text": "text-[#D4AF37]"
+    }
+  },
+  "database_schema": {
+    "tables": [
+      {
+        "name": "commissions",
+        "columns": [
+          "id UUID PRIMARY KEY DEFAULT uuid_generate_v4()",
+          "user_id UUID REFERENCES users(id)",
+          "artist_id UUID REFERENCES artists(id) NULL",
+          "medium VARCHAR(50) NOT NULL",
+          "width DECIMAL(10,2) NOT NULL",
+          "height DECIMAL(10,2) NOT NULL",
+          "skill_level VARCHAR(20) NOT NULL CHECK (skill_level IN ('Average', 'Advanced'))",
+          "detail_level VARCHAR(20) NOT NULL DEFAULT 'Basic'",
+          "subjects INTEGER DEFAULT 1",
+          "price_min DECIMAL(12,2) NOT NULL",
+          "price_max DECIMAL(12,2) NOT NULL",
+          "estimated_price DECIMAL(12,2) NOT NULL",
+          "reference_image_urls TEXT[]",
+          "special_instructions TEXT",
+          "deadline DATE",
+          "framing_option VARCHAR(50)",
+          "status VARCHAR(20) DEFAULT 'Requested' CHECK (status IN ('Requested', 'Accepted', 'In Progress', 'WIP Shared', 'Completed', 'Delivered'))",
+          "created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()",
+          "updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()"
+        ]
+      },
+      {
+        "name": "commission_updates",
+        "columns": [
+          "id UUID PRIMARY KEY DEFAULT uuid_generate_v4()",
+          "commission_id UUID REFERENCES commissions(id)",
+          "artist_id UUID REFERENCES artists(id)",
+          "image_url VARCHAR(500)",
+          "note TEXT",
+          "previous_status VARCHAR(20)",
+          "new_status VARCHAR(20)",
+          "created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()"
+        ]
+      }
+    ]
+  },
+  "storage_buckets": [
+    {
+      "name": "commission-refs",
+      "public": false,
+      "description": "Stores user uploaded reference images for commissions"
+    },
+    {
+      "name": "commission-wips",
+      "public": true,
+      "description": "Stores artist WIP (Work In Progress) images"
+    }
+  ],
+  "components": {
+    "PriceCalculator": {
+      "path": "/app/frontend/src/components/commission/PriceCalculator.js",
+      "description": "Interactive split-screen calculator. Left: Inputs (Sliders/Selects). Right: 'The Receipt' (Live visual estimate).",
+      "specs": {
+        "inputs": [
+          "Dimensions (Width/Height) - Slider or Input",
+          "Medium - Card Selection (Pencil, Watercolor, Acrylic, Oil, Hyper-Realism)",
+          "Skill Level - Radio Toggle (Average vs Advanced)",
+          "Detail Level - Segmented Control (Basic, Detailed, Hyper-Realistic)",
+          "Subjects - Counter (+/-)"
+        ],
+        "visuals": "Show a dynamic price range bar. Highlight the selected medium with an icon or texture."
+      }
+    },
+    "CommissionStatusTimeline": {
+      "path": "/app/frontend/src/components/commission/CommissionStatusTimeline.js",
+      "description": "Vertical timeline showing the journey of the art piece.",
+      "specs": {
+        "steps": ["Requested", "Accepted", "In Progress", "WIP Shared", "Completed", "Delivered"],
+        "features": "Show timestamps. For 'WIP Shared', display a thumbnail of the uploaded image that opens in a lightbox."
+      }
+    },
+    "WIPUploader": {
+      "path": "/app/frontend/src/components/commission/WIPUploader.js",
+      "description": "Drag and drop zone for artists to upload progress shots.",
+      "specs": {
+        "trigger": "Button 'Post Update'",
+        "fields": ["Image Upload", "Note/Comment", "Update Status Toggle (e.g., mark as 'WIP Shared')"]
+      }
+    }
+  },
+  "pages": [
+    {
+      "path": "/app/frontend/src/pages/CommissionRequestPage.js",
+      "route": "/commission/request",
+      "description": "Full page wrapper for the PriceCalculator + Request Form. Clean, distraction-free.",
+      "layout": "Two-column layout on desktop. Calculator sticky on right, Form flows on left."
+    },
+    {
+      "path": "/app/frontend/src/pages/UserCommissionsPage.js",
+      "route": "/user-dashboard/commissions",
+      "description": "List of active/past commissions for the user.",
+      "layout": "Grid of 'Commission Cards'. Each card shows status, latest WIP thumb, and 'Track' button."
+    },
+    {
+      "path": "/app/frontend/src/pages/ArtistCommissionsPage.js",
+      "route": "/dashboard/commissions",
+      "description": "Kanban or List view for artists to manage their queue.",
+      "features": ["Accept/Decline buttons", "Post Update button", "Filter by Status"]
+    }
+  ],
+  "instructions_to_main_agent": [
+    "1. INSTALL DEPENDENCIES: Use 'lucide-react' for icons. Ensure 'recharts' is available for any price visualization if needed.",
+    "2. PRICING LOGIC IMPLEMENTATION (Crucial):",
+    "   - Base Logic: `sqft = width * height`",
+    "   - Medium Pricing (Average/Advanced):",
+    "     - Pencil/Charcoal: 800-2000 / 2000-5000",
+    "     - Watercolor: 1200-3000 / 3000-6000",
+    "     - Acrylic: 1500-4000 / 4000-10000",
+    "     - Oil: 2500-6000 / 6000-15000",
+    "     - Hyper-Realism: 5000-12000 / 12000-30000",
+    "   - Detail Multiplier: Basic (1.0), Detailed (1.25), Hyper-Realistic (1.5)",
+    "   - Subject Multiplier: For subjects > 1, add 15% of base price per extra subject. Formula: `total = base + (base * (subjects-1) * 0.15)`",
+    "   - Display: Show Min, Max, and Average prices.",
+    "3. BACKEND INTEGRATION:",
+    "   - Create the 'commissions' and 'commission_updates' tables in Supabase/Postgres.",
+    "   - Create S3 buckets 'commission-refs' and 'commission-wips'.",
+    "   - Create API endpoints: `POST /commissions`, `GET /commissions/user/{id}`, `GET /commissions/artist/{id}`, `POST /commissions/{id}/update`.",
+    "4. UI POLISH:",
+    "   - Use 'Playfair Display' for the 'Estimated Price' big number to make it feel valuable.",
+    "   - Use skeleton loaders when fetching commission status.",
+    "   - Ensure mobile responsiveness for the calculator (stack columns)."
+  ],
+  "universal_guidelines": [
+    "Do not use generic gradients.",
+    "Use 2-3x more spacing than typical.",
+    "Every interaction needs a micro-animation (hover lift, scale).",
+    "Use 'sonner' for toast notifications."
+  ]
+}
