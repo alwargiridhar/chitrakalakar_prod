@@ -94,3 +94,9 @@ Adjust commission feature to existing framework without breaking existing Supaba
 - Updated upload bucket key mapping to support **artworks** as the primary key, with backward compatibility for `artist-artworks`.
 - Added backend env support for `AWS_BUCKET_ARTWORKS` (preferred) and fallback to `AWS_BUCKET_ARTIST_ARTWORKS`.
 - Updated frontend bucket constant to use `artworks` for artist uploads.
+
+
+## Latest Micro-Update (Location Autocomplete Reliability)
+- Fixed art-class location lookup failure when geocoder returns non-JSON/blocked response.
+- Hardened `/api/locations/search` with robust status handling, JSON guards, second attempt without country filter, and curated India-city fallback suggestions.
+- Verified `chenna` now returns valid dropdown suggestion (`Chennai, Tamil Nadu, India`).

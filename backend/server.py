@@ -692,6 +692,41 @@ async def health_check():
 async def search_locations(q: str, country: Optional[str] = None):
     """Search locations using OpenStreetMap Nominatim API"""
     import httpx
+
+    def fallback_locations(search_query: str):
+        """Fallback city suggestions when geocoder is blocked/rate-limited."""
+        city_state_pairs = [
+            ("Chennai", "Tamil Nadu"), ("Coimbatore", "Tamil Nadu"), ("Madurai", "Tamil Nadu"),
+            ("Salem", "Tamil Nadu"), ("Trichy", "Tamil Nadu"), ("Erode", "Tamil Nadu"),
+            ("Bengaluru", "Karnataka"), ("Mysuru", "Karnataka"), ("Mangaluru", "Karnataka"),
+            ("Hyderabad", "Telangana"), ("Warangal", "Telangana"), ("Vijayawada", "Andhra Pradesh"),
+            ("Visakhapatnam", "Andhra Pradesh"), ("Mumbai", "Maharashtra"), ("Pune", "Maharashtra"),
+            ("Nagpur", "Maharashtra"), ("Nashik", "Maharashtra"), ("Ahmedabad", "Gujarat"),
+            ("Surat", "Gujarat"), ("Vadodara", "Gujarat"), ("Jaipur", "Rajasthan"),
+            ("Udaipur", "Rajasthan"), ("Delhi", "Delhi"), ("Noida", "Uttar Pradesh"),
+            ("Lucknow", "Uttar Pradesh"), ("Kanpur", "Uttar Pradesh"), ("Kolkata", "West Bengal"),
+            ("Howrah", "West Bengal"), ("Bhubaneswar", "Odisha"), ("Cuttack", "Odisha"),
+            ("Bhopal", "Madhya Pradesh"), ("Indore", "Madhya Pradesh"), ("Patna", "Bihar"),
+            ("Ranchi", "Jharkhand"), ("Kochi", "Kerala"), ("Thiruvananthapuram", "Kerala"),
+            ("Kozhikode", "Kerala"), ("Chandigarh", "Chandigarh"), ("Amritsar", "Punjab"),
+            ("Ludhiana", "Punjab"), ("Guwahati", "Assam"), ("Shillong", "Meghalaya"),
+            ("Panaji", "Goa"), ("Dehradun", "Uttarakhand"),
+        ]
+
+        term = (search_query or "").strip().lower()
+        matches = []
+        for city, state in city_state_pairs:
+            if term in city.lower() or term in state.lower():
+                matches.append({
+                    "display_name": f"{city}, {state}, India",
+                    "city": city,
+                    "state": state,
+                    "country": "India",
+                    "country_code": "IN",
+                    "lat": None,
+                    "lon": None,
+                })
+        return {"locations": matches[:10]}
     
     if len(q) < 2:
         return {"locations": []}
@@ -707,13 +742,26 @@ async def search_locations(q: str, country: Optional[str] = None):
         if country:
             params["countrycodes"] = country.lower()
         
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=8.0) as client:
             response = await client.get(
                 "https://nominatim.openstreetmap.org/search",
                 params=params,
-                headers={"User-Agent": "ChitraKalakar/1.0"}
+                headers={
+                    "User-Agent": "ChitraKalakar/1.0 (support@chitrakalakar.com)",
+                    "Accept": "application/json",
+                }
             )
-            data = response.json()
+
+            if response.status_code != 200:
+                return fallback_locations(q)
+
+            try:
+                data = response.json()
+            except Exception:
+                return fallback_locations(q)
+
+            if not isinstance(data, list):
+                return fallback_locations(q)
         
         locations = []
         for item in data:
@@ -728,10 +776,42 @@ async def search_locations(q: str, country: Optional[str] = None):
                 "lon": item.get("lon")
             })
         
-        return {"locations": locations}
+        if locations:
+            return {"locations": locations}
+
+        # Secondary attempt without country restriction
+        if country:
+            try:
+                async with httpx.AsyncClient(timeout=8.0) as client:
+                    response = await client.get(
+                        "https://nominatim.openstreetmap.org/search",
+                        params={"q": q, "format": "json", "addressdetails": 1, "limit": 10},
+                        headers={"User-Agent": "ChitraKalakar/1.0 (support@chitrakalakar.com)", "Accept": "application/json"},
+                    )
+                    if response.status_code == 200:
+                        data = response.json() if response.text else []
+                        if isinstance(data, list):
+                            for item in data:
+                                address = item.get("address", {})
+                                locations.append({
+                                    "display_name": item.get("display_name"),
+                                    "city": address.get("city") or address.get("town") or address.get("village"),
+                                    "state": address.get("state"),
+                                    "country": address.get("country"),
+                                    "country_code": address.get("country_code", "").upper(),
+                                    "lat": item.get("lat"),
+                                    "lon": item.get("lon"),
+                                })
+            except Exception:
+                pass
+
+        if locations:
+            return {"locations": locations[:10]}
+
+        return fallback_locations(q)
     except Exception as e:
         print(f"Location search error: {e}")
-        return {"locations": []}
+        return fallback_locations(q)
 
 # ============ PUBLIC ROUTES ============
 
