@@ -100,6 +100,7 @@ export const publicAPI = {
   getCommunities: () => apiCall('/public/communities'),
   getCommunityDetail: (communityId) => apiCall(`/public/community/${communityId}`),
   getArtistOfTheDay: () => apiCall('/public/artist-of-the-day'),
+  getCommissionConfig: () => apiCall('/public/commission-config'),
 };
 
 // Community APIs
@@ -219,6 +220,25 @@ export const profileModificationAPI = {
 export const userAPI = {
   getMyEnquiries: () => apiCall('/user/my-enquiries'),
   getProfile: () => apiCall('/user/profile'),
+  getMyCommissions: () => apiCall('/user/commissions'),
+};
+
+export const commissionAPI = {
+  create: (data) => apiCall('/commissions', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  getUserCommissions: () => apiCall('/user/commissions'),
+  getArtistCommissions: () => apiCall('/artist/commissions'),
+  getAdminCommissions: () => apiCall('/admin/commissions'),
+  updateByArtist: (commissionId, data) => apiCall(`/artist/commissions/${commissionId}/update`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  adminAction: (data) => apiCall('/admin/commissions/action', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
 };
 
 // Admin APIs

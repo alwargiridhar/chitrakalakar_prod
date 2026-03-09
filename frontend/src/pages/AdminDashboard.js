@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { adminAPI } from '../services/api';
 import { ART_CATEGORIES } from '../utils/branding';
@@ -326,6 +326,13 @@ function AdminDashboard() {
         <p className="text-gray-600 mb-8">
           Welcome, {profiles?.full_name || profiles?.email}
         </p>
+        <Link
+          to="/admin/commissions"
+          className="inline-block mb-6 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-black"
+          data-testid="admin-dashboard-commission-requests-link"
+        >
+          Open Commission Requests
+        </Link>
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-8">

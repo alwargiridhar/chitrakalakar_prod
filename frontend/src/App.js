@@ -39,6 +39,10 @@ import CommunitiesPage from './pages/CommunitiesPage';
 import CommunityDetailPage from './pages/CommunityDetailPage';
 import InstallAppPage from './pages/InstallAppPage';
 import DownloadAppPage from './pages/DownloadAppPage';
+import CommissionRequestPage from './pages/CommissionRequestPage';
+import UserCommissionsPage from './pages/UserCommissionsPage';
+import ArtistCommissionsPage from './pages/ArtistCommissionsPage';
+import AdminCommissionsPage from './pages/AdminCommissionsPage';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 import './App.css';
@@ -78,6 +82,10 @@ function App() {
           <Route path="/community/:id" element={<Layout><CommunityDetailPage /></Layout>} />
           <Route path="/install" element={<Layout><InstallAppPage /></Layout>} />
           <Route path="/download" element={<Layout><DownloadAppPage /></Layout>} />
+          <Route path="/commission/request" element={<Layout><CommissionRequestPage /></Layout>} />
+          <Route path="/user-dashboard/commissions" element={<><NavBar /><UserCommissionsPage /></>} />
+          <Route path="/dashboard/commissions" element={<><NavBar /><ArtistCommissionsPage /></>} />
+          <Route path="/admin/commissions" element={<><NavBar /><AdminCommissionsPage /></>} />
           <Route path="*" element={<Layout><NotFoundPage /></Layout>} />
         </Routes>
         <Chatbot />

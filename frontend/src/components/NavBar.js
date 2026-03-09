@@ -40,6 +40,7 @@ function NavBar() {
   ];
 
   const navLinksAfterExhibitions = [
+    { label: 'Commission', href: '/commission/request' },
     { label: 'Communities', href: '/communities' },
     { label: 'Contact', href: '/contact' },
     { label: 'Art Classes', href: '/art-classes' },
@@ -61,6 +62,14 @@ function NavBar() {
       { label: getDashboardLink().label, href: getDashboardLink().href, icon: '📊' },
       { label: 'Account Settings', href: '/account', icon: '⚙️' },
     ];
+
+    if (isAdmin) {
+      items.push({ label: 'Commission Requests', href: '/admin/commissions', icon: '🧾' });
+    } else if (isArtist) {
+      items.push({ label: 'Commission Queue', href: '/dashboard/commissions', icon: '🧾' });
+    } else {
+      items.push({ label: 'My Commissions', href: '/user-dashboard/commissions', icon: '🧾' });
+    }
 
     // Add subscription for artists
     if (isArtist) {

@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException, Depends, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, List
+from typing import Optional, List, Dict
 from datetime import datetime, timezone, timedelta
 import os
 import time
@@ -15,6 +15,8 @@ import json
 import asyncio
 import hashlib
 import hmac
+import smtplib
+from email.message import EmailMessage
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
@@ -309,6 +311,177 @@ class PushToMarketplaceRequest(BaseModel):
 class CartItemRequest(BaseModel):
     artwork_id: str
     quantity: int = 1
+
+
+class CommissionCreate(BaseModel):
+    art_category: str
+    preferred_artist_id: Optional[str] = None
+    medium: str
+    width_ft: float = Field(gt=0)
+    height_ft: float = Field(gt=0)
+    skill_level: str  # Average / Advanced
+    detail_level: str = "Basic"
+    subjects: int = Field(default=1, ge=1)
+    reference_image_urls: List[str] = []
+    special_instructions: Optional[str] = None
+    deadline: Optional[str] = None
+    framing_option: Optional[str] = None
+    contact_phone: Optional[str] = None
+
+
+class CommissionArtistUpdate(BaseModel):
+    status: str
+    note: Optional[str] = None
+    image_url: Optional[str] = None
+
+
+class CommissionAdminAction(BaseModel):
+    commission_id: str
+    artist_id: Optional[str] = None
+    status: Optional[str] = None
+    admin_note: Optional[str] = None
+
+
+COMMISSION_STATUSES = [
+    "Requested",
+    "Accepted",
+    "In Progress",
+    "WIP Shared",
+    "Completed",
+    "Delivered",
+]
+
+COMMISSION_MEDIUM_PRICING = {
+    "Pencil / Charcoal": {
+        "average": {"min": 800, "max": 2000},
+        "advanced": {"min": 2000, "max": 5000},
+    },
+    "Watercolor": {
+        "average": {"min": 1200, "max": 3000},
+        "advanced": {"min": 3000, "max": 6000},
+    },
+    "Acrylic on Canvas": {
+        "average": {"min": 1500, "max": 4000},
+        "advanced": {"min": 4000, "max": 10000},
+    },
+    "Oil on Canvas": {
+        "average": {"min": 2500, "max": 6000},
+        "advanced": {"min": 6000, "max": 15000},
+    },
+    "Hyper-Realism / Museum Replica": {
+        "average": {"min": 5000, "max": 12000},
+        "advanced": {"min": 12000, "max": 30000},
+    },
+}
+
+COMMISSION_DETAIL_MULTIPLIERS = {
+    "Basic": 1.0,
+    "Detailed": 1.25,
+    "Hyper Realistic": 1.5,
+}
+
+COMMISSION_ART_CATEGORIES = [
+    "Acrylic Colors",
+    "Watercolors",
+    "Pencil & Pen Work",
+    "Pastels",
+    "Indian Ink",
+    "Illustrations",
+    "Visual Art",
+    "Digital Art",
+    "Mixed Media",
+    "Sculpture",
+    "Photography",
+    "Printmaking",
+]
+
+
+def _normalize_skill_level(value: str) -> str:
+    normalized = (value or "").strip().lower()
+    if normalized in ["average", "average professional artist"]:
+        return "average"
+    if normalized in ["advanced", "advanced / expert artist", "advanced/expert", "expert"]:
+        return "advanced"
+    raise HTTPException(status_code=400, detail="Invalid skill level")
+
+
+def _normalize_detail_level(value: str) -> str:
+    normalized = (value or "").strip().lower()
+    detail_map = {
+        "basic": "Basic",
+        "detailed": "Detailed",
+        "hyper realistic": "Hyper Realistic",
+        "hyper-realistic": "Hyper Realistic",
+    }
+    detail = detail_map.get(normalized)
+    if not detail:
+        raise HTTPException(status_code=400, detail="Invalid detail level")
+    return detail
+
+
+def calculate_commission_estimate(payload: CommissionCreate) -> Dict[str, float]:
+    medium_pricing = COMMISSION_MEDIUM_PRICING.get(payload.medium)
+    if not medium_pricing:
+        raise HTTPException(status_code=400, detail="Invalid medium")
+
+    skill_level = _normalize_skill_level(payload.skill_level)
+    detail_level = _normalize_detail_level(payload.detail_level)
+    price_band = medium_pricing[skill_level]
+
+    sqft = payload.width_ft * payload.height_ft
+    detail_multiplier = COMMISSION_DETAIL_MULTIPLIERS[detail_level]
+    subject_multiplier = 1 + max(0, payload.subjects - 1) * 0.15
+
+    min_price = sqft * price_band["min"] * detail_multiplier * subject_multiplier
+    max_price = sqft * price_band["max"] * detail_multiplier * subject_multiplier
+    avg_price = (min_price + max_price) / 2
+
+    return {
+        "square_feet": round(sqft, 2),
+        "min_price": round(min_price, 2),
+        "max_price": round(max_price, 2),
+        "average_price": round(avg_price, 2),
+        "normalized_skill": "Average" if skill_level == "average" else "Advanced",
+        "normalized_detail": detail_level,
+    }
+
+
+def _send_commission_admin_email(admin_emails: List[str], subject: str, body: str):
+    smtp_host = os.environ.get("SMTP_HOST")
+    smtp_port = os.environ.get("SMTP_PORT")
+    smtp_username = os.environ.get("SMTP_USERNAME")
+    smtp_password = os.environ.get("SMTP_PASSWORD")
+    from_email = os.environ.get("ADMIN_NOTIFICATION_FROM_EMAIL")
+
+    if not smtp_host or not smtp_port or not smtp_username or not smtp_password or not from_email:
+        print("Email notification skipped: SMTP environment is not configured")
+        return
+
+    if not admin_emails:
+        print("Email notification skipped: no admin email recipients found")
+        return
+
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = from_email
+    msg["To"] = ", ".join(admin_emails)
+    msg.set_content(body)
+
+    with smtplib.SMTP(smtp_host, int(smtp_port)) as smtp:
+        smtp.starttls()
+        smtp.login(smtp_username, smtp_password)
+        smtp.send_message(msg)
+
+
+def _get_commission_updates(supabase, commission_id: str):
+    updates = (
+        supabase.table("commission_updates")
+        .select("*, profiles!artist_id(full_name, avatar)")
+        .eq("commission_id", commission_id)
+        .order("created_at", desc=False)
+        .execute()
+    )
+    return updates.data or []
 
 # ============ HEALTH CHECK ============
 
@@ -1411,6 +1584,326 @@ async def reveal_artist_contact(request: RevealContactRequest, user: dict = Depe
         "artist": artist.data,
         "contacts_remaining": 2 - len(contacts_revealed) + 1
     }
+
+
+@app.get("/api/public/commission-config")
+async def get_commission_config():
+    """Get commission calculator configuration for all artwork categories."""
+    category_pricing = {
+        category: COMMISSION_MEDIUM_PRICING for category in COMMISSION_ART_CATEGORIES
+    }
+    return {
+        "categories": COMMISSION_ART_CATEGORIES,
+        "medium_pricing": COMMISSION_MEDIUM_PRICING,
+        "detail_multipliers": COMMISSION_DETAIL_MULTIPLIERS,
+        "statuses": COMMISSION_STATUSES,
+        "category_pricing": category_pricing,
+    }
+
+
+@app.post("/api/commissions")
+async def create_commission_request(
+    payload: CommissionCreate,
+    background_tasks: BackgroundTasks,
+    user: dict = Depends(require_user),
+):
+    """Create a commission request with live-calculated pricing and notify admins."""
+    supabase = get_supabase_client()
+
+    if payload.art_category not in COMMISSION_ART_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Invalid artwork category")
+
+    estimate = calculate_commission_estimate(payload)
+
+    artist_id = payload.preferred_artist_id
+    if artist_id:
+        artist = (
+            supabase.table("profiles")
+            .select("id, role, is_approved, is_active")
+            .eq("id", artist_id)
+            .single()
+            .execute()
+        )
+        if not artist.data or artist.data.get("role") != "artist":
+            raise HTTPException(status_code=404, detail="Preferred artist not found")
+
+    requester_profile = (
+        supabase.table("profiles")
+        .select("full_name, email, phone")
+        .eq("id", user["id"])
+        .single()
+        .execute()
+    )
+
+    commission_doc = {
+        "user_id": user["id"],
+        "artist_id": artist_id,
+        "art_category": payload.art_category,
+        "medium": payload.medium,
+        "width_ft": payload.width_ft,
+        "height_ft": payload.height_ft,
+        "square_feet": estimate["square_feet"],
+        "skill_level": estimate["normalized_skill"],
+        "detail_level": estimate["normalized_detail"],
+        "subjects": payload.subjects,
+        "price_min": estimate["min_price"],
+        "price_max": estimate["max_price"],
+        "estimated_price": estimate["average_price"],
+        "reference_image_urls": payload.reference_image_urls,
+        "special_instructions": payload.special_instructions,
+        "deadline": payload.deadline,
+        "framing_option": payload.framing_option,
+        "contact_name": (requester_profile.data or {}).get("full_name"),
+        "contact_email": (requester_profile.data or {}).get("email"),
+        "contact_phone": payload.contact_phone or (requester_profile.data or {}).get("phone"),
+        "status": "Requested",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    created = supabase.table("commissions").insert(commission_doc).execute()
+    if not created.data:
+        raise HTTPException(status_code=500, detail="Failed to create commission request")
+
+    commission = created.data[0]
+
+    supabase.table("commission_updates").insert(
+        {
+            "commission_id": commission["id"],
+            "artist_id": artist_id,
+            "note": "Commission request submitted",
+            "previous_status": None,
+            "new_status": "Requested",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+    ).execute()
+
+    admin_emails_res = (
+        supabase.table("profiles")
+        .select("email")
+        .eq("role", "admin")
+        .eq("is_active", True)
+        .not_.is_("email", "null")
+        .execute()
+    )
+    admin_emails = [a.get("email") for a in (admin_emails_res.data or []) if a.get("email")]
+
+    email_subject = f"New Commission Request #{commission['id'][:8]}"
+    email_body = (
+        f"A new commission request has been submitted.\n\n"
+        f"Requester: {(requester_profile.data or {}).get('full_name', 'N/A')}\n"
+        f"Category: {payload.art_category}\n"
+        f"Medium: {payload.medium}\n"
+        f"Estimated Range: ₹{estimate['min_price']} - ₹{estimate['max_price']}\n"
+        f"Status: Requested\n"
+    )
+    background_tasks.add_task(_send_commission_admin_email, admin_emails, email_subject, email_body)
+
+    return {
+        "success": True,
+        "commission": commission,
+        "estimated": {
+            "minimum": estimate["min_price"],
+            "maximum": estimate["max_price"],
+            "average": estimate["average_price"],
+        },
+    }
+
+
+@app.get("/api/user/commissions")
+async def get_user_commissions(user: dict = Depends(require_user)):
+    supabase = get_supabase_client()
+    commissions = (
+        supabase.table("commissions")
+        .select("*, profiles!artist_id(full_name, avatar)")
+        .eq("user_id", user["id"])
+        .order("created_at", desc=True)
+        .execute()
+    )
+
+    enriched = []
+    for commission in (commissions.data or []):
+        item = {
+            **commission,
+            "artist": commission.get("profiles"),
+            "updates": _get_commission_updates(supabase, commission["id"]),
+        }
+        enriched.append(item)
+
+    return {"commissions": enriched}
+
+
+@app.get("/api/artist/commissions")
+async def get_artist_commissions(artist: dict = Depends(require_artist)):
+    supabase = get_supabase_client()
+    commissions = (
+        supabase.table("commissions")
+        .select("*, profiles!user_id(full_name, email, phone)")
+        .eq("artist_id", artist["id"])
+        .order("created_at", desc=True)
+        .execute()
+    )
+
+    enriched = []
+    for commission in (commissions.data or []):
+        item = {
+            **commission,
+            "requester": commission.get("profiles"),
+            "updates": _get_commission_updates(supabase, commission["id"]),
+        }
+        enriched.append(item)
+
+    return {"commissions": enriched}
+
+
+@app.get("/api/admin/commissions")
+async def get_admin_commissions(admin: dict = Depends(require_admin)):
+    supabase = get_supabase_client()
+    commissions = (
+        supabase.table("commissions")
+        .select("*")
+        .order("created_at", desc=True)
+        .execute()
+    )
+
+    enriched = []
+    for commission in (commissions.data or []):
+        user_profile = (
+            supabase.table("profiles")
+            .select("id, full_name, email")
+            .eq("id", commission["user_id"])
+            .single()
+            .execute()
+        )
+
+        artist_profile = None
+        if commission.get("artist_id"):
+            artist_profile = (
+                supabase.table("profiles")
+                .select("id, full_name, email")
+                .eq("id", commission["artist_id"])
+                .single()
+                .execute()
+            )
+
+        item = {
+            **commission,
+            "user": user_profile.data if user_profile else None,
+            "artist": artist_profile.data if artist_profile else None,
+            "updates": _get_commission_updates(supabase, commission["id"]),
+        }
+        enriched.append(item)
+
+    return {"commissions": enriched}
+
+
+@app.post("/api/artist/commissions/{commission_id}/update")
+async def update_commission_by_artist(
+    commission_id: str,
+    payload: CommissionArtistUpdate,
+    artist: dict = Depends(require_artist),
+):
+    supabase = get_supabase_client()
+
+    commission_res = (
+        supabase.table("commissions")
+        .select("*")
+        .eq("id", commission_id)
+        .eq("artist_id", artist["id"])
+        .single()
+        .execute()
+    )
+
+    if not commission_res.data:
+        raise HTTPException(status_code=404, detail="Commission not found")
+
+    if payload.status not in COMMISSION_STATUSES:
+        raise HTTPException(status_code=400, detail="Invalid commission status")
+
+    current_status = commission_res.data.get("status")
+    if current_status == "Delivered":
+        raise HTTPException(status_code=400, detail="Delivered commission cannot be updated")
+
+    update_doc = {
+        "status": payload.status,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    if payload.image_url:
+        update_doc["latest_wip_image"] = payload.image_url
+
+    supabase.table("commissions").update(update_doc).eq("id", commission_id).execute()
+
+    status_update = {
+        "commission_id": commission_id,
+        "artist_id": artist["id"],
+        "image_url": payload.image_url,
+        "note": payload.note,
+        "previous_status": current_status,
+        "new_status": payload.status,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    inserted_update = supabase.table("commission_updates").insert(status_update).execute()
+
+    return {
+        "success": True,
+        "message": "Commission update posted",
+        "update": inserted_update.data[0] if inserted_update.data else status_update,
+    }
+
+
+@app.post("/api/admin/commissions/action")
+async def admin_action_on_commission(
+    payload: CommissionAdminAction,
+    admin: dict = Depends(require_admin),
+):
+    supabase = get_supabase_client()
+    commission_res = (
+        supabase.table("commissions")
+        .select("*")
+        .eq("id", payload.commission_id)
+        .single()
+        .execute()
+    )
+    if not commission_res.data:
+        raise HTTPException(status_code=404, detail="Commission not found")
+
+    update_doc = {"updated_at": datetime.now(timezone.utc).isoformat()}
+
+    if payload.artist_id:
+        artist = (
+            supabase.table("profiles")
+            .select("id, role")
+            .eq("id", payload.artist_id)
+            .single()
+            .execute()
+        )
+        if not artist.data or artist.data.get("role") != "artist":
+            raise HTTPException(status_code=404, detail="Artist not found")
+        update_doc["artist_id"] = payload.artist_id
+
+    if payload.status:
+        if payload.status not in COMMISSION_STATUSES:
+            raise HTTPException(status_code=400, detail="Invalid commission status")
+        update_doc["status"] = payload.status
+
+    if payload.admin_note:
+        update_doc["admin_note"] = payload.admin_note
+
+    supabase.table("commissions").update(update_doc).eq("id", payload.commission_id).execute()
+
+    if payload.status:
+        supabase.table("commission_updates").insert(
+            {
+                "commission_id": payload.commission_id,
+                "artist_id": payload.artist_id or commission_res.data.get("artist_id"),
+                "note": payload.admin_note,
+                "previous_status": commission_res.data.get("status"),
+                "new_status": payload.status,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+        ).execute()
+
+    return {"success": True, "message": "Commission updated by admin"}
 
 # ============ USER ROUTES ============
 

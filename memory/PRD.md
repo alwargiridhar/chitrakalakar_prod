@@ -1,265 +1,64 @@
-# ChitraKalakar - Art Marketplace Platform
+# PRD - ChitraKalakar Commissioning Feature
 
 ## Original Problem Statement
-Load the ChitraKalakar app from GitHub (https://github.com/alwargiridhar/chitrakalakar_prod) and implement the following enhancements:
+Implement commissioning artwork flow in existing chitrakalakar framework: interactive price calculator (medium/size/skill/detail/subjects), request submission with reference upload + instructions + deadline + framing, admin intake (DB + dashboard + email notification), artist WIP status updates, and user dashboard tracking with statuses: Requested → Accepted → In Progress → WIP Shared → Completed → Delivered. Also provide required tables and image bucket/folder strategy, and pricing matrix coverage for existing artwork categories.
 
-### Issues to Fix:
-1. Analytics on loading page loads late
-2. Paintings showing "pending for approval" but admin doesn't receive requests  
-3. Membership-based access for registered artists column and marketplace
+## Architecture Decisions
+- Continued with existing stack: React frontend + FastAPI backend + Supabase/Postgres data model patterns + existing signed upload API.
+- Added commission domain in backend (`commissions`, `commission_updates`) with status timeline.
+- Reused existing upload route and introduced dedicated folders (`commission-refs`, `commission-wips`) to support user references and artist WIP images.
+- Added optional SMTP-based admin email notification on commission creation (env-driven, non-breaking if missing).
+- Added dedicated pages for request flow and role-based commission management routes.
 
-### New Features:
-1. Enhanced artwork listing form with comprehensive checklist/dropdowns
-2. Show key information on thumbnails
-3. Show all artwork information in detail page
-4. **Virtual Room Preview** - Visualize artwork in different room settings
-5. User profile dropdown with account management pages
-6. PWA functionality for mobile/desktop installation
-7. Admin ability to manage featured artists
-8. Sub-admin creation with location autocomplete
-9. Pricing & voucher management system
-10. Artist of the Day feature
-11. Community feature for artists
+## What Has Been Implemented
+1. Backend APIs
+- Added calculator config endpoint: `GET /api/public/commission-config`
+- Added commission APIs:
+  - `POST /api/commissions`
+  - `GET /api/user/commissions`
+  - `GET /api/artist/commissions`
+  - `GET /api/admin/commissions`
+  - `POST /api/artist/commissions/{commission_id}/update`
+  - `POST /api/admin/commissions/action`
+- Added server-side pricing logic for all required mediums and multipliers.
+- Added admin email notification trigger for new commission requests.
 
----
+2. Frontend Features
+- New page: `/commission/request` (interactive price calculator + request form)
+- New page: `/user-dashboard/commissions` (user tracking view)
+- New page: `/dashboard/commissions` (artist queue + WIP uploader)
+- New page: `/admin/commissions` (admin intake + assign/status actions)
+- Added status timeline component and WIP uploader component.
+- Updated artist detail CTA to open commission request with preferred artist context.
+- Added navigation/menu links to commission flows by role.
+- Added required `data-testid` attributes across newly added interactive/critical UI elements.
 
-## Architecture
-
-### Tech Stack
-- **Frontend**: React.js with TailwindCSS
-- **Backend**: FastAPI (Python)
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: JWT tokens with Supabase Auth
-- **Payment**: Razorpay integration
-
-### Key Files
-- `/app/backend/server.py` - Main FastAPI application
-- `/app/frontend/src/pages/` - React page components
-- `/app/frontend/src/components/ArtworkForm.js` - Enhanced artwork form
-- `/app/frontend/src/components/VirtualRoomPreview.js` - Room visualization
-- `/app/frontend/src/services/api.js` - API service layer
-
----
-
-## User Personas
-
-1. **Artists** - Create profiles, upload artworks, manage portfolio, join communities
-2. **Buyers** - Browse marketplace, purchase artworks, visualize in rooms
-3. **Admin** - Approve artists/artworks, manage featured artists, create vouchers
-
----
-
-## Core Requirements (Static)
-
-### Membership System
-- Artists can create profiles for free
-- To appear in "Registered Artists" section - membership required
-- To push artworks to marketplace - membership required
-
-### Artwork Listing Requirements
-
-#### Mandatory Fields
-- Title, Category/Subject, Price & Currency, Minimum 1 image
-- Artwork Type, Ownership/Rights declaration, Shipping info
-
-#### Optional Fields (Improves Visibility)
-- Year of creation, Medium, Surface, Dimensions
-- Authenticity (COA, Signed, Hand-embellished)
-- Condition details, Framing status
-- Story & Context, Investment Signals
-
----
-
-## What's Been Implemented
-
-### Feb 19, 2026 - Session 8: Featured Artists System Overhaul
-
-1. **Featured Artists Now Clickable**
-   - Clicking featured artist opens their profile page
-   - Links to `/artist/{artist_id}` for registered or `/featured-artist/{id}` for contemporary
-
-2. **Paid Featured Request System (₹100 for 5 days)**
-   - Artists can request to be featured from their Dashboard → Membership tab
-   - Submit payment reference (UPI transaction ID)
-   - Admin reviews payment and approves/rejects request
-   - Approved artists get featured for 5 days with auto-expiry
-   - Backend endpoints: `/api/artist/request-featured`, `/api/admin/approve-featured-request`
-
-3. **Admin Featured Management**
-   - New "Featured Requests" section in Admin → Feature tab
-   - View pending requests with artist details and payment info
-   - Approve/Reject with optional rejection reason
-   - "Currently Featured" section shows all featured artists with Remove option
-   - Manual removal available anytime
-
-4. **Auto-Expiry System**
-   - Featured artists with `expires_at` are automatically removed after expiry
-   - Cleanup endpoint: `/api/system/cleanup-expired-featured`
-   - Can be called via cron job or on-demand
-
-5. **Database Migration**
-   - New `featured_requests` table created
-   - Added `expires_at`, `type`, `paid_amount`, `artist_id` to `featured_artists` table
-   - Migration script: `/app/scripts/featured_requests_migration.sql`
-
-### Feb 19, 2026 - Session 7: Bug Fixes & Feature Enhancements
-
-1. **PWA Installation Fix**
-   - Fixed manifest.json with proper icon purposes (separate "any" and "maskable")
-   - Changed `start_url` from "." to "/" for better compatibility
-   - Added unique `id` field for PWA identification
-   - Reduced install banner delay from 30s to 5s for better UX
-
-2. **Subscription Page Improvements**
-   - Made pricing plans dynamic (fetched from API)
-   - Added voucher code input with apply functionality
-   - Fixed price display for API response format (base_price → price mapping)
-   - Added GST calculation display
-
-3. **Community Creation Enabled for All Users**
-   - Removed membership requirement for community creation
-   - All authenticated users can now create communities
-   - Communities still require admin approval
-
-4. **Admin Pricing Management**
-   - Admins can now edit pricing plan details (name, price, duration, features)
-   - Plans are displayed in editable cards with inline editing
-   - GST is calculated automatically (18%)
-
-5. **Featured Artists Management**
-   - Added "Edit" button to contemporary featured artists
-   - Admins can modify artist details (bio, categories, artworks)
-
-6. **React Hook Fix**
-   - Fixed `useEffect` dependency warning in CommunityDetailPage.js
-   - Wrapped `fetchCommunityData` in `useCallback`
-
-### Feb 19, 2026 - Session 6: Community, Pricing & Trending Features
-
-1. **Trending Artists Section** (`/app/frontend/src/components/TrendingArtists.js`) ✨ NEW
-   - Shows top artists ranked by views and sales
-   - Displays artwork count, views, and sales statistics
-   - Top artwork preview for each artist
-   - Rank badges (#1 gold, #2 silver, #3 bronze)
-   - Auto-hides when no trending data available
-   - Backend endpoint: `GET /api/public/trending-artists`
-
-2. **Community Detail Page** (`/app/frontend/src/pages/CommunityDetailPage.js`)
-   - View individual community with posts and members
-   - Create posts (text, image, announcements)
-   - Invite artists to community (admin only)
-   - Join/Leave community functionality
-   - Responsive design for mobile
-
-2. **Admin Pricing & Voucher Management**
-   - New "Pricing & Vouchers" tab in Admin Dashboard
-   - View membership plans (Monthly ₹99, Annual ₹999)
-   - Create/Edit/Delete discount vouchers
-   - Toggle voucher active status
-   - View voucher usage statistics
-
-3. **Backend Endpoints Added/Updated**
-   - `POST /api/community/{id}/leave` - Leave a community
-   - `POST /api/community/{id}/post` - Create community post
-   - `GET /api/admin/vouchers` - List all vouchers
-   - `POST /api/admin/create-voucher` - Create new voucher
-   - `DELETE /api/admin/voucher/{id}` - Delete voucher
-   - `POST /api/admin/toggle-voucher/{id}` - Toggle voucher status
-
-4. **Routes Added**
-   - `/communities` - Communities listing page
-   - `/community/:id` - Individual community detail page
-
-### Previous Sessions Summary
-
-#### Session 5: Progressive Web App (PWA)
-- PWA Configuration with manifest.json and service-worker.js
-- Installable on mobile and desktop
-- Offline support with caching
-
-#### Session 4: User Dropdown Menu & Account Pages
-- NavBar user dropdown with role-based colors
-- Profile, Account, Subscription, Change Password pages
-
-#### Session 3: Membership-Based Artist Visibility
-- Public Artists Filter - Only shows active members
-- Admin Dashboard updates for member management
-
-#### Session 2: Virtual Room Preview Feature
-- 6 Room Presets with SVG furniture graphics
-- 10 Wall Colors and 5 Frame Styles
-- Drag-to-Reposition functionality
-
-#### Session 1: Core Enhancements
-- Enhanced Artwork Form with 50+ fields
-- Enhanced Thumbnails with badge system
-- Comprehensive Detail Page
-- Backend optimization for parallel queries
-
----
-
-## S3 Buckets Required
-
-Please create the following S3 buckets:
-```
-[your-prefix]-chitrakalakar-artworks     → For artwork images
-[your-prefix]-chitrakalakar-avatars      → For user profile photos
-[your-prefix]-chitrakalakar-exhibitions  → For exhibition banners
-[your-prefix]-chitrakalakar-communities  → For community images/posts
-```
-
----
-
-## Database Schema (Supabase)
-
-### Core Tables
-- `profiles` - User profiles with role, membership status
-- `artworks` - Artwork listings with all metadata
-- `exhibitions` - Exhibition entries
-- `featured_artists` - Featured artist profiles
-
-### New Tables for Communities & Vouchers
-- `communities` - Community definitions
-- `community_members` - Membership records
-- `community_posts` - Posts within communities
-- `vouchers` - Discount voucher codes
-
----
+3. Data/Infra Documentation
+- Added SQL migration: `/app/scripts/commissioning_feature_migration.sql`
+- Added setup doc: `/app/docs/COMMISSIONING_SETUP.md`
+  - Tables to add
+  - Bucket/folder plan
+  - Existing framework categories
+  - Pricing matrix applied for all categories
 
 ## Prioritized Backlog
+### P0
+- Run `/app/scripts/commissioning_feature_migration.sql` on production Supabase.
+- Confirm SMTP env variables for real admin email delivery:
+  - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `ADMIN_NOTIFICATION_FROM_EMAIL`
+- Verify authenticated flows end-to-end with real role accounts (user/artist/admin).
 
-### P0 - Critical
-- [x] Community Detail Page implementation
-- [x] Admin Pricing & Voucher Management
-- [ ] Configure Supabase connection for actual data flow
+### P1
+- Add dashboard count widgets for commissions inside existing monolithic dashboard tabs.
+- Add status transition guardrails (prevent invalid jump transitions by role).
+- Add file upload retry/error-state UX for reference and WIP images.
 
-### P1 - High Priority
-- [ ] Add real room background images (upgrade from gradients)
-- [ ] Implement artwork edit functionality
-- [ ] Add search functionality
+### P2
+- Add commission chat/thread between user and artist.
+- Add SLA alerts and overdue deadline highlighting.
+- Add downloadable commission transcript/report per order.
 
-### P2 - Medium Priority
-- [ ] Save favorite room configurations
-- [ ] Share room preview as image
-- [ ] Community post likes/comments
-
-### P3 - Nice to Have
-- [ ] Price history chart
-- [ ] Bulk artwork upload
-- [ ] Artist analytics dashboard
-- [ ] AR view using device camera
-
----
-
-## Test Reports
-
-- `/app/test_reports/iteration_5.json` - Latest test results
-- All tests passing (100% backend, 100% frontend)
-
----
-
-## Notes
-
-- Supabase credentials need to be configured in preview environment
-- All features are UI-complete and tested
-- Backend APIs return empty data when Supabase is not configured
+## Next Tasks
+- Execute DB migration + storage setup in production.
+- Validate role-specific journeys with real test users.
+- Tune admin workflow for assignment and approvals based on team process.

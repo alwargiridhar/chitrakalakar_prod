@@ -362,6 +362,13 @@ const handleSaveProfile = async () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome, {profiles?.full_name}! 🎨</h1>
           <p className="text-gray-600">Here is an overview of your artistry journey</p>
+          <Link
+            to="/dashboard/commissions"
+            className="inline-block mt-3 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-black"
+            data-testid="artist-dashboard-commission-queue-link"
+          >
+            Manage Commission Queue
+          </Link>
         </div>
 
         {/* Tabs */}

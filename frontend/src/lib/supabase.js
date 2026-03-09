@@ -35,4 +35,6 @@ export const BUCKETS = {
   AVATARS: 'avatars',
   ARTWORKS: 'artworks',
   EXHIBITIONS: 'exhibitions',
+  COMMISSION_REFS: 'commission-refs',
+  COMMISSION_WIPS: 'commission-wips',
 };
