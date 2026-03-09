@@ -64,3 +64,7 @@ Adjust commission feature to existing framework without breaking existing Supaba
 - Moved commission creation flow to dashboard-authenticated path (`/user-dashboard/commissions/new`), with legacy redirect from `/commission/request`.
 - Added commissioning authenticity gate: user must be logged in and profile must include `full_name`, `email`, and `phone` before creating commission.
 - Added Google/OAuth profile data capture enhancement to auto-fill available name/email/phone metadata into `profiles` when missing.
+
+
+## Latest Micro-Update (Commissioning FAQ)
+- Rewrote FAQ content to reflect current commissioning model: dashboard-only request flow, mandatory profile completion, no user/artist contact sharing, negotiation workflow, max-3 artist requests, first-accept lock, category pricing behavior, and timeline tracking.
