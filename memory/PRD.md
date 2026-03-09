@@ -110,3 +110,11 @@ Adjust commission feature to existing framework without breaking existing Supaba
 ## Latest Micro-Update (Adaptive Thumbnail Fit Logic)
 - Implemented adaptive artwork fit logic in Featured Artist Spotlight: auto-switches thumbnail image mode between `cover` and `contain` based on actual image aspect ratio at load time.
 - Balanced rule: near-normal ratios use cover for strong fill; extreme portrait/landscape ratios use contain to avoid out-focused cropping.
+
+
+## Latest Micro-Update (Global Adaptive Artwork Rendering + Artist Zoom Controls)
+- Added reusable `AdaptiveArtworkImage` component and applied adaptive fit logic across key artwork-display pages (Artists spotlight, Paintings cards, Painting Detail main+thumbnails, Artist Detail cards, Art Classes sample artworks, Commission matching artworks).
+- Added artist-side image projection controls in artwork upload form: per-image Zoom, Focus X/Y, and Fit Mode (Adaptive/Contain/Cover).
+- Artwork form now sends `image_display_settings` metadata so artists can control visual projection intent.
+- Backend artwork create API accepts `image_display_settings` with backward-compatible insert fallback if DB column is not yet present.
+- Migration includes additive `artworks.image_display_settings` JSONB column.

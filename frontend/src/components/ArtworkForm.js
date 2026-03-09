@@ -219,6 +219,7 @@ export default function ArtworkForm({ categories, onSubmit, onCancel }) {
     
     // Images
     images: [],
+    image_display_settings: [],
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -240,15 +241,32 @@ export default function ArtworkForm({ categories, onSubmit, onCancel }) {
 
   const handleImageUpload = (url) => {
     if (formData.images.length < 8) {
-      setFormData(prev => ({ ...prev, images: [...prev.images, url] }));
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, url],
+        image_display_settings: [
+          ...(prev.image_display_settings || []),
+          { zoom: 1, focus_x: 50, focus_y: 50, fit_mode: 'auto' },
+        ],
+      }));
     }
   };
 
   const handleRemoveImage = (index) => {
     setFormData(prev => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index)
+      images: prev.images.filter((_, i) => i !== index),
+      image_display_settings: (prev.image_display_settings || []).filter((_, i) => i !== index),
     }));
+  };
+
+  const handleImageSettingChange = (index, field, value) => {
+    setFormData(prev => {
+      const current = [...(prev.image_display_settings || [])];
+      const existing = current[index] || { zoom: 1, focus_x: 50, focus_y: 50, fit_mode: 'auto' };
+      current[index] = { ...existing, [field]: value };
+      return { ...prev, image_display_settings: current };
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -280,6 +298,7 @@ export default function ArtworkForm({ categories, onSubmit, onCancel }) {
         quantity_available: parseInt(formData.quantity_available) || 1,
         dimensions,
         image: formData.images[0],
+        image_display_settings: (formData.image_display_settings || []).slice(0, formData.images.length),
       });
     } catch (error) {
       alert(error.message || 'Failed to add artwork');
@@ -694,20 +713,86 @@ export default function ArtworkForm({ categories, onSubmit, onCancel }) {
         
         {/* Uploaded images preview */}
         {formData.images.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
             {formData.images.map((url, index) => (
-              <div key={index} className="relative w-24 h-24 border rounded overflow-hidden">
-                <img src={url} alt={`Image ${index + 1}`} className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveImage(index)}
-                  className="absolute top-0 right-0 bg-red-500 text-white w-6 h-6 flex items-center justify-center text-xs"
-                >
-                  ✕
-                </button>
-                <span className="absolute bottom-0 left-0 bg-black/50 text-white text-xs px-1">
-                  {index === 0 ? 'Main' : index + 1}
-                </span>
+              <div key={index} className="border rounded-lg p-2 bg-gray-50">
+                <div className="relative w-full h-32 border rounded overflow-hidden bg-white">
+                  <img
+                    src={url}
+                    alt={`Image ${index + 1}`}
+                    className="w-full h-full object-contain"
+                    style={{
+                      transform: `scale(${(formData.image_display_settings?.[index]?.zoom || 1)})`,
+                      transformOrigin: `${formData.image_display_settings?.[index]?.focus_x || 50}% ${formData.image_display_settings?.[index]?.focus_y || 50}%`,
+                      objectPosition: `${formData.image_display_settings?.[index]?.focus_x || 50}% ${formData.image_display_settings?.[index]?.focus_y || 50}%`,
+                    }}
+                  />
+                  <span className="absolute bottom-0 left-0 bg-black/50 text-white text-xs px-1">
+                    {index === 0 ? 'Main' : index + 1}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(index)}
+                    className="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded flex items-center justify-center text-xs"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="mt-2 space-y-2">
+                  <div>
+                    <label className="text-xs text-gray-600 block">Zoom ({Math.round((formData.image_display_settings?.[index]?.zoom || 1) * 100)}%)</label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="2"
+                      step="0.05"
+                      value={formData.image_display_settings?.[index]?.zoom || 1}
+                      onChange={(e) => handleImageSettingChange(index, 'zoom', Number(e.target.value))}
+                      className="w-full"
+                      data-testid={`artwork-image-zoom-${index}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-600 block">Focus Horizontal</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={formData.image_display_settings?.[index]?.focus_x || 50}
+                      onChange={(e) => handleImageSettingChange(index, 'focus_x', Number(e.target.value))}
+                      className="w-full"
+                      data-testid={`artwork-image-focus-x-${index}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-600 block">Focus Vertical</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={formData.image_display_settings?.[index]?.focus_y || 50}
+                      onChange={(e) => handleImageSettingChange(index, 'focus_y', Number(e.target.value))}
+                      className="w-full"
+                      data-testid={`artwork-image-focus-y-${index}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-600 block">Fit Mode</label>
+                    <select
+                      value={formData.image_display_settings?.[index]?.fit_mode || 'auto'}
+                      onChange={(e) => handleImageSettingChange(index, 'fit_mode', e.target.value)}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                      data-testid={`artwork-image-fit-mode-${index}`}
+                    >
+                      <option value="auto">Adaptive (Default)</option>
+                      <option value="contain">Contain</option>
+                      <option value="cover">Cover</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             ))}
           </div>

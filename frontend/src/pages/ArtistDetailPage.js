@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { publicAPI } from '../services/api';
+import AdaptiveArtworkImage from '../components/AdaptiveArtworkImage';
 
 function ArtistDetailPage() {
   const { id } = useParams();
@@ -118,10 +119,11 @@ function ArtistDetailPage() {
                 >
                   <div className="aspect-square bg-gray-100 relative overflow-hidden">
                     {artwork.image ? (
-                      <img 
+                      <AdaptiveArtworkImage
                         src={artwork.image} 
                         alt={artwork.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        settings={(artwork.image_display_settings || [])[0] || null}
+                        className="group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-6xl text-gray-300">

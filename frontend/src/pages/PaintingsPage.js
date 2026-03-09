@@ -4,6 +4,7 @@ import { publicAPI, cartAPI } from '../services/api';
 import { ART_CATEGORIES } from '../utils/branding';
 import { useAuth } from '../contexts/AuthContext';
 import VirtualRoomPreview from '../components/VirtualRoomPreview';
+import AdaptiveArtworkImage from '../components/AdaptiveArtworkImage';
 
 function PaintingsPage() {
   const { isAuthenticated } = useAuth();
@@ -187,10 +188,11 @@ function PaintingsPage() {
               >
                 <div className="aspect-square bg-gray-100 relative overflow-hidden">
                   {(painting.images?.[0] || painting.image) ? (
-                    <img 
+                    <AdaptiveArtworkImage
                       src={painting.images?.[0] || painting.image} 
                       alt={painting.title}
-                      className="w-full h-full object-contain bg-gray-50 group-hover:scale-105 transition-transform duration-300"
+                      settings={(painting.image_display_settings || [])[0] || null}
+                      className="bg-gray-50 group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-6xl text-gray-300">

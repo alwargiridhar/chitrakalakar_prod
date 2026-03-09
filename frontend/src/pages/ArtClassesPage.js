@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { publicAPI } from '../services/api';
 import { ART_CATEGORIES } from '../utils/branding';
 import LocationAutocomplete from '../components/LocationAutocomplete';
+import AdaptiveArtworkImage from '../components/AdaptiveArtworkImage';
 
 function ArtClassesPage() {
   const [step, setStep] = useState('form'); // form, results
@@ -319,7 +320,11 @@ function ArtClassesPage() {
                           {artist.sample_artworks.slice(0, 3).map((artwork, idx) => (
                             <div key={idx} className="aspect-square rounded overflow-hidden bg-gray-100">
                               {artwork.image ? (
-                                <img src={artwork.image} alt={artwork.title} className="w-full h-full object-cover" />
+                                <AdaptiveArtworkImage
+                                  src={artwork.image}
+                                  alt={artwork.title}
+                                  settings={(artwork.image_display_settings || [])[0] || null}
+                                />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-2xl">🎨</div>
                               )}

@@ -120,3 +120,7 @@ CREATE INDEX IF NOT EXISTS idx_commission_updates_commission ON commission_updat
 -- AWS_BUCKET_ARTIST_ARTWORKS
 -- AWS_BUCKET_COMMISSION_REFERENCES
 -- AWS_BUCKET_COMMISSION_DELIVERIES
+
+-- 6) Optional: image projection controls for adaptive artwork rendering
+ALTER TABLE artworks
+ADD COLUMN IF NOT EXISTS image_display_settings JSONB DEFAULT '[]'::jsonb;

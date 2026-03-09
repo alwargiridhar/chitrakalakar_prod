@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { commissionAPI, publicAPI } from '../services/api';
 import { BUCKETS } from '../lib/supabase';
 import ImageUpload from '../components/ImageUpload';
+import AdaptiveArtworkImage from '../components/AdaptiveArtworkImage';
 import PriceCalculator from '../components/commission/PriceCalculator';
 import { calculateEstimate, formatINR } from '../components/commission/pricing';
 
@@ -341,7 +342,13 @@ function CommissionRequestPage() {
                         <div className="grid grid-cols-3 gap-2 mt-3">
                           {(artist.artworks || []).slice(0, 3).map((artwork) => (
                             <div key={artwork.id} className="rounded-md overflow-hidden bg-gray-100" data-testid={`commission-matching-artist-artwork-${artist.id}-${artwork.id}`}>
-                              <img src={artwork.image} alt={artwork.title || 'Artwork'} className="w-full h-16 object-cover" />
+                              <div className="w-full h-16 overflow-hidden bg-gray-50">
+                                <AdaptiveArtworkImage
+                                  src={artwork.image}
+                                  alt={artwork.title || 'Artwork'}
+                                  settings={(artwork.image_display_settings || [])[0] || null}
+                                />
+                              </div>
                             </div>
                           ))}
                         </div>

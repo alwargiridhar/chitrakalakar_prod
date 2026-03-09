@@ -168,6 +168,9 @@ class ArtworkCreate(BaseModel):
     series_name: Optional[str] = None
     collector_interest: Optional[bool] = False
 
+    # Optional image projection controls per image (artist-managed)
+    image_display_settings: Optional[List[dict]] = None
+
 # Pricing Management Models
 class MembershipPlanUpdate(BaseModel):
     plan_id: str  # 'basic', 'premium', 'annual'
@@ -3886,6 +3889,7 @@ async def create_artwork(
             "price": float(artwork.price),
             "image": images[0] if images else None,  # Primary image for backwards compatibility
             "images": images,  # All images
+            "image_display_settings": (artwork.image_display_settings or [])[:8],
             "is_approved": False,
             "is_available": True,
             "in_marketplace": False,  # Not in marketplace until pushed
@@ -3951,7 +3955,15 @@ async def create_artwork(
             "collector_interest": artwork.collector_interest,
         }
 
-        result = supabase.table("artworks").insert(artwork_data).execute()
+        try:
+            result = supabase.table("artworks").insert(artwork_data).execute()
+        except Exception as e:
+            # Backward compatibility if column is not yet migrated
+            if "image_display_settings" in str(e):
+                fallback_data = {k: v for k, v in artwork_data.items() if k != "image_display_settings"}
+                result = supabase.table("artworks").insert(fallback_data).execute()
+            else:
+                raise
 
         if not result.data:
             raise HTTPException(status_code=400, detail="Insert failed - no data returned")

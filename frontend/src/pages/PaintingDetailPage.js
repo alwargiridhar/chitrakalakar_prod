@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { publicAPI, cartAPI, videoScreeningAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import VirtualRoomPreview from '../components/VirtualRoomPreview';
+import AdaptiveArtworkImage from '../components/AdaptiveArtworkImage';
 
 function PaintingDetailPage() {
   const { id } = useParams();
@@ -82,6 +83,7 @@ function PaintingDetailPage() {
   };
 
   const images = painting?.images || (painting?.image ? [painting.image] : []);
+  const imageDisplaySettings = painting?.image_display_settings || [];
 
   if (loading) {
     return (
@@ -161,11 +163,11 @@ function PaintingDetailPage() {
           <div className="space-y-4">
             <div className="aspect-square bg-white rounded-xl shadow-lg overflow-hidden">
               {images.length > 0 ? (
-                <img 
+                <AdaptiveArtworkImage
                   src={images[currentImageIndex]} 
                   alt={painting.title}
-                  className="w-full h-full object-contain"
-                  data-testid="painting-main-image"
+                  settings={imageDisplaySettings[currentImageIndex] || imageDisplaySettings[0] || null}
+                  dataTestId="painting-main-image"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-8xl text-gray-300">
@@ -186,7 +188,11 @@ function PaintingDetailPage() {
                     }`}
                     data-testid={`thumbnail-${index}`}
                   >
-                    <img src={img} alt={`View ${index + 1}`} className="w-full h-full object-cover" />
+                    <AdaptiveArtworkImage
+                      src={img}
+                      alt={`View ${index + 1}`}
+                      settings={imageDisplaySettings[index] || imageDisplaySettings[0] || null}
+                    />
                   </button>
                 ))}
               </div>
