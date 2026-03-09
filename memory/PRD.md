@@ -68,3 +68,10 @@ Adjust commission feature to existing framework without breaking existing Supaba
 
 ## Latest Micro-Update (Commissioning FAQ)
 - Rewrote FAQ content to reflect current commissioning model: dashboard-only request flow, mandatory profile completion, no user/artist contact sharing, negotiation workflow, max-3 artist requests, first-accept lock, category pricing behavior, and timeline tracking.
+
+
+## Latest Micro-Update (Artists Page UX)
+- Reworked `/artists` page layout to show a top **Featured Artist Spotlight** block (avatar left, profile details, most-viewed artworks right/down responsive).
+- Featured spotlight source now uses existing `getFeaturedArtists()` result as primary source, with graceful fallback to first registered artist if featured list is empty.
+- Added artwork ordering fallback logic: `views` -> `likes` -> latest.
+- Moved **Registered Artists** section below featured block to match requested content hierarchy and improve visual symmetry.

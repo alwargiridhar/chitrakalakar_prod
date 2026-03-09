@@ -1,16 +1,43 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { publicAPI } from '../services/api';
 
 function ArtistsPage() {
   const [artists, setArtists] = useState([]);
   const [featuredArtists, setFeaturedArtists] = useState({ contemporary: [], registered: [] });
+  const [spotlightArtist, setSpotlightArtist] = useState(null);
+  const [spotlightArtworks, setSpotlightArtworks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('registered');
 
   useEffect(() => {
     fetchArtists();
   }, []);
+
+  const allFeatured = useMemo(
+    () => [
+      ...(featuredArtists.contemporary || []),
+      ...(featuredArtists.registered || []),
+    ],
+    [featuredArtists]
+  );
+
+  const getArtworkImage = (artwork) => artwork?.images?.[0] || artwork?.image || '';
+
+  const sortMostViewed = (items = []) => {
+    return [...items].sort((a, b) => {
+      const aViews = Number(a?.views || a?.view_count || 0);
+      const bViews = Number(b?.views || b?.view_count || 0);
+      if (bViews !== aViews) return bViews - aViews;
+
+      const aLikes = Number(a?.likes_count || a?.likes || 0);
+      const bLikes = Number(b?.likes_count || b?.likes || 0);
+      if (bLikes !== aLikes) return bLikes - aLikes;
+
+      const aDate = new Date(a?.created_at || 0).getTime();
+      const bDate = new Date(b?.created_at || 0).getTime();
+      return bDate - aDate;
+    });
+  };
 
   const fetchArtists = async () => {
     try {
@@ -18,8 +45,40 @@ function ArtistsPage() {
         publicAPI.getArtists(),
         publicAPI.getFeaturedArtists()
       ]);
+
       setArtists(artistsRes.artists || []);
       setFeaturedArtists(featuredRes);
+
+      const spotlight =
+        (featuredRes.contemporary && featuredRes.contemporary[0]) ||
+        (featuredRes.registered && featuredRes.registered[0]) ||
+        null;
+
+      if (spotlight) {
+        if (spotlight.artist_id) {
+          try {
+            const detailRes = await publicAPI.getArtistDetail(spotlight.artist_id);
+            setSpotlightArtist(detailRes.artist || spotlight);
+            setSpotlightArtworks(sortMostViewed(detailRes.artworks || []).slice(0, 3));
+          } catch {
+            setSpotlightArtist(spotlight);
+            setSpotlightArtworks(sortMostViewed(spotlight.artworks || []).slice(0, 3));
+          }
+        } else {
+          setSpotlightArtist(spotlight);
+          setSpotlightArtworks(sortMostViewed(spotlight.artworks || []).slice(0, 3));
+        }
+      } else if ((artistsRes.artists || []).length > 0) {
+        const fallbackArtist = artistsRes.artists[0];
+        try {
+          const detailRes = await publicAPI.getArtistDetail(fallbackArtist.id);
+          setSpotlightArtist(detailRes.artist || fallbackArtist);
+          setSpotlightArtworks(sortMostViewed(detailRes.artworks || []).slice(0, 3));
+        } catch {
+          setSpotlightArtist(fallbackArtist);
+          setSpotlightArtworks([]);
+        }
+      }
     } catch (error) {
       console.error('Error fetching artists:', error);
     } finally {
@@ -38,198 +97,191 @@ function ArtistsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl font-bold mb-4">Our Artists</h1>
-          <p className="text-xl opacity-90">
+      <div className="bg-gradient-to-r from-[#f97316] via-[#f59e0b] to-[#eab308] text-white py-14">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center" data-testid="artists-hero-section">
+          <h1 className="text-4xl sm:text-5xl font-bold mb-4" data-testid="artists-hero-title">Our Artists</h1>
+          <p className="text-base sm:text-lg opacity-95 max-w-3xl mx-auto" data-testid="artists-hero-subtitle">
             Discover talented artisans and explore their beautiful creations
           </p>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tabs */}
-        <div className="flex border-b border-gray-200 mb-8">
-          <button
-            onClick={() => setActiveTab('registered')}
-            className={`px-6 py-3 font-medium border-b-2 transition-colors ${
-              activeTab === 'registered'
-                ? 'border-orange-500 text-orange-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Registered Artists ({artists.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('featured')}
-            className={`px-6 py-3 font-medium border-b-2 transition-colors ${
-              activeTab === 'featured'
-                ? 'border-orange-500 text-orange-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Featured Artists ({(featuredArtists.contemporary?.length || 0) + (featuredArtists.registered?.length || 0)})
-          </button>
+        <div className="mb-6" data-testid="featured-artists-count">
+          <h2 className="text-2xl font-semibold text-gray-900">Featured Artist Spotlight</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Featured Artists ({allFeatured.length})
+          </p>
         </div>
 
-        {/* Registered Artists Tab */}
-        {activeTab === 'registered' && (
-          <>
-            {artists.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-xl">
-                <span className="text-6xl mb-4 block">🎨</span>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No artists yet</h3>
-                <p className="text-gray-500 mb-4">Be the first to join our community!</p>
-                <Link 
-                  to="/signup" 
-                  className="inline-block px-6 py-2 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg hover:opacity-90"
-                >
-                  Join as Artist
-                </Link>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {artists.map(artist => (
-                  <Link 
-                    key={artist.id}
-                    to={`/artist/${artist.id}`}
-                    className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-shadow group"
+        {/* Featured Spotlight Layout */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-7 shadow-sm" data-testid="featured-artist-spotlight-card">
+          {spotlightArtist ? (
+            <div className="grid lg:grid-cols-5 gap-7 items-start">
+              <div className="lg:col-span-2" data-testid="featured-artist-profile-block">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-24 h-24 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200" data-testid="featured-artist-avatar-wrap">
+                    {spotlightArtist.avatar ? (
+                      <img
+                        src={spotlightArtist.avatar}
+                        alt={spotlightArtist.name || spotlightArtist.full_name || 'Featured Artist'}
+                        className="w-full h-full object-cover"
+                        data-testid="featured-artist-avatar"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-orange-100 to-yellow-100" data-testid="featured-artist-avatar-fallback" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900" data-testid="featured-artist-name">
+                      {spotlightArtist.name || spotlightArtist.full_name || 'Featured Artist'}
+                    </h3>
+                    {spotlightArtist.location && (
+                      <p className="text-sm text-gray-600" data-testid="featured-artist-location">{spotlightArtist.location}</p>
+                    )}
+                  </div>
+                </div>
+
+                {(spotlightArtist.bio || spotlightArtist.description) && (
+                  <p className="text-sm text-gray-700 leading-relaxed mb-4" data-testid="featured-artist-description">
+                    {spotlightArtist.bio || spotlightArtist.description}
+                  </p>
+                )}
+
+                {Array.isArray(spotlightArtist.categories) && spotlightArtist.categories.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-5" data-testid="featured-artist-categories">
+                    {spotlightArtist.categories.slice(0, 5).map((category) => (
+                      <span key={category} className="px-3 py-1 bg-orange-50 text-orange-700 text-xs rounded-full border border-orange-200" data-testid={`featured-artist-category-${category}`}>
+                        {category}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {(spotlightArtist.artist_id || spotlightArtist.id) && (
+                  <Link
+                    to={`/artist/${spotlightArtist.artist_id || spotlightArtist.id}`}
+                    className="inline-block px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-black transition-colors"
+                    data-testid="featured-artist-view-profile-link"
                   >
-                    <div className="h-48 bg-gradient-to-br from-orange-100 to-yellow-100 relative overflow-hidden">
-                      {artist.avatar ? (
+                    View Artist Profile
+                  </Link>
+                )}
+              </div>
+
+              <div className="lg:col-span-3" data-testid="featured-artist-most-viewed-section">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-lg font-semibold text-gray-900" data-testid="featured-artist-most-viewed-title">Most Viewed Artworks</h4>
+                  <span className="text-xs text-gray-500" data-testid="featured-artist-most-viewed-subtitle">Sorted by views, then likes, then latest</span>
+                </div>
+
+                {spotlightArtworks.length > 0 ? (
+                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4" data-testid="featured-artist-most-viewed-grid">
+                    {spotlightArtworks.map((artwork) => (
+                      <Link
+                        key={artwork.id}
+                        to={`/painting/${artwork.id}`}
+                        className="rounded-xl overflow-hidden border border-gray-200 bg-white hover:shadow-md transition-shadow"
+                        data-testid={`featured-artwork-card-${artwork.id}`}
+                      >
+                        <div className="aspect-[4/3] bg-gray-100 overflow-hidden">
+                          {getArtworkImage(artwork) ? (
+                            <img
+                              src={getArtworkImage(artwork)}
+                              alt={artwork.title || 'Artwork'}
+                              className="w-full h-full object-cover"
+                              data-testid={`featured-artwork-image-${artwork.id}`}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200" data-testid={`featured-artwork-image-fallback-${artwork.id}`} />
+                          )}
+                        </div>
+                        <div className="p-3">
+                          <p className="font-medium text-gray-900 truncate" data-testid={`featured-artwork-title-${artwork.id}`}>
+                            {artwork.title || 'Untitled Artwork'}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1" data-testid={`featured-artwork-metrics-${artwork.id}`}>
+                            Views: {Number(artwork.views || artwork.view_count || 0)} · Likes: {Number(artwork.likes_count || artwork.likes || 0)}
+                          </p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 text-sm text-gray-500" data-testid="featured-artist-most-viewed-empty">
+                    No artworks available for this featured artist yet.
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center" data-testid="featured-artist-empty-state">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No featured artists yet</h3>
+              <p className="text-sm text-gray-500">Check back soon for featured artist highlights.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Registered Artists below featured section */}
+        <div className="mt-10" data-testid="registered-artists-section">
+          <div className="flex items-end justify-between mb-5 gap-4">
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-900" data-testid="registered-artists-title">Registered Artists</h2>
+              <p className="text-sm text-gray-600" data-testid="registered-artists-subtitle">Registered Artists ({artists.length})</p>
+            </div>
+          </div>
+
+          {artists.length === 0 ? (
+            <div className="text-center py-12 bg-white border border-gray-200 rounded-xl" data-testid="registered-artists-empty-state">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No artists yet</h3>
+              <p className="text-gray-500 mb-4">Be the first to join our community.</p>
+              <Link
+                to="/signup"
+                className="inline-block px-6 py-2 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg hover:opacity-90"
+                data-testid="registered-artists-join-link"
+              >
+                Join as Artist
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" data-testid="registered-artists-grid">
+              {artists.map((artist) => (
+                <Link
+                  key={artist.id}
+                  to={`/artist/${artist.id}`}
+                  className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-shadow group border border-gray-200"
+                  data-testid={`registered-artist-card-${artist.id}`}
+                >
+                  <div className="h-48 bg-gradient-to-br from-orange-100 to-yellow-100 relative overflow-hidden">
+                    {artist.avatar ? (
                         <img 
                           src={artist.avatar} 
                           alt={artist.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          data-testid={`registered-artist-avatar-${artist.id}`}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-6xl">
-                          👤
-                        </div>
+                        <div className="w-full h-full bg-gradient-to-br from-orange-100 to-yellow-200" data-testid={`registered-artist-avatar-fallback-${artist.id}`} />
                       )}
                     </div>
                     <div className="p-4">
-                      <h3 className="font-semibold text-gray-900 text-lg mb-1">{artist.name}</h3>
+                      <h3 className="font-semibold text-gray-900 text-lg mb-1" data-testid={`registered-artist-name-${artist.id}`}>{artist.name}</h3>
                       {artist.location && (
-                        <p className="text-sm text-gray-500 flex items-center gap-1 mb-2">
-                          <span>📍</span> {artist.location}
+                        <p className="text-sm text-gray-500 mb-2" data-testid={`registered-artist-location-${artist.id}`}>
+                          {artist.location}
                         </p>
                       )}
                       {artist.categories && artist.categories.length > 0 && (
-                        <p className="text-sm text-orange-500 truncate">
+                        <p className="text-sm text-orange-500 truncate" data-testid={`registered-artist-categories-${artist.id}`}>
                           {artist.categories.join(', ')}
                         </p>
                       )}
                     </div>
                   </Link>
                 ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Featured Artists Tab */}
-        {activeTab === 'featured' && (
-          <div className="space-y-12">
-            {/* Contemporary Featured Artists */}
-            {featuredArtists.contemporary?.length > 0 && (
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Contemporary Artists</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {featuredArtists.contemporary.map(artist => (
-                    <div 
-                      key={artist.id}
-                      className="bg-white rounded-xl shadow-sm overflow-hidden"
-                    >
-                      <div className="h-48 bg-gradient-to-br from-purple-100 to-pink-100 relative overflow-hidden">
-                        {artist.avatar ? (
-                          <img 
-                            src={artist.avatar} 
-                            alt={artist.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-6xl">
-                            👤
-                          </div>
-                        )}
-                        <span className="absolute top-3 right-3 px-2 py-1 bg-purple-500 text-white text-xs rounded-full">
-                          Contemporary
-                        </span>
-                      </div>
-                      <div className="p-4">
-                        <h4 className="font-semibold text-gray-900 text-lg mb-1">{artist.name}</h4>
-                        {artist.location && (
-                          <p className="text-sm text-gray-500 flex items-center gap-1 mb-2">
-                            <span>📍</span> {artist.location}
-                          </p>
-                        )}
-                        {artist.categories && artist.categories.length > 0 && (
-                          <p className="text-sm text-purple-500 truncate">
-                            {artist.categories.join(', ')}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Registered Featured Artists */}
-            {featuredArtists.registered?.length > 0 && (
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Featured Registered Artists</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {featuredArtists.registered.map(artist => (
-                    <div 
-                      key={artist.id}
-                      className="bg-white rounded-xl shadow-sm overflow-hidden"
-                    >
-                      <div className="h-48 bg-gradient-to-br from-orange-100 to-yellow-100 relative overflow-hidden">
-                        {artist.avatar ? (
-                          <img 
-                            src={artist.avatar} 
-                            alt={artist.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-6xl">
-                            👤
-                          </div>
-                        )}
-                        <span className="absolute top-3 right-3 px-2 py-1 bg-orange-500 text-white text-xs rounded-full">
-                          Featured
-                        </span>
-                      </div>
-                      <div className="p-4">
-                        <h4 className="font-semibold text-gray-900 text-lg mb-1">{artist.name}</h4>
-                        {artist.location && (
-                          <p className="text-sm text-gray-500 flex items-center gap-1 mb-2">
-                            <span>📍</span> {artist.location}
-                          </p>
-                        )}
-                        {artist.categories && artist.categories.length > 0 && (
-                          <p className="text-sm text-orange-500 truncate">
-                            {artist.categories.join(', ')}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {(featuredArtists.contemporary?.length || 0) + (featuredArtists.registered?.length || 0) === 0 && (
-              <div className="text-center py-16 bg-white rounded-xl">
-                <span className="text-6xl mb-4 block">⭐</span>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No featured artists yet</h3>
-                <p className="text-gray-500">Check back soon for featured artists</p>
-              </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
