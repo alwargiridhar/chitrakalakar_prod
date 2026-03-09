@@ -153,7 +153,7 @@ function ArtistDetailPage() {
             Submit a commission enquiry and we&apos;ll help connect you with the artist.
           </p>
           <Link 
-            to={`/commission/request?artistId=${id}`}
+            to={`/user-dashboard/commissions/new?artistId=${id}`}
             className="inline-block px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
             data-testid="artist-detail-commission-link"
           >

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 
 // Components
@@ -82,8 +82,9 @@ function App() {
           <Route path="/community/:id" element={<Layout><CommunityDetailPage /></Layout>} />
           <Route path="/install" element={<Layout><InstallAppPage /></Layout>} />
           <Route path="/download" element={<Layout><DownloadAppPage /></Layout>} />
-          <Route path="/commission/request" element={<Layout><CommissionRequestPage /></Layout>} />
+          <Route path="/commission/request" element={<Navigate to="/user-dashboard/commissions/new" replace />} />
           <Route path="/user-dashboard/commissions" element={<><NavBar /><UserCommissionsPage /></>} />
+          <Route path="/user-dashboard/commissions/new" element={<><NavBar /><CommissionRequestPage /></>} />
           <Route path="/dashboard/commissions" element={<><NavBar /><ArtistCommissionsPage /></>} />
           <Route path="/admin/commissions" element={<><NavBar /><AdminCommissionsPage /></>} />
           <Route path="*" element={<Layout><NotFoundPage /></Layout>} />

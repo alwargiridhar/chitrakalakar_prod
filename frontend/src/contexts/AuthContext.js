@@ -39,7 +39,33 @@ export function AuthProvider({ children }) {
         console.error('Profile fetch error:', error);
         setProfiles(null);
       } else {
-        setProfiles(data);
+        const metadata = session.user.user_metadata || {};
+        const derivedUpdates = {};
+
+        if (data) {
+          if (!data.full_name && (metadata.full_name || metadata.name)) {
+            derivedUpdates.full_name = metadata.full_name || metadata.name;
+          }
+          if (!data.email && session.user.email) {
+            derivedUpdates.email = session.user.email;
+          }
+          if (!data.phone && (session.user.phone || metadata.phone)) {
+            derivedUpdates.phone = session.user.phone || metadata.phone;
+          }
+        }
+
+        if (data && Object.keys(derivedUpdates).length > 0) {
+          const { data: updatedProfile } = await supabase
+            .from('profiles')
+            .update(derivedUpdates)
+            .eq('id', session.user.id)
+            .select()
+            .maybeSingle();
+
+          setProfiles(updatedProfile || { ...data, ...derivedUpdates });
+        } else {
+          setProfiles(data);
+        }
       }
 
       setIsLoading(false);

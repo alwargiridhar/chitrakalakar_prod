@@ -38,7 +38,7 @@ function UserCommissionsPage() {
           <h1 className="text-4xl text-[#1A1A1A]" style={{ fontFamily: 'Playfair Display, serif' }} data-testid="user-commissions-title">
             My Commissioned Works
           </h1>
-          <Link to="/commission/request" className="px-4 py-2 bg-[#1A1A1A] text-white rounded-lg" data-testid="user-commissions-new-request-link">
+          <Link to="/user-dashboard/commissions/new" className="px-4 py-2 bg-[#1A1A1A] text-white rounded-lg" data-testid="user-commissions-new-request-link">
             New Request
           </Link>
         </div>
@@ -48,7 +48,7 @@ function UserCommissionsPage() {
         ) : commissions.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center" data-testid="user-commissions-empty-state">
             <p className="text-gray-600 mb-4">No commission requests yet.</p>
-            <Link to="/commission/request" className="px-4 py-2 bg-[#1A1A1A] text-white rounded-lg" data-testid="user-commissions-empty-action">
+            <Link to="/user-dashboard/commissions/new" className="px-4 py-2 bg-[#1A1A1A] text-white rounded-lg" data-testid="user-commissions-empty-action">
               Start Commission
             </Link>
           </div>

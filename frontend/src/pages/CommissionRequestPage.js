@@ -8,7 +8,7 @@ import PriceCalculator from '../components/commission/PriceCalculator';
 import { calculateEstimate, formatINR } from '../components/commission/pricing';
 
 function CommissionRequestPage() {
-  const { isAuthenticated, profiles } = useAuth();
+  const { isAuthenticated, isLoading, profiles } = useAuth();
   const navigate = useNavigate();
   const { search } = useLocation();
   const query = new URLSearchParams(search);
@@ -23,7 +23,6 @@ function CommissionRequestPage() {
     skill_level: 'Average',
     detail_level: 'Basic',
     subjects: 1,
-    pricing_type: 'fixed',
     offer_price: '',
     negotiation_allowed: false,
     selected_artist_ids: preferredArtistId ? [preferredArtistId] : [],
@@ -31,11 +30,30 @@ function CommissionRequestPage() {
     special_instructions: '',
     deadline: '',
     framing_option: 'No Frame',
-    contact_phone: profiles?.phone || '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [matchingArtists, setMatchingArtists] = useState([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
+
+  const isProfileComplete = Boolean(profiles?.full_name && profiles?.email && profiles?.phone);
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    if (!isAuthenticated) {
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    if (profiles?.role === 'artist') {
+      navigate('/dashboard/commissions', { replace: true });
+      return;
+    }
+
+    if (profiles?.role === 'admin') {
+      navigate('/admin/commissions', { replace: true });
+    }
+  }, [isLoading, isAuthenticated, profiles, navigate]);
 
   const estimate = useMemo(() => calculateEstimate({
     category: formData.art_category,
@@ -107,6 +125,12 @@ function CommissionRequestPage() {
       return;
     }
 
+    if (!isProfileComplete) {
+      alert('Please complete your registration profile (full name, email, phone) before commissioning.');
+      navigate('/account');
+      return;
+    }
+
     try {
       setSubmitting(true);
       await commissionAPI.create({
@@ -125,6 +149,33 @@ function CommissionRequestPage() {
       setSubmitting(false);
     }
   };
+
+  if (isLoading || !isAuthenticated) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center" data-testid="commission-request-loading">Loading...</div>;
+  }
+
+  if (!isProfileComplete) {
+    return (
+      <div className="min-h-screen bg-gray-50 px-4 py-16" data-testid="commission-profile-incomplete-page">
+        <div className="max-w-2xl mx-auto bg-white border border-gray-200 rounded-2xl p-8 text-center">
+          <h1 className="text-3xl text-[#1A1A1A]" style={{ fontFamily: 'Playfair Display, serif' }} data-testid="commission-profile-incomplete-title">
+            Complete Registration to Start Commission
+          </h1>
+          <p className="text-sm text-gray-600 mt-3" data-testid="commission-profile-incomplete-message">
+            For authenticity, commissioning is enabled only after profile completion with full name, email, and phone. If you signed up using Gmail, available details are auto-captured and you can complete the remaining fields in Account.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/account')}
+            className="mt-6 px-5 py-2.5 rounded-xl bg-[#1A1A1A] text-white hover:bg-black"
+            data-testid="commission-profile-incomplete-account-button"
+          >
+            Complete Profile
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFAFA]" style={{ fontFamily: 'Manrope, sans-serif' }} data-testid="commission-request-page">
@@ -193,34 +244,20 @@ function CommissionRequestPage() {
               </div>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2" data-testid="commission-pricing-type-label">Pricing Type</label>
-                <select
-                  value={formData.pricing_type}
-                  onChange={(e) => setFormData((p) => ({ ...p, pricing_type: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2"
-                  data-testid="commission-pricing-type-select"
-                >
-                  <option value="fixed">Fixed</option>
-                  <option value="negotiable">Negotiable</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2" data-testid="commission-negotiation-label">Negotiation Allowed</label>
-                <select
-                  value={formData.negotiation_allowed ? 'yes' : 'no'}
-                  onChange={(e) => setFormData((p) => ({ ...p, negotiation_allowed: e.target.value === 'yes' }))}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2"
-                  data-testid="commission-negotiation-select"
-                >
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                </select>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2" data-testid="commission-negotiation-label">Negotiation Allowed</label>
+              <select
+                value={formData.negotiation_allowed ? 'yes' : 'no'}
+                onChange={(e) => setFormData((p) => ({ ...p, negotiation_allowed: e.target.value === 'yes' }))}
+                className="w-full border border-gray-300 rounded-xl px-3 py-2"
+                data-testid="commission-negotiation-select"
+              >
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
             </div>
 
-            {formData.pricing_type === 'negotiable' && (
+            {formData.negotiation_allowed && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2" data-testid="commission-offer-price-label">Offer Price (optional)</label>
                 <input
@@ -233,18 +270,6 @@ function CommissionRequestPage() {
                 />
               </div>
             )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2" data-testid="commission-contact-phone-label">Contact Number</label>
-              <input
-                type="tel"
-                value={formData.contact_phone}
-                onChange={(e) => setFormData((p) => ({ ...p, contact_phone: e.target.value }))}
-                className="w-full border border-gray-300 rounded-xl px-3 py-2"
-                placeholder="Enter your active phone number"
-                data-testid="commission-contact-phone-input"
-              />
-            </div>
 
             <div data-testid="commission-reference-upload-section">
               <p className="text-sm font-medium text-gray-700 mb-2" data-testid="commission-reference-upload-label">Reference Images</p>

@@ -324,7 +324,7 @@ class CommissionCreate(BaseModel):
     skill_level: str  # Average / Advanced
     detail_level: str = "Basic"
     subjects: int = Field(default=1, ge=1)
-    pricing_type: str = "fixed"  # fixed | negotiable
+    pricing_type: Optional[str] = None  # derived from negotiation_allowed for backward compatibility
     offer_price: Optional[float] = None
     negotiation_allowed: bool = False
     selected_artist_ids: List[str] = []
@@ -1819,8 +1819,6 @@ async def create_commission_request(
 
     if payload.art_category not in COMMISSION_ART_CATEGORIES:
         raise HTTPException(status_code=400, detail="Invalid artwork category")
-    if payload.pricing_type not in ["fixed", "negotiable"]:
-        raise HTTPException(status_code=400, detail="pricing_type must be fixed or negotiable")
     if len(payload.selected_artist_ids) > 3:
         raise HTTPException(status_code=400, detail="You can send request to maximum 3 artists")
 
@@ -1834,6 +1832,16 @@ async def create_commission_request(
         .execute()
     )
 
+    requester_data = requester_profile.data or {}
+    if not requester_data.get("full_name") or not requester_data.get("email") or not requester_data.get("phone"):
+        raise HTTPException(
+            status_code=400,
+            detail="Complete your registration profile (full name, email, phone) before commissioning.",
+        )
+
+    effective_pricing_type = "negotiable" if payload.negotiation_allowed else "fixed"
+    effective_offer_price = payload.offer_price if payload.negotiation_allowed else None
+
     commission_doc = {
         "user_id": user["id"],
         "category": payload.art_category,
@@ -1846,8 +1854,8 @@ async def create_commission_request(
         "budget": payload.budget,
         "deadline": payload.deadline,
         "negotiation_allowed": payload.negotiation_allowed,
-        "pricing_type": payload.pricing_type,
-        "offer_price": payload.offer_price,
+        "pricing_type": effective_pricing_type,
+        "offer_price": effective_offer_price,
         "skill_level": estimate["normalized_skill"],
         "detail_level": estimate["normalized_detail"],
         "subjects": payload.subjects,
@@ -1855,9 +1863,9 @@ async def create_commission_request(
         "price_max": estimate["max_price"],
         "estimated_price": estimate["average_price"],
         "framing_option": payload.framing_option,
-        "contact_name": (requester_profile.data or {}).get("full_name"),
-        "contact_email": (requester_profile.data or {}).get("email"),
-        "contact_phone": payload.contact_phone or (requester_profile.data or {}).get("phone"),
+        "contact_name": requester_data.get("full_name"),
+        "contact_email": requester_data.get("email"),
+        "contact_phone": requester_data.get("phone"),
         "status": "pending",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
@@ -1889,8 +1897,8 @@ async def create_commission_request(
             {
                 "commission_id": commission["id"],
                 "artist_id": artist_id,
-                "offer_price": payload.offer_price,
-                "pricing_type": payload.pricing_type,
+                "offer_price": effective_offer_price,
+                "pricing_type": effective_pricing_type,
                 "status": "pending",
                 "sent_at": datetime.now(timezone.utc).isoformat(),
             }
@@ -1925,7 +1933,7 @@ async def create_commission_request(
         f"Medium: {payload.medium}\n"
         f"Estimated Range: ₹{estimate['min_price']} - ₹{estimate['max_price']}\n"
         f"Budget: ₹{payload.budget}\n"
-        f"Pricing Type: {payload.pricing_type}\n"
+        f"Negotiation Allowed: {'Yes' if payload.negotiation_allowed else 'No'}\n"
         f"Status: pending\n"
     )
     background_tasks.add_task(_send_commission_admin_email, admin_emails, email_subject, email_body)
@@ -2040,7 +2048,7 @@ async def get_artist_commissions(artist: dict = Depends(require_artist)):
 
         requester_profile = (
             supabase.table("profiles")
-            .select("id, full_name, email, phone")
+            .select("id, full_name")
             .eq("id", commission["user_id"])
             .single()
             .execute()

@@ -55,7 +55,7 @@ function UserDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Link to="/commission/request" className="bg-white rounded-xl shadow-sm p-6 hover:shadow-lg transition-shadow" data-testid="user-dashboard-quick-commission-link">
+          <Link to="/user-dashboard/commissions/new" className="bg-white rounded-xl shadow-sm p-6 hover:shadow-lg transition-shadow" data-testid="user-dashboard-quick-commission-link">
             <h3 className="text-lg font-semibold text-gray-900 mb-1">Commission Artwork</h3>
             <p className="text-sm text-gray-500">Get instant estimate and submit a custom request.</p>
           </Link>
@@ -108,7 +108,7 @@ function UserDashboard() {
             {commissions.length === 0 ? (
               <div className="p-8 text-center" data-testid="user-dashboard-commissions-empty">
                 <p className="text-gray-600 mb-4">No commission requests yet.</p>
-                <Link to="/commission/request" className="px-4 py-2 bg-orange-500 text-white rounded-lg" data-testid="user-dashboard-commissions-empty-link">
+                <Link to="/user-dashboard/commissions/new" className="px-4 py-2 bg-orange-500 text-white rounded-lg" data-testid="user-dashboard-commissions-empty-link">
                   Start a Commission
                 </Link>
               </div>
