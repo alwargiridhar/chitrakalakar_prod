@@ -100,3 +100,8 @@ Adjust commission feature to existing framework without breaking existing Supaba
 - Fixed art-class location lookup failure when geocoder returns non-JSON/blocked response.
 - Hardened `/api/locations/search` with robust status handling, JSON guards, second attempt without country filter, and curated India-city fallback suggestions.
 - Verified `chenna` now returns valid dropdown suggestion (`Chennai, Tamil Nadu, India`).
+
+
+## Latest Micro-Update (Featured Artwork Thumbnail Fit)
+- Updated featured artist "Most Viewed Artworks" thumbnails to preserve full artwork framing using `object-contain` with centered fit and padded neutral background.
+- Prevents out-focused/cropped artwork appearance in featured spotlight cards.

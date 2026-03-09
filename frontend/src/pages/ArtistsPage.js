@@ -184,12 +184,12 @@ function ArtistsPage() {
                         className="rounded-xl overflow-hidden border border-gray-200 bg-white hover:shadow-md transition-shadow"
                         data-testid={`featured-artwork-card-${artwork.id}`}
                       >
-                        <div className="aspect-[4/3] bg-gray-100 overflow-hidden">
+                        <div className="aspect-[4/3] bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden flex items-center justify-center p-2">
                           {getArtworkImage(artwork) ? (
                             <img
                               src={getArtworkImage(artwork)}
                               alt={artwork.title || 'Artwork'}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-contain object-center"
                               data-testid={`featured-artwork-image-${artwork.id}`}
                             />
                           ) : (
