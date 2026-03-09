@@ -1426,35 +1426,45 @@ async def get_my_video_screenings(user: dict = Depends(require_user)):
 async def add_to_cart(data: CartItemRequest, user: dict = Depends(require_user)):
     """Add item to cart"""
     supabase = get_supabase_client()
-    
-    # Check if artwork exists and is available
-    artwork = supabase.table('artworks').select('*').eq('id', data.artwork_id).eq('is_available', True).single().execute()
-    if not artwork.data:
-        raise HTTPException(status_code=404, detail="Artwork not found or not available")
-    
-    # Check if already in cart
-    existing = supabase.table('cart_items').select('id, quantity').eq('user_id', user['id']).eq('artwork_id', data.artwork_id).execute()
-    
-    if existing.data:
-        # Update quantity
-        new_quantity = existing.data[0]['quantity'] + data.quantity
-        supabase.table('cart_items').update({"quantity": new_quantity}).eq('id', existing.data[0]['id']).execute()
-    else:
-        # Add new item
-        cart_data = {
-            "user_id": user['id'],
-            "artwork_id": data.artwork_id,
-            "quantity": data.quantity,
-            "added_at": datetime.now(timezone.utc).isoformat()
-        }
-        supabase.table('cart_items').insert(cart_data).execute()
-    
-    return {"success": True, "message": "Added to cart"}
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
+
+    try:
+        # Check if artwork exists and is available
+        artwork = supabase.table('artworks').select('*').eq('id', data.artwork_id).eq('is_available', True).single().execute()
+        if not artwork.data:
+            raise HTTPException(status_code=404, detail="Artwork not found or not available")
+
+        # Check if already in cart
+        existing = supabase.table('cart_items').select('id, quantity').eq('user_id', user['id']).eq('artwork_id', data.artwork_id).execute()
+
+        if existing.data:
+            # Update quantity
+            new_quantity = existing.data[0]['quantity'] + data.quantity
+            supabase.table('cart_items').update({"quantity": new_quantity}).eq('id', existing.data[0]['id']).execute()
+        else:
+            # Add new item
+            cart_data = {
+                "user_id": user['id'],
+                "artwork_id": data.artwork_id,
+                "quantity": data.quantity,
+                "added_at": datetime.now(timezone.utc).isoformat()
+            }
+            supabase.table('cart_items').insert(cart_data).execute()
+
+        return {"success": True, "message": "Added to cart"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"add_to_cart error: {e}")
+        raise HTTPException(status_code=500, detail="Unable to add to cart right now. Please try again.")
 
 @app.get("/api/cart")
 async def get_cart(user: dict = Depends(require_user)):
     """Get user's cart"""
     supabase = get_supabase_client()
+    if not supabase:
+        return {"items": [], "total": 0, "item_count": 0}
     
     cart_items = supabase.table('cart_items').select('*, artworks!artwork_id(*)').eq('user_id', user['id']).execute()
     
@@ -1470,6 +1480,8 @@ async def get_cart(user: dict = Depends(require_user)):
 async def remove_from_cart(item_id: str, user: dict = Depends(require_user)):
     """Remove item from cart"""
     supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
     
     supabase.table('cart_items').delete().eq('id', item_id).eq('user_id', user['id']).execute()
     

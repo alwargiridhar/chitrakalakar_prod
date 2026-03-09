@@ -29,10 +29,15 @@ const apiCall = async (endpoint, options = {}) => {
     ...options.headers,
   };
 
-  const response = await fetch(`${API}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  let response;
+  try {
+    response = await fetch(`${API}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch (networkError) {
+    throw new Error('Unable to reach server. Please refresh and try again.');
+  }
 
   let data = null;
 

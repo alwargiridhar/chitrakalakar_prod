@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { publicAPI } from '../services/api';
 import { ART_CATEGORIES } from '../utils/branding';
+import LocationAutocomplete from '../components/LocationAutocomplete';
 
 function ArtClassesPage() {
   const [step, setStep] = useState('form'); // form, results
@@ -22,6 +23,12 @@ function ArtClassesPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (formData.class_type === 'offline' && !formData.user_location?.trim()) {
+      setError('Please select your location from the dropdown suggestions.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -174,14 +181,16 @@ function ArtClassesPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Your Location *
                   </label>
-                  <input
-                    type="text"
+                  <LocationAutocomplete
                     value={formData.user_location}
-                    onChange={(e) => setFormData({ ...formData, user_location: e.target.value })}
-                    required={formData.class_type === 'offline'}
-                    placeholder="Enter your city"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    onChange={(displayName) => setFormData({ ...formData, user_location: displayName })}
+                    placeholder="Type at least 2 characters to search city"
+                    country="in"
+                    className="w-full"
                   />
+                  <p className="text-xs text-gray-500 mt-1" data-testid="art-class-location-hint">
+                    Start typing your city/locality and choose from dropdown suggestions.
+                  </p>
                 </div>
               )}
 

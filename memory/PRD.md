@@ -75,3 +75,10 @@ Adjust commission feature to existing framework without breaking existing Supaba
 - Featured spotlight source now uses existing `getFeaturedArtists()` result as primary source, with graceful fallback to first registered artist if featured list is empty.
 - Added artwork ordering fallback logic: `views` -> `likes` -> latest.
 - Moved **Registered Artists** section below featured block to match requested content hierarchy and improve visual symmetry.
+
+
+## Latest Micro-Update (Bug Fixes)
+- Fixed cart API resilience by adding DB-availability guards and robust exception handling in `/api/cart/add`, `/api/cart`, and `/api/cart/{item_id}`.
+- Improved frontend API network error handling to return a clear actionable message instead of raw fetch failure.
+- Updated Art Classes enquiry form to use live location autocomplete dropdown while typing (via existing `LocationAutocomplete` + `/api/locations/search`).
+- Added offline class location validation to prevent blank location submissions.
