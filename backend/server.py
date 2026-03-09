@@ -1536,33 +1536,45 @@ async def get_my_orders(user: dict = Depends(require_user)):
 async def get_recent_notifications():
     """Get recent purchase/order notifications for display"""
     supabase = get_supabase_client()
-    
-    # Get notifications from last 24 hours
-    cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
-    
-    notifications = supabase.table('notifications').select('*').gte('created_at', cutoff).order('created_at', desc=True).limit(20).execute()
-    
-    # Format time ago
-    result = []
-    for notif in (notifications.data or []):
-        created = datetime.fromisoformat(notif['created_at'].replace('Z', '+00:00'))
-        diff = datetime.now(timezone.utc) - created
-        
-        if diff.total_seconds() < 60:
-            time_ago = "just now"
-        elif diff.total_seconds() < 3600:
-            time_ago = f"{int(diff.total_seconds() / 60)} min ago"
-        elif diff.total_seconds() < 86400:
-            time_ago = f"{int(diff.total_seconds() / 3600)} hours ago"
-        else:
-            time_ago = "within 24 hours"
-        
-        result.append({
-            **notif,
-            "time_ago": time_ago
-        })
-    
-    return {"notifications": result}
+    if not supabase:
+        return {"notifications": []}
+
+    try:
+        # Get notifications from last 24 hours
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+        notifications = (
+            supabase.table('notifications')
+            .select('*')
+            .gte('created_at', cutoff)
+            .order('created_at', desc=True)
+            .limit(20)
+            .execute()
+        )
+
+        # Format time ago
+        result = []
+        for notif in (notifications.data or []):
+            created = datetime.fromisoformat(notif['created_at'].replace('Z', '+00:00'))
+            diff = datetime.now(timezone.utc) - created
+
+            if diff.total_seconds() < 60:
+                time_ago = "just now"
+            elif diff.total_seconds() < 3600:
+                time_ago = f"{int(diff.total_seconds() / 60)} min ago"
+            elif diff.total_seconds() < 86400:
+                time_ago = f"{int(diff.total_seconds() / 3600)} hours ago"
+            else:
+                time_ago = "within 24 hours"
+
+            result.append({
+                **notif,
+                "time_ago": time_ago
+            })
+
+        return {"notifications": result}
+    except Exception as e:
+        print("notifications fetch error", e)
+        return {"notifications": []}
 
 # ============ COURIER TRACKING ============
 

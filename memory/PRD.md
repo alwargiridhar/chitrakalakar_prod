@@ -56,3 +56,11 @@ Adjust commission feature to existing framework without breaking existing Supaba
 1. Apply migration and seed artist category pricing data.
 2. Configure strict S3 bucket envs and verify upload path for all media.
 3. Run authenticated user+artist+admin scenario tests end-to-end.
+
+
+## Latest Change Set (Privacy + Dashboard Gating)
+- Removed duplicate pricing semantics in commission form: now only **Negotiation Allowed** controls fixed/negotiable behavior.
+- Enforced privacy boundary: artist/user contact details are not exposed to each other in commission APIs/UI.
+- Moved commission creation flow to dashboard-authenticated path (`/user-dashboard/commissions/new`), with legacy redirect from `/commission/request`.
+- Added commissioning authenticity gate: user must be logged in and profile must include `full_name`, `email`, and `phone` before creating commission.
+- Added Google/OAuth profile data capture enhancement to auto-fill available name/email/phone metadata into `profiles` when missing.
