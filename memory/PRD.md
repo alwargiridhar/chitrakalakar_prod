@@ -105,3 +105,8 @@ Adjust commission feature to existing framework without breaking existing Supaba
 ## Latest Micro-Update (Featured Artwork Thumbnail Fit)
 - Updated featured artist "Most Viewed Artworks" thumbnails to preserve full artwork framing using `object-contain` with centered fit and padded neutral background.
 - Prevents out-focused/cropped artwork appearance in featured spotlight cards.
+
+
+## Latest Micro-Update (Adaptive Thumbnail Fit Logic)
+- Implemented adaptive artwork fit logic in Featured Artist Spotlight: auto-switches thumbnail image mode between `cover` and `contain` based on actual image aspect ratio at load time.
+- Balanced rule: near-normal ratios use cover for strong fill; extreme portrait/landscape ratios use contain to avoid out-focused cropping.

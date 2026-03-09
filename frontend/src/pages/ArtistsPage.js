@@ -7,6 +7,7 @@ function ArtistsPage() {
   const [featuredArtists, setFeaturedArtists] = useState({ contemporary: [], registered: [] });
   const [spotlightArtist, setSpotlightArtist] = useState(null);
   const [spotlightArtworks, setSpotlightArtworks] = useState([]);
+  const [artworkFitMode, setArtworkFitMode] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,6 +38,17 @@ function ArtistsPage() {
       const bDate = new Date(b?.created_at || 0).getTime();
       return bDate - aDate;
     });
+  };
+
+  const handleArtworkImageLoad = (artworkId, event) => {
+    const img = event.currentTarget;
+    const width = img.naturalWidth || 1;
+    const height = img.naturalHeight || 1;
+    const ratio = width / height;
+
+    // 4:3 card container ratio = 1.33. Use cover for near-normal ratios, contain for extreme ratios.
+    const fit = ratio > 0.9 && ratio < 1.7 ? 'cover' : 'contain';
+    setArtworkFitMode((prev) => ({ ...prev, [artworkId]: fit }));
   };
 
   const fetchArtists = async () => {
@@ -189,7 +201,8 @@ function ArtistsPage() {
                             <img
                               src={getArtworkImage(artwork)}
                               alt={artwork.title || 'Artwork'}
-                              className="w-full h-full object-contain object-center"
+                              onLoad={(e) => handleArtworkImageLoad(artwork.id, e)}
+                              className={`w-full h-full object-center ${artworkFitMode[artwork.id] === 'cover' ? 'object-cover' : 'object-contain'}`}
                               data-testid={`featured-artwork-image-${artwork.id}`}
                             />
                           ) : (
