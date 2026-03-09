@@ -124,3 +124,9 @@ Adjust commission feature to existing framework without breaking existing Supaba
 - Expanded zoom/focus projection editor to all `ImageUpload` flows by default (avatars, community/exhibition-like uploads, commission refs, etc.).
 - Added inline controls in upload component: Zoom, Focus X/Y, Fit Mode + Apply & Upload.
 - Artwork upload keeps dedicated per-image projection controls in `ArtworkForm` (ImageUpload editor disabled there to avoid duplicate control layers).
+
+
+## Latest Micro-Update (Community Create CORS + Upload Error)
+- Fixed backend CORS middleware configuration for wildcard mode by disabling credentials when `CORS_ORIGINS=*`, ensuring valid `Access-Control-Allow-Origin` headers are emitted.
+- Fixed upload client parsing bug that caused `Failed to execute 'clone' on 'Response': Response body is already used`.
+- Upload response handling now reads response body once (`text -> JSON parse`) with safe error extraction.

@@ -70,11 +70,18 @@ app = FastAPI(title="ChitraKalakar API")
 security = HTTPBearer()
 
 # CORS configuration
-CORS_ORIGINS = os.environ.get('CORS_ORIGINS', '*').split(',')
+raw_cors_origins = os.environ.get('CORS_ORIGINS', '*').strip()
+if raw_cors_origins == '*':
+    cors_origins = ['*']
+    cors_allow_credentials = False
+else:
+    cors_origins = [origin.strip() for origin in raw_cors_origins.split(',') if origin.strip()]
+    cors_allow_credentials = True
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
-    allow_credentials=True,
+    allow_origins=cors_origins,
+    allow_credentials=cors_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )

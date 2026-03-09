@@ -23,19 +23,21 @@ export const uploadFile = async ({ file, folder, bucketKey, entityId = null }) =
     }
   );
 
-  // Clone response before reading to avoid "body stream already read" error
-  const resClone = res.clone();
-  
-  if (!res.ok) {
-    try {
-      const errorData = await resClone.json();
-      throw new Error(errorData?.detail || 'Upload URL request failed');
-    } catch (e) {
-      throw new Error('Upload URL request failed');
-    }
+  const rawText = await res.text();
+  let dataJson = null;
+  try {
+    dataJson = rawText ? JSON.parse(rawText) : null;
+  } catch {
+    dataJson = null;
   }
-  
-  const dataJson = await res.json();
+
+  if (!res.ok) {
+    throw new Error(dataJson?.detail || dataJson?.message || 'Upload URL request failed');
+  }
+
+  if (!dataJson?.uploadUrl || !dataJson?.publicUrl) {
+    throw new Error('Upload URL response is invalid');
+  }
 
   const { uploadUrl, publicUrl } = dataJson;
 
