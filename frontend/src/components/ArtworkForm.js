@@ -804,6 +804,7 @@ export default function ArtworkForm({ categories, onSubmit, onCancel }) {
             folder="artworks"
             onUpload={handleImageUpload}
             label={`Upload Image (${formData.images.length}/8)`}
+            enableProjectionEditor={false}
           />
         )}
         

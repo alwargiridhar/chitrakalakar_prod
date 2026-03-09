@@ -118,3 +118,9 @@ Adjust commission feature to existing framework without breaking existing Supaba
 - Artwork form now sends `image_display_settings` metadata so artists can control visual projection intent.
 - Backend artwork create API accepts `image_display_settings` with backward-compatible insert fallback if DB column is not yet present.
 - Migration includes additive `artworks.image_display_settings` JSONB column.
+
+
+## Latest Micro-Update (Zoom/Focus Editor Expansion)
+- Expanded zoom/focus projection editor to all `ImageUpload` flows by default (avatars, community/exhibition-like uploads, commission refs, etc.).
+- Added inline controls in upload component: Zoom, Focus X/Y, Fit Mode + Apply & Upload.
+- Artwork upload keeps dedicated per-image projection controls in `ArtworkForm` (ImageUpload editor disabled there to avoid duplicate control layers).
