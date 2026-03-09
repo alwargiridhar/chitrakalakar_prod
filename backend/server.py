@@ -1155,7 +1155,7 @@ async def get_community_detail(community_id: str):
         raise HTTPException(status_code=500, detail="Error fetching community")
 
 @app.post("/api/communities")
-async def create_community(data: CommunityCreate, user: dict = Depends(require_artist)):
+async def create_community_legacy(data: CommunityCreate, user: dict = Depends(require_artist)):
     """Create a new community (requires artist role)"""
     supabase = get_supabase_client()
     
@@ -1165,13 +1165,26 @@ async def create_community(data: CommunityCreate, user: dict = Depends(require_a
     community_data = {
         "name": data.name,
         "description": data.description,
+        "image": data.image,
+        "category": data.category,
         "location": data.location,
-        "creator_id": user['id'],
+        "invite_criteria": data.invite_criteria,
+        "created_by": user['id'],
+        "member_count": 1,
         "is_approved": False,  # Requires admin approval
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
-    
-    result = supabase.table('communities').insert(community_data).execute()
+
+    try:
+        result = supabase.table('communities').insert(community_data).execute()
+    except Exception as e:
+        msg = str(e)
+        fallback = dict(community_data)
+        for optional_field in ["location", "invite_criteria", "updated_at"]:
+            if optional_field in fallback and (optional_field in msg or "column" in msg.lower()):
+                fallback.pop(optional_field, None)
+        result = supabase.table('communities').insert(fallback).execute()
     
     return {"success": True, "community": result.data[0], "message": "Community created and pending admin approval"}
 
@@ -3458,9 +3471,11 @@ async def get_artist_of_the_day():
 # ============ COMMUNITY MANAGEMENT ============
 
 @app.post("/api/community/create")
-async def create_community(community: CommunityCreate, artist: dict = Depends(require_artist)):
+async def create_community_managed(community: CommunityCreate, artist: dict = Depends(require_artist)):
     """Create a new community (requires membership)"""
     supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
     
     # Check if artist has membership
     profile = supabase.table('profiles').select('is_member, membership_expiry').eq('id', artist['id']).single().execute()
@@ -3478,19 +3493,41 @@ async def create_community(community: CommunityCreate, artist: dict = Depends(re
         "created_by": artist['id'],
         "member_count": 1,
         "is_approved": False,  # Needs admin approval
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
-    
-    result = supabase.table('communities').insert(community_data).execute()
+
+    # Keep backward compatibility with older table schemas
+    result = None
+    try:
+        result = supabase.table('communities').insert(community_data).execute()
+    except Exception as e:
+        msg = str(e)
+        fallback_data = dict(community_data)
+        for optional_field in ["location", "invite_criteria", "updated_at"]:
+            if optional_field in fallback_data and (optional_field in msg or "column" in msg.lower()):
+                fallback_data.pop(optional_field, None)
+
+        try:
+            result = supabase.table('communities').insert(fallback_data).execute()
+        except Exception as final_error:
+            print(f"create_community schema mismatch: {final_error}")
+            raise HTTPException(status_code=500, detail="Community table schema mismatch. Please sync columns and retry.")
     
     if result.data:
         # Add creator as admin member
-        supabase.table('community_members').insert({
+        member_payload = {
             "community_id": result.data[0]['id'],
             "user_id": artist['id'],
             "role": "admin",
             "joined_at": datetime.now(timezone.utc).isoformat()
-        }).execute()
+        }
+        try:
+            supabase.table('community_members').insert(member_payload).execute()
+        except Exception:
+            # Fallback for schemas without role column
+            member_payload.pop("role", None)
+            supabase.table('community_members').insert(member_payload).execute()
     
     return {"success": True, "message": "Community created and pending approval", "community": result.data[0] if result.data else None}
 

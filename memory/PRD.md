@@ -130,3 +130,10 @@ Adjust commission feature to existing framework without breaking existing Supaba
 - Fixed backend CORS middleware configuration for wildcard mode by disabling credentials when `CORS_ORIGINS=*`, ensuring valid `Access-Control-Allow-Origin` headers are emitted.
 - Fixed upload client parsing bug that caused `Failed to execute 'clone' on 'Response': Response body is already used`.
 - Upload response handling now reads response body once (`text -> JSON parse`) with safe error extraction.
+
+
+## Latest Micro-Update (Community Create Schema Compatibility)
+- Hardened both community-create endpoints (`/api/community/create` and `/api/communities`) to work with existing community schemas.
+- Added insert fallback logic to automatically drop optional fields (`location`, `invite_criteria`, `updated_at`) if target columns are missing.
+- Added `community_members` insert fallback for schemas without `role` column.
+- Renamed duplicate python handler names for clarity and to avoid accidental override confusion.
