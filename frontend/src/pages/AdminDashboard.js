@@ -387,6 +387,10 @@ function AdminDashboard() {
               <p className="text-sm text-gray-500 mb-1">Pending Exhibitions</p>
               <p className="text-3xl font-bold text-blue-500">{dashboardData.pending_exhibitions}</p>
             </div>
+            <div className="bg-white rounded-xl p-6 shadow-sm cursor-pointer hover:ring-2 hover:ring-orange-200" onClick={() => setActiveTab('communities')} data-testid="pending-communities-card">
+              <p className="text-sm text-gray-500 mb-1">Pending Communities</p>
+              <p className="text-3xl font-bold text-indigo-500">{pendingCommunities.length}</p>
+            </div>
             <div className="bg-white rounded-xl p-6 shadow-sm">
               <p className="text-sm text-gray-500 mb-1">Total Users</p>
               <p className="text-3xl font-bold text-gray-900">{dashboardData.total_users}</p>
