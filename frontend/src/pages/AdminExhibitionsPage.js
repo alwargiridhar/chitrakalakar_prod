@@ -272,10 +272,13 @@ function AdminExhibitionsPage() {
               exhibitions.map((exhibition) => (
                 <div key={exhibition.id} className="border border-gray-200 rounded-lg p-3" data-testid={`admin-manage-exhibition-${exhibition.id}`}>
                   <p className="font-semibold text-gray-900">{exhibition.name}</p>
-                  <p className="text-xs text-gray-600">{exhibition.artist_name || 'Unknown Artist'} • {exhibition.status}</p>
+                  <p className="text-xs text-gray-600">{exhibition.artist_name || 'Unknown Artist'} • <span className={`font-medium ${exhibition.status === 'active' ? 'text-green-600' : exhibition.status === 'paused' ? 'text-amber-600' : 'text-gray-600'}`}>{exhibition.status}</span></p>
                   <p className="text-xs text-gray-500">Days Paid: {exhibition.days_paid || 0}</p>
+                  {exhibition.artist_action_request && exhibition.artist_action_status === 'pending' && (
+                    <p className="text-xs text-indigo-600 mt-1">⚠️ Artist requested: {exhibition.artist_action_request}</p>
+                  )}
 
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2 mt-2">
                     <input
                       type="number"
                       min="1"
@@ -293,6 +296,25 @@ function AdminExhibitionsPage() {
                     >
                       Extend
                     </button>
+                    {exhibition.status === 'active' ? (
+                      <button
+                        type="button"
+                        onClick={() => handleStatusChange(exhibition.id, 'paused')}
+                        className="px-2.5 py-1 text-xs rounded bg-orange-500 text-white hover:bg-orange-600"
+                        data-testid={`admin-pause-exhibition-${exhibition.id}`}
+                      >
+                        Pause
+                      </button>
+                    ) : exhibition.status === 'paused' ? (
+                      <button
+                        type="button"
+                        onClick={() => handleStatusChange(exhibition.id, 'active')}
+                        className="px-2.5 py-1 text-xs rounded bg-green-500 text-white hover:bg-green-600"
+                        data-testid={`admin-resume-exhibition-${exhibition.id}`}
+                      >
+                        Resume
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       onClick={() => handleDelete(exhibition.id)}
