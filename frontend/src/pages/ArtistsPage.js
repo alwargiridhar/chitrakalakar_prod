@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { publicAPI } from '../services/api';
 import AdaptiveArtworkImage from '../components/AdaptiveArtworkImage';
@@ -9,10 +9,6 @@ function ArtistsPage() {
   const [spotlightArtist, setSpotlightArtist] = useState(null);
   const [spotlightArtworks, setSpotlightArtworks] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchArtists();
-  }, []);
 
   const allFeatured = useMemo(
     () => [
@@ -26,7 +22,7 @@ function ArtistsPage() {
 
   const getArtworkImage = (artwork) => artwork?.images?.[0] || artwork?.image || '';
 
-  const sortMostViewed = (items = []) => {
+  const sortMostViewed = useCallback((items = []) => {
     return [...items].sort((a, b) => {
       const aViews = Number(a?.views || a?.view_count || 0);
       const bViews = Number(b?.views || b?.view_count || 0);
@@ -40,9 +36,9 @@ function ArtistsPage() {
       const bDate = new Date(b?.created_at || 0).getTime();
       return bDate - aDate;
     });
-  };
+  }, []);
 
-  const fetchArtists = async () => {
+  const fetchArtists = useCallback(async () => {
     try {
       const [artistsRes, featuredRes] = await Promise.all([
         publicAPI.getArtists(),
@@ -87,7 +83,11 @@ function ArtistsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [sortMostViewed]);
+
+  useEffect(() => {
+    fetchArtists();
+  }, [fetchArtists]);
 
   if (loading) {
     return (

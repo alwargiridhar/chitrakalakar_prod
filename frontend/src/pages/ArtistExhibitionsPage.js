@@ -77,7 +77,7 @@ function ArtistExhibitionsPage() {
 
   useEffect(() => {
     const plan = EXHIBITION_PLAN[form.exhibition_type] || EXHIBITION_PLAN.Kalakanksh;
-    let nextEndDate = form.end_date;
+    let nextEndDate = '';
     if (form.start_date) {
       const start = new Date(form.start_date);
       if (!Number.isNaN(start.getTime())) {
@@ -89,6 +89,13 @@ function ArtistExhibitionsPage() {
 
     setForm((prev) => {
       const normalizedArtworkIds = prev.artwork_ids.slice(0, plan.max_artworks);
+      const noChange =
+        prev.base_fee === plan.fee &&
+        prev.end_date === nextEndDate &&
+        normalizedArtworkIds.length === prev.artwork_ids.length;
+
+      if (noChange) return prev;
+
       return {
         ...prev,
         base_fee: plan.fee,

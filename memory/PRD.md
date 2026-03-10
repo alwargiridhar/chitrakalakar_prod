@@ -188,3 +188,9 @@ Adjust commission feature to existing framework without breaking existing Supaba
 - Reworked admin exhibition creator to support multi-painting entries with `+ Add Painting` flow, per-painting image + optional short description + pricing + creation date + on-sale ribbon preview.
 - Added backend support for `exhibition_paintings` metadata in admin-created exhibitions (with schema-safe fallback if column missing).
 - Normalized menu visibility by making `Exhibitions` a regular top menu link via nav link configuration.
+
+
+## Latest Micro-Update (Lint Hook Dependencies)
+- Fixed React hook dependency warnings:
+  - `ArtistExhibitionsPage`: removed implicit `form.end_date` dependency by computing end-date deterministically.
+  - `ArtistsPage`: wrapped sort and fetch callbacks with `useCallback` and updated `useEffect` dependencies.
