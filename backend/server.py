@@ -4720,6 +4720,45 @@ async def admin_delete_exhibition(exhibition_id: str, admin: dict = Depends(requ
 
     return {"success": True, "message": "Exhibition deleted"}
 
+
+@app.put("/api/admin/exhibitions/{exhibition_id}")
+async def admin_update_exhibition(exhibition_id: str, payload: AdminExhibitionUpdateRequest, admin: dict = Depends(require_admin)):
+    """Admin can update exhibition details including name, description, end_date, and status"""
+    supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
+
+    # Get current exhibition
+    exhibition = supabase.table('exhibitions').select('*').eq('id', exhibition_id).single().execute()
+    if not exhibition.data:
+        raise HTTPException(status_code=404, detail="Exhibition not found")
+
+    # Build update payload with only changed fields
+    update_data = {}
+    if payload.name is not None:
+        update_data['name'] = payload.name
+    if payload.description is not None:
+        update_data['description'] = payload.description
+    if payload.end_date is not None:
+        update_data['end_date'] = payload.end_date
+    if payload.status is not None and payload.status in ['active', 'paused', 'archived', 'upcoming']:
+        update_data['status'] = payload.status
+
+    if not update_data:
+        return {"success": True, "message": "No changes to apply"}
+
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+
+    try:
+        supabase.table('exhibitions').update(update_data).eq('id', exhibition_id).execute()
+    except Exception as e:
+        # Fallback without updated_at if column doesn't exist
+        update_data.pop('updated_at', None)
+        if update_data:
+            supabase.table('exhibitions').update(update_data).eq('id', exhibition_id).execute()
+
+    return {"success": True, "message": "Exhibition updated"}
+
 @app.post("/api/upload-url")
 async def get_upload_url(
     body: UploadUrlRequest,
