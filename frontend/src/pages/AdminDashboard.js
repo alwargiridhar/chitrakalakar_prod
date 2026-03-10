@@ -118,7 +118,7 @@ function AdminDashboard() {
         artistsByMembership,
         vouchersData,
         featuredReqs,
-        communities,
+        communitiesData,
       ] = await Promise.all([
         adminAPI.getDashboard(),
         adminAPI.getPendingArtists(),
@@ -131,7 +131,7 @@ function AdminDashboard() {
         adminAPI.getArtistsByMembership().catch(() => ({ members: [], non_members: [] })),
         adminAPI.getVouchers().catch(() => ({ vouchers: [] })),
         adminAPI.getFeaturedRequests().catch(() => ({ requests: [] })),
-        adminAPI.getPendingCommunities().catch(() => ({ communities: [] })),
+        adminAPI.getPendingCommunities().catch((err) => { console.error('Failed to fetch pending communities:', err); return { communities: [] }; }),
       ]);
 
       setDashboardData(dashboard);
@@ -146,7 +146,7 @@ function AdminDashboard() {
       setNonMemberArtists(artistsByMembership.non_members || []);
       setVouchers(vouchersData.vouchers || []);
       setFeaturedRequests(featuredReqs.requests || []);
-      setPendingCommunities(communities.communities || []);
+      setPendingCommunities(communitiesData.communities || []);
     } catch (err) {
       console.error('Admin dashboard fetch error:', err);
     } finally {
