@@ -73,6 +73,38 @@ class TestUnauthContracts:
         body = response.json()
         assert body.get("detail")
 
+    # Module: Exhibition public alias endpoints and artist auth contracts
+    def test_public_active_exhibitions_alias_payload(self, api_base_url):
+        response = requests.get(f"{api_base_url}/api/public/active-exhibitions", timeout=20)
+        assert response.status_code == 200
+        body = response.json()
+        assert isinstance(body, dict)
+        assert "exhibitions" in body
+        assert isinstance(body["exhibitions"], list)
+
+    def test_public_archived_exhibitions_alias_payload(self, api_base_url):
+        response = requests.get(f"{api_base_url}/api/public/archived-exhibitions", timeout=20)
+        assert response.status_code == 200
+        body = response.json()
+        assert isinstance(body, dict)
+        assert "exhibitions" in body
+        assert isinstance(body["exhibitions"], list)
+
+    def test_artist_exhibition_pricing_requires_auth_not_500(self, api_base_url):
+        response = requests.get(f"{api_base_url}/api/artist/exhibitions/pricing", timeout=20)
+        assert response.status_code in [401, 403]
+        body = response.json()
+        assert body.get("detail")
+
+    def test_artist_exhibition_payment_order_requires_auth_not_500(self, api_base_url):
+        response = requests.post(
+            f"{api_base_url}/api/artist/exhibitions/payment-order?exhibition_type=Kalakanksh",
+            timeout=20,
+        )
+        assert response.status_code in [401, 403]
+        body = response.json()
+        assert body.get("detail")
+
 
 # Module: Code-level regression checks for prior blockers
 class TestCodeReadinessRegression:

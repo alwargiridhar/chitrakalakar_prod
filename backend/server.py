@@ -244,7 +244,13 @@ class ExhibitionCreate(BaseModel):
     exhibition_type: str = "Kalakanksh"
     voluntary_platform_fee: float = 0
     exhibition_images: List[str] = []
+    primary_exhibition_image: Optional[str] = None
+    payment_method: str = "manual"  # manual | razorpay
+    payment_screenshot_url: Optional[str] = None
     payment_reference: Optional[str] = None
+    razorpay_order_id: Optional[str] = None
+    razorpay_payment_id: Optional[str] = None
+    razorpay_signature: Optional[str] = None
 
 
 class ExhibitionAdminCreate(BaseModel):
@@ -504,6 +510,12 @@ COMMISSION_ART_CATEGORIES = [
     "Printmaking",
 ]
 
+EXHIBITION_PLAN_CONFIG = {
+    "Kalakanksh": {"base_fee": 500, "days": 1, "max_artworks": 10},
+    "Kalahruday": {"base_fee": 1000, "days": 3, "max_artworks": 20},
+    "KalaDeeksh": {"base_fee": 2500, "days": 10, "max_artworks": 25},
+}
+
 
 def _normalize_skill_level(value: str) -> str:
     normalized = (value or "").strip().lower()
@@ -600,6 +612,56 @@ def _get_commission_updates(supabase, commission_id: str):
     return updates.data or []
 
 
+def _normalize_exhibition_type(value: str) -> str:
+    raw = (value or "Kalakanksh").strip().lower()
+    mapping = {
+        "kalakanksh": "Kalakanksh",
+        "kalahruday": "Kalahruday",
+        "kaladeeksh": "KalaDeeksh",
+    }
+    return mapping.get(raw, "Kalakanksh")
+
+
+def _get_exhibition_plan(exhibition_type: str):
+    normalized = _normalize_exhibition_type(exhibition_type)
+    return normalized, EXHIBITION_PLAN_CONFIG[normalized]
+
+
+def _parse_iso_date(value: str):
+    return datetime.fromisoformat(value.replace('Z', '+00:00'))
+
+
+def _sync_exhibition_statuses(supabase):
+    now = datetime.now(timezone.utc)
+    rows = supabase.table('exhibitions').select('id, start_date, days_paid, exhibition_type, status, is_approved').eq('is_approved', True).execute()
+    for exhibition in (rows.data or []):
+        try:
+            start = _parse_iso_date(exhibition['start_date'])
+        except Exception:
+            continue
+
+        _, plan = _get_exhibition_plan(exhibition.get('exhibition_type'))
+        days_paid = int(exhibition.get('days_paid') or plan['days'])
+
+        active_end = start + timedelta(days=days_paid)
+        archive_end = active_end + timedelta(days=days_paid)
+
+        if now < start:
+            next_status = 'upcoming'
+        elif start <= now < active_end:
+            next_status = 'active'
+        elif active_end <= now < archive_end:
+            next_status = 'archived'
+        else:
+            next_status = 'expired'
+
+        if exhibition.get('status') != next_status:
+            supabase.table('exhibitions').update({
+                'status': next_status,
+                'updated_at': datetime.now(timezone.utc).isoformat(),
+            }).eq('id', exhibition['id']).execute()
+
+
 def _resolve_upload_bucket(bucket_key: Optional[str]):
     artworks_bucket = os.environ.get("AWS_BUCKET_ARTWORKS") or os.environ.get("AWS_BUCKET_ARTIST_ARTWORKS")
     mapping = {
@@ -607,6 +669,7 @@ def _resolve_upload_bucket(bucket_key: Optional[str]):
         "artworks": artworks_bucket,
         "commission-references": os.environ.get("AWS_BUCKET_COMMISSION_REFERENCES"),
         "commission-deliveries": os.environ.get("AWS_BUCKET_COMMISSION_DELIVERIES"),
+        "exhibition-payment-proofs": os.environ.get("AWS_BUCKET_EXHIBITION_PAYMENT_PROOFS"),
         "avatars": os.environ.get("AWS_BUCKET_AVATARS"),
         "communities": os.environ.get("AWS_BUCKET_COMMUNITIES"),
         "exhibitions": os.environ.get("AWS_BUCKET_EXHIBITIONS"),
@@ -1081,6 +1144,7 @@ async def get_public_exhibitions():
         return {"exhibitions": []}
     
     try:
+        _sync_exhibition_statuses(supabase)
         exhibitions = supabase.table('exhibitions').select('*').eq('is_approved', True).order('created_at', desc=True).execute()
         return {"exhibitions": exhibitions.data or []}
     except Exception as e:
@@ -1096,11 +1160,17 @@ async def get_active_exhibitions():
         return {"exhibitions": []}
     
     try:
+        _sync_exhibition_statuses(supabase)
         exhibitions = supabase.table('exhibitions').select('*').eq('is_approved', True).eq('status', 'active').execute()
         return {"exhibitions": exhibitions.data or []}
     except Exception as e:
         print(f"Active exhibitions error: {e}")
         return {"exhibitions": []}
+
+
+@app.get("/api/public/active-exhibitions")
+async def get_active_exhibitions_alias():
+    return await get_active_exhibitions()
 
 @app.get("/api/public/exhibitions/archived")
 async def get_archived_exhibitions():
@@ -1111,11 +1181,17 @@ async def get_archived_exhibitions():
         return {"exhibitions": []}
     
     try:
+        _sync_exhibition_statuses(supabase)
         exhibitions = supabase.table('exhibitions').select('*').eq('is_approved', True).eq('status', 'archived').execute()
         return {"exhibitions": exhibitions.data or []}
     except Exception as e:
         print(f"Archived exhibitions error: {e}")
         return {"exhibitions": []}
+
+
+@app.get("/api/public/archived-exhibitions")
+async def get_archived_exhibitions_alias():
+    return await get_archived_exhibitions()
 
 # ============ COMMUNITIES ============
 
@@ -4148,6 +4224,37 @@ async def get_artist_exhibitions(artist: dict = Depends(require_artist)):
     
     return {"exhibitions": exhibitions.data or []}
 
+
+@app.get("/api/artist/exhibitions/pricing")
+async def get_exhibition_pricing_config(artist: dict = Depends(require_artist)):
+    return {"config": EXHIBITION_PLAN_CONFIG}
+
+
+@app.post("/api/artist/exhibitions/payment-order")
+async def create_exhibition_payment_order(exhibition_type: str, artist: dict = Depends(require_artist)):
+    exhibition_type, config = _get_exhibition_plan(exhibition_type)
+    razorpay_client = get_razorpay_client()
+    if not razorpay_client:
+        raise HTTPException(status_code=503, detail="Razorpay is not configured")
+
+    amount_paise = int(config['base_fee'] * 100)
+    order = razorpay_client.order.create({
+        'amount': amount_paise,
+        'currency': 'INR',
+        'receipt': f"exh_{artist['id'][:8]}_{int(datetime.now(timezone.utc).timestamp())}",
+    })
+
+    key_id = os.environ.get('RAZORPAY_KEY_ID')
+    return {
+        "success": True,
+        "exhibition_type": exhibition_type,
+        "amount": config['base_fee'],
+        "days": config['days'],
+        "max_artworks": config['max_artworks'],
+        "razorpay_key": key_id,
+        "razorpay_order_id": order['id'],
+    }
+
 @app.post("/api/artist/exhibitions")
 async def create_exhibition(exhibition: ExhibitionCreate, artist: dict = Depends(require_artist)):
     """Create new exhibition request. Artists with validated terms can proceed faster; others need manual admin payment approval."""
@@ -4155,51 +4262,87 @@ async def create_exhibition(exhibition: ExhibitionCreate, artist: dict = Depends
     if not supabase:
         raise HTTPException(status_code=503, detail="Database not configured")
     
-    # Exhibition pricing config
-    exhibition_config = {
-        "Kalakanksh": {"base_fee": 1000, "days": 3, "max_base_artworks": 10, "max_total_artworks": 15, "extra_artwork_fee": 100},
-        "Kalahruday": {"base_fee": 2000, "days": 5, "max_base_artworks": 20, "max_total_artworks": 20, "extra_artwork_fee": 0},
-        "KalaDeeksh": {"base_fee": 3000, "days": 10, "max_base_artworks": 30, "max_total_artworks": 30, "extra_artwork_fee": 0}
-    }
-    
-    config = exhibition_config.get(exhibition.exhibition_type, exhibition_config["Kalakanksh"])
+    exhibition_type, config = _get_exhibition_plan(exhibition.exhibition_type)
     num_artworks = len(exhibition.artwork_ids)
     
-    if num_artworks > config["max_total_artworks"]:
-        raise HTTPException(status_code=400, detail=f"{exhibition.exhibition_type} allows maximum {config['max_total_artworks']} artworks")
-    
-    additional_artworks = 0
-    additional_artwork_fee = 0
-    if exhibition.exhibition_type == "Kalakanksh" and num_artworks > config["max_base_artworks"]:
-        additional_artworks = num_artworks - config["max_base_artworks"]
-        additional_artwork_fee = additional_artworks * config["extra_artwork_fee"]
-    
-    total_fees = config["base_fee"] + additional_artwork_fee
+    if num_artworks > config["max_artworks"]:
+        raise HTTPException(status_code=400, detail=f"{exhibition_type} allows maximum {config['max_artworks']} artworks")
+
+    if len(exhibition.exhibition_images) > 3:
+        raise HTTPException(status_code=400, detail="Maximum 3 exhibition images allowed")
+
+    primary_image = exhibition.primary_exhibition_image or (exhibition.exhibition_images[0] if exhibition.exhibition_images else None)
+    if primary_image and primary_image not in exhibition.exhibition_images:
+        raise HTTPException(status_code=400, detail="Primary exhibition image must be one of uploaded images")
+
+    total_fees = config["base_fee"] + float(exhibition.voluntary_platform_fee or 0)
+
+    try:
+        start_date = _parse_iso_date(exhibition.start_date)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid start date")
+
+    computed_end = start_date + timedelta(days=int(config["days"]))
+    computed_end_iso = computed_end.isoformat()
+
+    payment_method = (exhibition.payment_method or "manual").strip().lower()
+    if payment_method not in ["manual", "razorpay"]:
+        raise HTTPException(status_code=400, detail="payment_method must be manual or razorpay")
+
+    if payment_method == "manual" and not exhibition.payment_screenshot_url:
+        raise HTTPException(status_code=400, detail="Manual payment screenshot is required")
+
+    if payment_method == "razorpay":
+        if not (exhibition.razorpay_order_id and exhibition.razorpay_payment_id and exhibition.razorpay_signature):
+            raise HTTPException(status_code=400, detail="Razorpay payment details are required")
+        razorpay_client = get_razorpay_client()
+        if not razorpay_client:
+            raise HTTPException(status_code=503, detail="Razorpay is not configured")
+        try:
+            razorpay_client.utility.verify_payment_signature({
+                'razorpay_order_id': exhibition.razorpay_order_id,
+                'razorpay_payment_id': exhibition.razorpay_payment_id,
+                'razorpay_signature': exhibition.razorpay_signature
+            })
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid Razorpay signature")
 
     profile = supabase.table('profiles').select('is_member').eq('id', artist['id']).single().execute()
     is_member = bool((profile.data or {}).get('is_member'))
 
-    payment_status = "validated_membership" if is_member else "pending_manual_approval"
-    request_status = "pending_admin_approval" if is_member else "pending_admin_payment_review"
+    if payment_method == "razorpay":
+        payment_status = "paid_razorpay"
+        request_status = "pending_admin_approval"
+    else:
+        payment_status = "paid_manual_pending_validation" if exhibition.payment_screenshot_url else "pending_manual_approval"
+        request_status = "pending_admin_payment_review"
+
+    if is_member and payment_method == "manual":
+        request_status = "pending_admin_approval"
     
     exhibition_data = {
         "artist_id": artist['id'],
         "name": exhibition.name,
         "description": exhibition.description,
         "start_date": exhibition.start_date,
-        "end_date": exhibition.end_date,
+        "end_date": computed_end_iso,
         "artwork_ids": exhibition.artwork_ids,
         "status": "upcoming",
         "views": 0,
         "exhibition_images": exhibition.exhibition_images,
-        "exhibition_type": exhibition.exhibition_type,
+        "primary_exhibition_image": primary_image,
+        "exhibition_type": exhibition_type,
         "fees": total_fees,
         "days_paid": config["days"],
-        "max_artworks": config["max_base_artworks"],
-        "additional_artworks": additional_artworks,
-        "additional_artwork_fee": additional_artwork_fee,
+        "max_artworks": config["max_artworks"],
+        "additional_artworks": 0,
+        "additional_artwork_fee": 0,
         "voluntary_platform_fee": exhibition.voluntary_platform_fee,
+        "payment_method": payment_method,
+        "payment_screenshot_url": exhibition.payment_screenshot_url,
         "payment_reference": exhibition.payment_reference,
+        "razorpay_order_id": exhibition.razorpay_order_id,
+        "razorpay_payment_id": exhibition.razorpay_payment_id,
         "payment_status": payment_status,
         "request_status": request_status,
         "is_approved": False,
@@ -4212,7 +4355,7 @@ async def create_exhibition(exhibition: ExhibitionCreate, artist: dict = Depends
     except Exception as e:
         msg = str(e)
         fallback = dict(exhibition_data)
-        for optional_field in ["exhibition_images", "payment_reference", "payment_status", "request_status", "updated_at"]:
+        for optional_field in ["exhibition_images", "primary_exhibition_image", "payment_method", "payment_screenshot_url", "payment_reference", "razorpay_order_id", "razorpay_payment_id", "payment_status", "request_status", "updated_at"]:
             if optional_field in fallback and (optional_field in msg or "column" in msg.lower()):
                 fallback.pop(optional_field, None)
         result = supabase.table('exhibitions').insert(fallback).execute()
@@ -4228,20 +4371,29 @@ async def admin_create_exhibition(payload: ExhibitionAdminCreate, admin: dict = 
         raise HTTPException(status_code=503, detail="Database not configured")
 
     target_artist_id = payload.artist_id or admin['id']
+    exhibition_type, plan = _get_exhibition_plan(payload.exhibition_type)
+
+    try:
+        start_date = _parse_iso_date(payload.start_date)
+        computed_end = start_date + timedelta(days=int(plan['days']))
+        computed_end_iso = computed_end.isoformat()
+    except Exception:
+        computed_end_iso = payload.end_date
+
     exhibition_data = {
         "artist_id": target_artist_id,
         "name": payload.name,
         "description": payload.description,
         "start_date": payload.start_date,
-        "end_date": payload.end_date,
+        "end_date": computed_end_iso,
         "artwork_ids": payload.artwork_ids,
         "exhibition_images": payload.exhibition_images,
         "status": "active",
         "views": 0,
-        "exhibition_type": payload.exhibition_type,
+        "exhibition_type": exhibition_type,
         "fees": 0,
-        "days_paid": 0,
-        "max_artworks": len(payload.artwork_ids),
+        "days_paid": plan['days'],
+        "max_artworks": plan['max_artworks'],
         "additional_artworks": 0,
         "additional_artwork_fee": 0,
         "voluntary_platform_fee": 0,

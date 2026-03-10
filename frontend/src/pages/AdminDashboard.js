@@ -611,11 +611,20 @@ function AdminDashboard() {
               ) : (
                 <div className="space-y-4">
                   {pendingExhibitions.map((exhibition) => (
-                    <div key={exhibition.id} className="border border-gray-200 rounded-lg p-4 flex items-center justify-between">
+                    <div key={exhibition.id} className="border border-gray-200 rounded-lg p-4 flex items-start justify-between gap-4">
                       <div>
                         <h3 className="font-semibold text-gray-900">{exhibition.name}</h3>
                         <p className="text-sm text-gray-500">by {exhibition.artist_name}</p>
                         <p className="text-sm text-orange-500">{exhibition.start_date} - {exhibition.end_date}</p>
+                        <p className="text-xs text-gray-600 mt-1">Payment: {exhibition.payment_status || 'pending manual review'} • Method: {exhibition.payment_method || 'manual'}</p>
+                        {exhibition.payment_reference && (
+                          <p className="text-xs text-blue-600">Payment Ref: {exhibition.payment_reference}</p>
+                        )}
+                        {exhibition.payment_screenshot_url && (
+                          <a href={exhibition.payment_screenshot_url} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:text-indigo-700" data-testid={`admin-exhibition-payment-proof-${exhibition.id}`}>
+                            View Payment Screenshot
+                          </a>
+                        )}
                       </div>
                       <div className="flex gap-2">
                         <button onClick={() => handleApproveExhibition(exhibition.id, true)} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Approve</button>

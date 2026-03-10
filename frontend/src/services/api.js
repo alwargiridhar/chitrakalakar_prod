@@ -454,6 +454,13 @@ export const artistAPI = {
 
   getExhibitions: () => apiCall('/artist/exhibitions'),
 
+  getExhibitionPricing: () => apiCall('/artist/exhibitions/pricing'),
+
+  createExhibitionPaymentOrder: (exhibitionType) =>
+    apiCall(`/artist/exhibitions/payment-order?exhibition_type=${encodeURIComponent(exhibitionType)}`, {
+      method: 'POST',
+    }),
+
   createExhibition: (data) =>
     apiCall('/artist/exhibitions', {
       method: 'POST',

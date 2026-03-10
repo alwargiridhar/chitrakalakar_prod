@@ -36,6 +36,7 @@ export const BUCKETS = {
   ARTWORKS: 'artworks',
   ARTIST_ARTWORKS: 'artworks',
   EXHIBITIONS: 'exhibitions',
+  EXHIBITION_PAYMENT_PROOFS: 'exhibition-payment-proofs',
   COMMISSION_REFERENCES: 'commission-references',
   COMMISSION_DELIVERIES: 'commission-deliveries',
   COMMISSION_REFS: 'commission-references',

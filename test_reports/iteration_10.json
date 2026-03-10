@@ -1,0 +1,44 @@
+{
+  "summary": "Executed targeted backend + frontend regression for exhibition workflow routes/contracts on public preview URL. Public exhibitions pages load, alias endpoints return valid payloads, protected artist/admin exhibition routes redirect without runtime crash, and artist pricing/payment-order endpoints enforce auth as expected.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Razorpay checkout script bootstrap",
+        "issue": "Console still reports failed request to https://checkout-static-next.razorpay.com/build/undefined (ERR_BLOCKED_BY_ORB) during exhibition page loads.",
+        "affected_selectors": []
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_exhibitions_community_regression.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Investigate Razorpay script config/path causing /build/undefined fetch failures.",
+    "Run authenticated artist/admin create-flow retest (submission + payment paths) once credentials are available."
+  ],
+  "critical_code_review_comments": [
+    "Backend endpoints /api/public/active-exhibitions and /api/public/archived-exhibitions are present and stable via alias handlers.",
+    "Artist pricing (/api/artist/exhibitions/pricing) and payment-order (/api/artist/exhibitions/payment-order) contracts are auth-protected and no longer return 500 on unauth access.",
+    "ArchivedExhibitionsPage interactive elements still have limited data-testid coverage, reducing automation robustness."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_exhibitions_community_regression.py",
+    "/app/test_reports/iteration_10.json"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 targeted tests passed)",
+    "frontend": "100% for requested route-health/public-page checks"
+  },
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Authenticated end-to-end flows (artist exhibition submission, manual screenshot validation path, Razorpay completion callback) remain unverified due to missing credentials; only route health and unauth contracts were validated in this run.",
+  "rca of the issue": "The remaining observable issue is third-party Razorpay static asset request to /build/undefined, indicating a likely checkout script/version bootstrap misconfiguration rather than route logic failure."
+}
