@@ -129,6 +129,16 @@ function SubscriptionPage() {
             }
           }
         };
+
+        if (!options.key || options.key === 'undefined') {
+          alert('Razorpay key is missing. Please use manual payment or contact admin.');
+          return;
+        }
+
+        if (!window.Razorpay) {
+          alert('Razorpay is not available right now. Please try again later.');
+          return;
+        }
         
         const razorpay = new window.Razorpay(options);
         razorpay.on('payment.failed', function (response) {

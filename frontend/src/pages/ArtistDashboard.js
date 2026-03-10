@@ -232,6 +232,16 @@ const handleMembershipPayment = async (planType) => {
         color: '#f97316'
       }
     };
+
+    if (!options.key || options.key === 'undefined') {
+      alert('Razorpay key is missing. Please use manual payment path.');
+      return;
+    }
+
+    if (!window.Razorpay) {
+      alert('Razorpay script is not available right now. Please try manual payment.');
+      return;
+    }
     
     const razorpay = new window.Razorpay(options);
     razorpay.open();

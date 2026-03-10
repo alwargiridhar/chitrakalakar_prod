@@ -4283,7 +4283,7 @@ async def create_exhibition(exhibition: ExhibitionCreate, artist: dict = Depends
         raise HTTPException(status_code=400, detail="Invalid start date")
 
     computed_end = start_date + timedelta(days=int(config["days"]))
-    computed_end_iso = computed_end.isoformat()
+    computed_end_iso = computed_end.date().isoformat()
 
     payment_method = (exhibition.payment_method or "manual").strip().lower()
     if payment_method not in ["manual", "razorpay"]:
@@ -4376,7 +4376,7 @@ async def admin_create_exhibition(payload: ExhibitionAdminCreate, admin: dict = 
     try:
         start_date = _parse_iso_date(payload.start_date)
         computed_end = start_date + timedelta(days=int(plan['days']))
-        computed_end_iso = computed_end.isoformat()
+        computed_end_iso = computed_end.date().isoformat()
     except Exception:
         computed_end_iso = payload.end_date
 
