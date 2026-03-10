@@ -181,7 +181,7 @@ export function AuthProvider({ children }) {
         logout,
         updateProfile,
         isAuthenticated: !!profiles,
-        isAdmin: profiles?.role === 'admin',
+        isAdmin: profiles?.role === 'admin' || profiles?.role === 'lead_chitrakar',
         isArtist: profiles?.role === 'artist',
         isLeadChitrakar: profiles?.role === 'lead_chitrakar',
         isKalakar: profiles?.role === 'kalakar',
