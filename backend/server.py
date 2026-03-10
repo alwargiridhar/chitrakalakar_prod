@@ -284,6 +284,14 @@ class AdminExhibitionExtendRequest(BaseModel):
     exhibition_id: str
     extra_days: int = Field(gt=0, le=30)
 
+
+class AdminExhibitionUpdateRequest(BaseModel):
+    exhibition_id: str
+    name: Optional[str] = None
+    description: Optional[str] = None
+    end_date: Optional[str] = None
+    status: Optional[str] = None  # active, paused, archived
+
 class FeaturedArtistCreate(BaseModel):
     name: str
     bio: str
