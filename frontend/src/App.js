@@ -43,6 +43,8 @@ import CommissionRequestPage from './pages/CommissionRequestPage';
 import UserCommissionsPage from './pages/UserCommissionsPage';
 import ArtistCommissionsPage from './pages/ArtistCommissionsPage';
 import AdminCommissionsPage from './pages/AdminCommissionsPage';
+import ArtistExhibitionsPage from './pages/ArtistExhibitionsPage';
+import AdminExhibitionsPage from './pages/AdminExhibitionsPage';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 import './App.css';
@@ -86,7 +88,9 @@ function App() {
           <Route path="/user-dashboard/commissions" element={<><NavBar /><UserCommissionsPage /></>} />
           <Route path="/user-dashboard/commissions/new" element={<><NavBar /><CommissionRequestPage /></>} />
           <Route path="/dashboard/commissions" element={<><NavBar /><ArtistCommissionsPage /></>} />
+          <Route path="/dashboard/exhibitions" element={<><NavBar /><ArtistExhibitionsPage /></>} />
           <Route path="/admin/commissions" element={<><NavBar /><AdminCommissionsPage /></>} />
+          <Route path="/admin/exhibitions" element={<><NavBar /><AdminExhibitionsPage /></>} />
           <Route path="*" element={<Layout><NotFoundPage /></Layout>} />
         </Routes>
         <Chatbot />

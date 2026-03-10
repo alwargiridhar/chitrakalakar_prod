@@ -333,6 +333,13 @@ function AdminDashboard() {
         >
           Open Commission Requests
         </Link>
+        <Link
+          to="/admin/exhibitions"
+          className="inline-block mb-6 ml-2 px-4 py-2 rounded-lg bg-orange-500 text-white text-sm hover:bg-orange-600"
+          data-testid="admin-dashboard-create-exhibition-link"
+        >
+          Create Exhibition (No Payment)
+        </Link>
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-8">

@@ -243,6 +243,19 @@ class ExhibitionCreate(BaseModel):
     artwork_ids: List[str] = []
     exhibition_type: str = "Kalakanksh"
     voluntary_platform_fee: float = 0
+    exhibition_images: List[str] = []
+    payment_reference: Optional[str] = None
+
+
+class ExhibitionAdminCreate(BaseModel):
+    artist_id: Optional[str] = None
+    name: str
+    description: Optional[str] = None
+    start_date: str
+    end_date: str
+    artwork_ids: List[str] = []
+    exhibition_type: str = "Kalakanksh"
+    exhibition_images: List[str] = []
 
 class ExhibitionApprovalRequest(BaseModel):
     exhibition_id: str
@@ -2705,9 +2718,37 @@ async def approve_exhibition(request: ExhibitionApprovalRequest, admin: dict = D
     supabase = get_supabase_client()
     
     if request.approved:
-        result = supabase.table('exhibitions').update({"is_approved": True, "status": "active"}).eq('id', request.exhibition_id).execute()
+        update_payload = {
+            "is_approved": True,
+            "status": "active",
+            "payment_status": "approved_manual",
+            "request_status": "approved",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        try:
+            result = supabase.table('exhibitions').update(update_payload).eq('id', request.exhibition_id).execute()
+        except Exception as e:
+            msg = str(e)
+            fallback = dict(update_payload)
+            for optional_field in ["payment_status", "request_status", "updated_at"]:
+                if optional_field in fallback and (optional_field in msg or "column" in msg.lower()):
+                    fallback.pop(optional_field, None)
+            result = supabase.table('exhibitions').update(fallback).eq('id', request.exhibition_id).execute()
     else:
-        result = supabase.table('exhibitions').delete().eq('id', request.exhibition_id).execute()
+        reject_payload = {
+            "is_approved": False,
+            "status": "rejected",
+            "request_status": "rejected",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        try:
+            result = supabase.table('exhibitions').update(reject_payload).eq('id', request.exhibition_id).execute()
+        except Exception as e:
+            msg = str(e)
+            fallback = {"is_approved": False, "status": "rejected"}
+            if "request_status" in msg.lower():
+                fallback.pop("request_status", None)
+            result = supabase.table('exhibitions').update(fallback).eq('id', request.exhibition_id).execute()
     
     return {"success": True, "message": f"Exhibition {'approved' if request.approved else 'rejected'}"}
 
@@ -4114,8 +4155,10 @@ async def get_artist_exhibitions(artist: dict = Depends(require_artist)):
 
 @app.post("/api/artist/exhibitions")
 async def create_exhibition(exhibition: ExhibitionCreate, artist: dict = Depends(require_artist)):
-    """Create new exhibition"""
+    """Create new exhibition request. Artists with validated terms can proceed faster; others need manual admin payment approval."""
     supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
     
     # Exhibition pricing config
     exhibition_config = {
@@ -4137,6 +4180,12 @@ async def create_exhibition(exhibition: ExhibitionCreate, artist: dict = Depends
         additional_artwork_fee = additional_artworks * config["extra_artwork_fee"]
     
     total_fees = config["base_fee"] + additional_artwork_fee
+
+    profile = supabase.table('profiles').select('is_member').eq('id', artist['id']).single().execute()
+    is_member = bool((profile.data or {}).get('is_member'))
+
+    payment_status = "validated_membership" if is_member else "pending_manual_approval"
+    request_status = "pending_admin_approval" if is_member else "pending_admin_payment_review"
     
     exhibition_data = {
         "artist_id": artist['id'],
@@ -4147,6 +4196,7 @@ async def create_exhibition(exhibition: ExhibitionCreate, artist: dict = Depends
         "artwork_ids": exhibition.artwork_ids,
         "status": "upcoming",
         "views": 0,
+        "exhibition_images": exhibition.exhibition_images,
         "exhibition_type": exhibition.exhibition_type,
         "fees": total_fees,
         "days_paid": config["days"],
@@ -4154,12 +4204,70 @@ async def create_exhibition(exhibition: ExhibitionCreate, artist: dict = Depends
         "additional_artworks": additional_artworks,
         "additional_artwork_fee": additional_artwork_fee,
         "voluntary_platform_fee": exhibition.voluntary_platform_fee,
-        "is_approved": False
+        "payment_reference": exhibition.payment_reference,
+        "payment_status": payment_status,
+        "request_status": request_status,
+        "is_approved": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
-    
-    result = supabase.table('exhibitions').insert(exhibition_data).execute()
+
+    try:
+        result = supabase.table('exhibitions').insert(exhibition_data).execute()
+    except Exception as e:
+        msg = str(e)
+        fallback = dict(exhibition_data)
+        for optional_field in ["exhibition_images", "payment_reference", "payment_status", "request_status", "updated_at"]:
+            if optional_field in fallback and (optional_field in msg or "column" in msg.lower()):
+                fallback.pop(optional_field, None)
+        result = supabase.table('exhibitions').insert(fallback).execute()
     
     return {"success": True, "exhibition": result.data[0], "message": f"Exhibition submitted. Total fee: ₹{total_fees}"}
+
+
+@app.post("/api/admin/exhibitions/create")
+async def admin_create_exhibition(payload: ExhibitionAdminCreate, admin: dict = Depends(require_admin)):
+    """Admin can directly create and publish exhibitions without payment."""
+    supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
+
+    target_artist_id = payload.artist_id or admin['id']
+    exhibition_data = {
+        "artist_id": target_artist_id,
+        "name": payload.name,
+        "description": payload.description,
+        "start_date": payload.start_date,
+        "end_date": payload.end_date,
+        "artwork_ids": payload.artwork_ids,
+        "exhibition_images": payload.exhibition_images,
+        "status": "active",
+        "views": 0,
+        "exhibition_type": payload.exhibition_type,
+        "fees": 0,
+        "days_paid": 0,
+        "max_artworks": len(payload.artwork_ids),
+        "additional_artworks": 0,
+        "additional_artwork_fee": 0,
+        "voluntary_platform_fee": 0,
+        "payment_status": "waived_admin",
+        "request_status": "admin_created",
+        "is_approved": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    try:
+        result = supabase.table('exhibitions').insert(exhibition_data).execute()
+    except Exception as e:
+        msg = str(e)
+        fallback = dict(exhibition_data)
+        for optional_field in ["exhibition_images", "payment_status", "request_status", "updated_at"]:
+            if optional_field in fallback and (optional_field in msg or "column" in msg.lower()):
+                fallback.pop(optional_field, None)
+        result = supabase.table('exhibitions').insert(fallback).execute()
+
+    return {"success": True, "exhibition": result.data[0] if result.data else None, "message": "Exhibition created by admin"}
 
 @app.post("/api/upload-url")
 async def get_upload_url(

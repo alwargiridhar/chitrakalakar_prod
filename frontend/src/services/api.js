@@ -294,6 +294,10 @@ export const adminAPI = {
     method: 'POST',
     body: JSON.stringify({ exhibition_id: exhibitionId, approved }),
   }),
+  createExhibition: (data) => apiCall('/admin/exhibitions/create', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
   archiveExhibition: (exhibitionId) => apiCall(`/admin/archive-exhibition/${exhibitionId}`, {
     method: 'POST',
   }),

@@ -369,6 +369,13 @@ const handleSaveProfile = async () => {
           >
             Manage Commission Queue
           </Link>
+          <Link
+            to="/dashboard/exhibitions"
+            className="inline-block mt-3 ml-2 px-4 py-2 rounded-lg bg-orange-500 text-white text-sm hover:bg-orange-600"
+            data-testid="artist-dashboard-exhibition-link"
+          >
+            Exhibition Requests
+          </Link>
         </div>
 
         {/* Tabs */}

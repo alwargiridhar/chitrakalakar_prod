@@ -1,0 +1,55 @@
+{
+  "summary": "Executed targeted backend + frontend regression testing for exhibition workflow and community creation readiness on public preview URL. Build compiles, key routes load/redirect without crash, and unauth contracts for new exhibition/community APIs pass. Identified two critical code-level regressions likely causing reported community and artist exhibition failures when authenticated.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "/api/community/create",
+        "issue": "Route uses fields community.image/community.category/community.invite_criteria, but CommunityCreate model is redefined later without these fields. Authenticated execution can raise runtime AttributeError and fail community creation.",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Artist exhibition dashboard data load",
+        "issue": "ArtistExhibitionsPage calls artistAPI.getArtworks(), but api.js does not export getArtworks (only getPortfolio). Authenticated artist opening /dashboard/exhibitions is expected to fail data fetch/runtime flow.",
+        "affected_selectors": [
+          "[data-testid='artist-exhibitions-page']",
+          "[data-testid='artist-exhibition-form']"
+        ]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_exhibitions_community_regression.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Fix duplicate CommunityCreate model declaration in backend/server.py (merge fields needed by /api/community/create route).",
+    "Fix ArtistExhibitionsPage API call mismatch: replace artistAPI.getArtworks() with existing artistAPI.getPortfolio() mapping or add getArtworks alias in api.js.",
+    "After fixes, retest authenticated artist/admin flows for /dashboard/exhibitions and /admin/exhibitions including submit actions.",
+    "Optional hardening: add data-testid attributes to desktop exhibition dropdown trigger/links in NavBar for more robust automation coverage."
+  ],
+  "critical_code_review_comments": [
+    "backend/server.py defines CommunityCreate twice; second definition overwrites first and drops fields used in create_community_managed.",
+    "frontend/src/pages/ArtistExhibitionsPage.js references artistAPI.getArtworks which is not defined in frontend/src/services/api.js.",
+    "ImageUpload projection + ratio/output-size options compile successfully in production build and include testids for projection controls."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_exhibitions_community_regression.py",
+    "/app/test_reports/iteration_8.json"
+  ],
+  "success_rate": {
+    "backend": "100% (5/5 targeted tests passed)",
+    "frontend": "75% (public route/navigation smoke passed; auth-gated exhibition workflows not fully executable without credentials)"
+  },
+  "seed_data_creation": "None",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Use authenticated artist and admin accounts to reproduce and verify fixes: (1) artist /dashboard/exhibitions currently likely fails on getArtworks call, (2) community creation likely fails due to CommunityCreate model field mismatch at runtime. Current public URL auth redirects for protected routes are working.",
+  "rca of the issue": "Community create RCA: duplicated Pydantic class name CommunityCreate caused field shadowing; route code still expects removed attributes, leading to runtime failure when authenticated requests hit /api/community/create. Artist exhibitions RCA: page invokes non-existent artistAPI.getArtworks(), causing integration failure for authenticated fetchData path."
+}

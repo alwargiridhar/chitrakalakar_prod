@@ -64,8 +64,10 @@ function NavBar() {
 
     if (isAdmin) {
       items.push({ label: 'Commission Requests', href: '/admin/commissions', icon: '🧾' });
+      items.push({ label: 'Exhibitions', href: '/admin/exhibitions', icon: '🖼️' });
     } else if (isArtist) {
       items.push({ label: 'Commission Queue', href: '/dashboard/commissions', icon: '🧾' });
+      items.push({ label: 'Exhibition Requests', href: '/dashboard/exhibitions', icon: '🖼️' });
     } else {
       items.push({ label: 'My Commissions', href: '/user-dashboard/commissions', icon: '🧾' });
     }

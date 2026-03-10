@@ -18,6 +18,9 @@ export function ImageUpload({
   label = "Upload Image",
   entityId = null,
   enableProjectionEditor = true,
+  maxFileSizeMB = 5,
+  enforceAspectRatios = [],
+  outputMaxSizeMB = null,
 }) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(currentImage || null);
@@ -35,6 +38,22 @@ export function ImageUpload({
   const getAdaptiveFitMode = (width, height) => {
     const ratio = (width || 1) / (height || 1);
     return ratio > 0.9 && ratio < 1.7 ? 'cover' : 'contain';
+  };
+
+  const parseRatio = (ratioLabel) => {
+    if (!ratioLabel || !ratioLabel.includes(':')) return null;
+    const [w, h] = ratioLabel.split(':').map(Number);
+    if (!w || !h) return null;
+    return w / h;
+  };
+
+  const getNearestTargetRatio = (imageRatio) => {
+    if (!enforceAspectRatios || enforceAspectRatios.length === 0) return null;
+    const parsed = enforceAspectRatios.map(parseRatio).filter(Boolean);
+    if (!parsed.length) return null;
+    return parsed.reduce((best, current) => {
+      return Math.abs(current - imageRatio) < Math.abs(best - imageRatio) ? current : best;
+    }, parsed[0]);
   };
 
   const loadImageFromFile = (file) =>
@@ -58,8 +77,21 @@ export function ImageUpload({
     const canvas = document.createElement('canvas');
     const isAvatar = folder === 'avatars' || bucket === BUCKETS.AVATARS;
 
-    canvas.width = isAvatar ? 800 : img.naturalWidth;
-    canvas.height = isAvatar ? 800 : img.naturalHeight;
+    let canvasWidth = isAvatar ? 800 : img.naturalWidth;
+    let canvasHeight = isAvatar ? 800 : img.naturalHeight;
+
+    const imageRatio = img.naturalWidth / img.naturalHeight;
+    const targetRatio = getNearestTargetRatio(imageRatio);
+    if (targetRatio) {
+      if (imageRatio > targetRatio) {
+        canvasWidth = Math.round(canvasHeight * targetRatio);
+      } else {
+        canvasHeight = Math.round(canvasWidth / targetRatio);
+      }
+    }
+
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
 
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#ffffff';
@@ -89,6 +121,21 @@ export function ImageUpload({
     return new File([blob], file.name, { type: mimeType });
   };
 
+  const compressToTargetSize = async (file, targetMB) => {
+    if (!targetMB || file.size <= targetMB * 1024 * 1024) return file;
+
+    let quality = 0.85;
+    let maxWidth = 1600;
+    let current = file;
+    for (let i = 0; i < 6; i += 1) {
+      current = await compressImage(current, maxWidth, quality);
+      if (current.size <= targetMB * 1024 * 1024) return current;
+      quality = Math.max(0.5, quality - 0.08);
+      maxWidth = Math.max(900, Math.floor(maxWidth * 0.9));
+    }
+    return current;
+  };
+
   const uploadProcessedFile = async (file, projectionSettings = null) => {
     setError('');
     setUploading(true);
@@ -109,8 +156,10 @@ export function ImageUpload({
         compressedFile = await compressImage(processedFile, 1000, 0.8);
       }
 
+      const finalFile = await compressToTargetSize(compressedFile, outputMaxSizeMB);
+
       const imageUrl = await uploadFile({
-        file: compressedFile,
+        file: finalFile,
         bucketKey: bucket,
         folder,
         entityId,
@@ -142,8 +191,8 @@ export function ImageUpload({
     }
 
     // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Image size should be less than 5MB');
+    if (file.size > maxFileSizeMB * 1024 * 1024) {
+      setError(`Image size should be less than ${maxFileSizeMB}MB`);
       return;
     }
 
