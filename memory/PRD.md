@@ -175,3 +175,8 @@ Adjust commission feature to existing framework without breaking existing Supaba
 - Removed exhibitions dropdown from navbar.
 - `Exhibitions` is now a single direct nav link to active/upcoming exhibitions.
 - Archived navigation remains available from the exhibitions page (and back-link from archived page).
+
+
+## Latest Micro-Update (Single S3 Bucket + Folder Mode)
+- Added backend compatibility for single-bucket setups: if per-feature bucket env is missing, upload routing now falls back to `AWS_BUCKET_NAME` / `AWS_S3_BUCKET`.
+- Updated S3 object key generation to always include folder prefixes (`artworks/`, `communities/`, `exhibitions/`, `commission-references/`, etc.), so data lands correctly in folder-based structure inside one bucket.

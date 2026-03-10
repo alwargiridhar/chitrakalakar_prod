@@ -675,6 +675,7 @@ def _sync_exhibition_statuses(supabase):
 
 def _resolve_upload_bucket(bucket_key: Optional[str]):
     artworks_bucket = os.environ.get("AWS_BUCKET_ARTWORKS") or os.environ.get("AWS_BUCKET_ARTIST_ARTWORKS")
+    shared_bucket = os.environ.get("AWS_BUCKET_NAME") or os.environ.get("AWS_S3_BUCKET")
     mapping = {
         "artist-artworks": artworks_bucket,
         "artworks": artworks_bucket,
@@ -690,9 +691,14 @@ def _resolve_upload_bucket(bucket_key: Optional[str]):
         raise HTTPException(status_code=400, detail="bucket_key is required")
 
     selected = mapping.get(bucket_key)
-    if not selected:
-        raise HTTPException(status_code=500, detail=f"Bucket not configured for {bucket_key}")
-    return selected
+    if selected:
+        return selected
+
+    # Single-bucket compatibility mode: use one shared bucket with folder prefixes
+    if shared_bucket:
+        return shared_bucket
+
+    raise HTTPException(status_code=500, detail=f"Bucket not configured for {bucket_key}")
 
 
 def _compute_commission_display_status(request_row: dict, deal_row: Optional[dict]) -> str:
@@ -4523,15 +4529,16 @@ async def get_upload_url(
         
         ext = body.filename.split('.')[-1]
         bucket_name = _resolve_upload_bucket(body.bucket_key)
+        folder_prefix = (body.folder or body.bucket_key or "uploads").strip("/")
 
         file_token = f"{uuid.uuid4()}.{ext}"
         if body.bucket_key in ["artist-artworks", "artworks"]:
-            key = f"{user['id']}/{uuid.uuid4()}/{file_token}"
+            key = f"{folder_prefix}/{user['id']}/{uuid.uuid4()}/{file_token}"
         elif body.bucket_key in ["commission-references", "commission-deliveries"]:
             parent = body.entity_id or user["id"]
-            key = f"{parent}/{file_token}"
+            key = f"{folder_prefix}/{parent}/{file_token}"
         else:
-            key = f"{body.folder}/{user['id']}/{file_token}"
+            key = f"{folder_prefix}/{user['id']}/{file_token}"
         
         upload_url = s3.generate_presigned_url(
             "put_object",
