@@ -3768,19 +3768,15 @@ async def create_community_managed(community: CommunityCreate, artist: dict = De
     if not profile.data.get('is_member'):
         raise HTTPException(status_code=403, detail="Active membership required to create communities")
     
+    # Use only columns that exist in the DB schema
     community_data = {
         "name": community.name,
         "description": community.description,
         "image": community.image,
         "category": community.category,
-        "location": community.location,
-        "invite_criteria": community.invite_criteria,
         "created_by": artist['id'],
-        "creator_id": artist['id'],
         "member_count": 1,
         "is_approved": False,  # Needs admin approval
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
     # Keep backward compatibility with older table schemas
@@ -3790,8 +3786,9 @@ async def create_community_managed(community: CommunityCreate, artist: dict = De
     except Exception as e:
         msg = str(e)
         fallback_data = dict(community_data)
-        for optional_field in ["location", "invite_criteria", "updated_at"]:
-            if optional_field in fallback_data and (optional_field in msg or "column" in msg.lower()):
+        # Remove optional fields that might not exist
+        for optional_field in ["category", "image"]:
+            if optional_field in fallback_data:
                 fallback_data.pop(optional_field, None)
 
         try:
@@ -3800,22 +3797,20 @@ async def create_community_managed(community: CommunityCreate, artist: dict = De
             print(f"create_community schema mismatch: {final_error}")
             raise HTTPException(status_code=500, detail="Community table schema mismatch. Please sync columns and retry.")
     
-    if result.data:
+    if result and result.data:
         # Add creator as admin member
         member_payload = {
             "community_id": result.data[0]['id'],
             "user_id": artist['id'],
-            "role": "admin",
             "joined_at": datetime.now(timezone.utc).isoformat()
         }
         try:
             supabase.table('community_members').insert(member_payload).execute()
-        except Exception:
-            # Fallback for schemas without role column
-            member_payload.pop("role", None)
-            supabase.table('community_members').insert(member_payload).execute()
+        except Exception as member_error:
+            print(f"Failed to add creator as member: {member_error}")
+            # Continue anyway - community was created
     
-    return {"success": True, "message": "Community created and pending approval", "community": result.data[0] if result.data else None}
+    return {"success": True, "message": "Community created and pending approval", "community": result.data[0] if result and result.data else None}
 
 @app.get("/api/communities")
 async def get_communities():
