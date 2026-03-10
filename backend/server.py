@@ -2410,7 +2410,7 @@ async def get_artist_commissions(artist: dict = Depends(require_artist)):
 
 
 @app.get("/api/admin/commissions")
-async def get_admin_commissions(admin: dict = Depends(require_admin)):
+async def get_admin_commissions(admin: dict = Depends(require_lead_chitrakar)):
     supabase = get_supabase_client()
     if not supabase:
         return {"commissions": []}
@@ -2560,7 +2560,7 @@ async def update_commission_by_artist(
 @app.post("/api/admin/commissions/action")
 async def admin_action_on_commission(
     payload: CommissionAdminAction,
-    admin: dict = Depends(require_admin),
+    admin: dict = Depends(require_lead_chitrakar),
 ):
     supabase = get_supabase_client()
     if not supabase:
@@ -2812,7 +2812,7 @@ async def get_pending_modifications(user: dict = Depends(require_user)):
 # ============ ADMIN ROUTES ============
 
 @app.get("/api/admin/dashboard")
-async def get_admin_dashboard(admin: dict = Depends(require_admin)):
+async def get_admin_dashboard(admin: dict = Depends(require_lead_chitrakar)):
     """Get admin dashboard statistics"""
     supabase = get_supabase_client()
     
@@ -2835,7 +2835,7 @@ async def get_admin_dashboard(admin: dict = Depends(require_admin)):
     }
 
 @app.get("/api/admin/pending-artists")
-async def get_pending_artists(admin: dict = Depends(require_admin)):
+async def get_pending_artists(admin: dict = Depends(require_lead_chitrakar)):
     """Get artists awaiting approval"""
     supabase = get_supabase_client()
     
@@ -2844,7 +2844,7 @@ async def get_pending_artists(admin: dict = Depends(require_admin)):
     return {"artists": artists.data or []}
 
 @app.post("/api/admin/approve-artist")
-async def approve_artist(artist_id: str, approved: bool, admin: dict = Depends(require_admin)):
+async def approve_artist(artist_id: str, approved: bool, admin: dict = Depends(require_lead_chitrakar)):
     """Approve or reject an artist"""
     supabase = get_supabase_client()
     
@@ -2856,7 +2856,7 @@ async def approve_artist(artist_id: str, approved: bool, admin: dict = Depends(r
     return {"success": True, "message": f"Artist {'approved' if approved else 'rejected'}"}
 
 @app.get("/api/admin/pending-artworks")
-async def get_pending_artworks(admin: dict = Depends(require_admin)):
+async def get_pending_artworks(admin: dict = Depends(require_lead_chitrakar)):
     """Get artworks awaiting approval"""
     supabase = get_supabase_client()
     
@@ -2874,7 +2874,7 @@ async def get_pending_artworks(admin: dict = Depends(require_admin)):
     return {"artworks": result}
 
 @app.post("/api/admin/approve-artwork")
-async def approve_artwork(request: ArtworkApprovalRequest, admin: dict = Depends(require_admin)):
+async def approve_artwork(request: ArtworkApprovalRequest, admin: dict = Depends(require_lead_chitrakar)):
     """Approve or reject an artwork"""
     supabase = get_supabase_client()
     
@@ -2886,7 +2886,7 @@ async def approve_artwork(request: ArtworkApprovalRequest, admin: dict = Depends
     return {"success": True, "message": f"Artwork {'approved' if request.approved else 'rejected'}"}
 
 @app.get("/api/admin/pending-exhibitions")
-async def get_pending_exhibitions(admin: dict = Depends(require_admin)):
+async def get_pending_exhibitions(admin: dict = Depends(require_lead_chitrakar)):
     """Get exhibitions awaiting approval"""
     supabase = get_supabase_client()
 
@@ -2902,7 +2902,7 @@ async def get_pending_exhibitions(admin: dict = Depends(require_admin)):
     return {"exhibitions": list(merged.values())}
 
 @app.post("/api/admin/approve-exhibition")
-async def approve_exhibition(request: ExhibitionApprovalRequest, admin: dict = Depends(require_admin)):
+async def approve_exhibition(request: ExhibitionApprovalRequest, admin: dict = Depends(require_lead_chitrakar)):
     """Approve or reject an exhibition"""
     supabase = get_supabase_client()
     
@@ -2948,7 +2948,7 @@ async def approve_exhibition(request: ExhibitionApprovalRequest, admin: dict = D
 
 
 @app.post("/api/admin/exhibitions/review-action")
-async def review_exhibition_action(request: AdminExhibitionActionReviewRequest, admin: dict = Depends(require_admin)):
+async def review_exhibition_action(request: AdminExhibitionActionReviewRequest, admin: dict = Depends(require_lead_chitrakar)):
     """Admin reviews artist pause/delete request for exhibitions."""
     supabase = get_supabase_client()
 
@@ -2984,7 +2984,7 @@ async def review_exhibition_action(request: AdminExhibitionActionReviewRequest, 
     return {"success": True, "message": "Exhibition action reviewed"}
 
 @app.get("/api/admin/all-users")
-async def get_all_users(admin: dict = Depends(require_admin)):
+async def get_all_users(admin: dict = Depends(require_lead_chitrakar)):
     """Get all users"""
     supabase = get_supabase_client()
     
@@ -2993,7 +2993,7 @@ async def get_all_users(admin: dict = Depends(require_admin)):
     return {"users": users.data or []}
 
 @app.get("/api/admin/approved-artists")
-async def get_approved_artists(admin: dict = Depends(require_admin)):
+async def get_approved_artists(admin: dict = Depends(require_lead_chitrakar)):
     """Get approved artists for featuring"""
     supabase = get_supabase_client()
     
@@ -3002,7 +3002,7 @@ async def get_approved_artists(admin: dict = Depends(require_admin)):
     return {"artists": artists.data or []}
 
 @app.get("/api/admin/featured-artists")
-async def get_admin_featured_artists(admin: dict = Depends(require_admin)):
+async def get_admin_featured_artists(admin: dict = Depends(require_lead_chitrakar)):
     """Get all featured artists for admin"""
     supabase = get_supabase_client()
     
@@ -3021,7 +3021,7 @@ async def get_admin_featured_artists(admin: dict = Depends(require_admin)):
     }
 
 @app.post("/api/admin/feature-contemporary-artist")
-async def feature_contemporary_artist(artist_data: FeaturedArtistCreate, admin: dict = Depends(require_admin)):
+async def feature_contemporary_artist(artist_data: FeaturedArtistCreate, admin: dict = Depends(require_lead_chitrakar)):
     """Add a contemporary featured artist"""
     supabase = get_supabase_client()
     
@@ -3042,7 +3042,7 @@ async def feature_contemporary_artist(artist_data: FeaturedArtistCreate, admin: 
 
 @app.delete("/api/admin/feature-contemporary-artist/{artist_id}")
 @app.delete("/api/admin/featured-artist/{artist_id}")
-async def delete_contemporary_artist(artist_id: str, admin: dict = Depends(require_admin)):
+async def delete_contemporary_artist(artist_id: str, admin: dict = Depends(require_lead_chitrakar)):
     """Remove a contemporary featured artist"""
     supabase = get_supabase_client()
     
@@ -3051,7 +3051,7 @@ async def delete_contemporary_artist(artist_id: str, admin: dict = Depends(requi
     return {"success": True, "message": "Featured artist removed"}
 
 @app.post("/api/admin/feature-registered-artist")
-async def feature_registered_artist(request: FeatureRegisteredArtistRequest, admin: dict = Depends(require_admin)):
+async def feature_registered_artist(request: FeatureRegisteredArtistRequest, admin: dict = Depends(require_lead_chitrakar)):
     """Feature or unfeature a registered artist"""
     supabase = get_supabase_client()
     
@@ -3139,7 +3139,7 @@ async def get_featured_request_status(user: dict = Depends(require_user)):
     }
 
 @app.get("/api/admin/featured-requests")
-async def get_featured_requests(admin: dict = Depends(require_admin)):
+async def get_featured_requests(admin: dict = Depends(require_lead_chitrakar)):
     """Admin gets all pending featured requests"""
     supabase = get_supabase_client()
     
@@ -3148,7 +3148,7 @@ async def get_featured_requests(admin: dict = Depends(require_admin)):
     return {"requests": requests.data or []}
 
 @app.post("/api/admin/approve-featured-request")
-async def approve_featured_request(request: FeaturedRequestApproval, admin: dict = Depends(require_admin)):
+async def approve_featured_request(request: FeaturedRequestApproval, admin: dict = Depends(require_lead_chitrakar)):
     """Admin approves or rejects featured request"""
     supabase = get_supabase_client()
     
@@ -3209,7 +3209,7 @@ async def approve_featured_request(request: FeaturedRequestApproval, admin: dict
         return {"success": True, "message": "Featured request rejected"}
 
 @app.delete("/api/admin/remove-featured/{artist_id}")
-async def admin_remove_featured(artist_id: str, admin: dict = Depends(require_admin)):
+async def admin_remove_featured(artist_id: str, admin: dict = Depends(require_lead_chitrakar)):
     """Admin manually removes featured artist"""
     supabase = get_supabase_client()
     
@@ -3257,7 +3257,7 @@ async def cleanup_expired_featured():
     return {"cleaned": len(expired.data) if expired.data else 0}
 
 @app.post("/api/admin/create-sub-admin")
-async def create_sub_admin(request: CreateSubAdminRequest, admin: dict = Depends(require_admin)):
+async def create_sub_admin(request: CreateSubAdminRequest, admin: dict = Depends(require_lead_chitrakar)):
     """Admin can create sub-admin users"""
     supabase = get_supabase_client()
     
@@ -3286,7 +3286,7 @@ async def create_sub_admin(request: CreateSubAdminRequest, admin: dict = Depends
         raise HTTPException(status_code=500, detail=f"Failed to create sub-admin: {str(e)}")
 
 @app.get("/api/admin/sub-admins")
-async def get_sub_admins(admin: dict = Depends(require_admin)):
+async def get_sub_admins(admin: dict = Depends(require_lead_chitrakar)):
     """Get all sub-admin users"""
     supabase = get_supabase_client()
     
@@ -3338,7 +3338,7 @@ async def approve_community(community_id: str, approved: bool, admin: dict = Dep
 
 # Admin Profile Modifications
 @app.get("/api/admin/pending-profile-modifications")
-async def get_pending_profile_modifications(admin: dict = Depends(require_admin)):
+async def get_pending_profile_modifications(admin: dict = Depends(require_lead_chitrakar)):
     """Get pending profile modification requests"""
     supabase = get_supabase_client()
     
@@ -3347,7 +3347,7 @@ async def get_pending_profile_modifications(admin: dict = Depends(require_admin)
     return {"modifications": modifications.data or []}
 
 @app.post("/api/admin/approve-profile-modification")
-async def approve_profile_modification(modification_id: str, approved: bool, admin: dict = Depends(require_admin)):
+async def approve_profile_modification(modification_id: str, approved: bool, admin: dict = Depends(require_lead_chitrakar)):
     """Approve or reject profile modification"""
     supabase = get_supabase_client()
     
@@ -3368,7 +3368,7 @@ async def approve_profile_modification(modification_id: str, approved: bool, adm
 # ============ ADMIN ARTIST MANAGEMENT (Members vs Non-Members) ============
 
 @app.get("/api/admin/artists-by-membership")
-async def get_artists_by_membership(admin: dict = Depends(require_admin)):
+async def get_artists_by_membership(admin: dict = Depends(require_lead_chitrakar)):
     """Get all artists separated by membership status"""
     supabase = get_supabase_client()
     
@@ -3423,7 +3423,7 @@ class UpdateUserRoleRequest(BaseModel):
     new_role: str  # 'user', 'artist', 'admin', 'lead_chitrakar', 'kalakar'
 
 @app.post("/api/admin/update-user-role")
-async def update_user_role(request: UpdateUserRoleRequest, admin: dict = Depends(require_admin)):
+async def update_user_role(request: UpdateUserRoleRequest, admin: dict = Depends(require_lead_chitrakar)):
     """Admin can change user roles"""
     supabase = get_supabase_client()
     
@@ -3451,7 +3451,7 @@ class GrantMembershipRequest(BaseModel):
     duration_days: int = 30
 
 @app.post("/api/admin/grant-membership")
-async def admin_grant_membership(request: GrantMembershipRequest, admin: dict = Depends(require_admin)):
+async def admin_grant_membership(request: GrantMembershipRequest, admin: dict = Depends(require_lead_chitrakar)):
     """Admin can grant membership to an artist"""
     supabase = get_supabase_client()
     
@@ -3470,7 +3470,7 @@ async def admin_grant_membership(request: GrantMembershipRequest, admin: dict = 
     return {"success": True, "message": f"Membership granted until {expiry_date.strftime('%Y-%m-%d')}"}
 
 @app.post("/api/admin/revoke-membership")
-async def admin_revoke_membership(artist_id: str, admin: dict = Depends(require_admin)):
+async def admin_revoke_membership(artist_id: str, admin: dict = Depends(require_lead_chitrakar)):
     """Admin can revoke membership from an artist"""
     supabase = get_supabase_client()
     
@@ -3485,7 +3485,7 @@ async def admin_revoke_membership(artist_id: str, admin: dict = Depends(require_
     return {"success": True, "message": "Membership revoked"}
 
 @app.post("/api/admin/toggle-user-status")
-async def toggle_user_status(user_id: str, admin: dict = Depends(require_admin)):
+async def toggle_user_status(user_id: str, admin: dict = Depends(require_lead_chitrakar)):
     """Admin can activate/deactivate users"""
     supabase = get_supabase_client()
     
@@ -3504,7 +3504,7 @@ async def toggle_user_status(user_id: str, admin: dict = Depends(require_admin))
 # ============ PRICING & VOUCHER MANAGEMENT ============
 
 @app.get("/api/admin/membership-plans")
-async def get_membership_plans(admin: dict = Depends(require_admin)):
+async def get_membership_plans(admin: dict = Depends(require_lead_chitrakar)):
     """Get all membership plans"""
     supabase = get_supabase_client()
     
@@ -3520,7 +3520,7 @@ async def get_membership_plans(admin: dict = Depends(require_admin)):
         ]}
 
 @app.post("/api/admin/update-membership-plan")
-async def update_membership_plan(plan: MembershipPlanUpdate, admin: dict = Depends(require_admin)):
+async def update_membership_plan(plan: MembershipPlanUpdate, admin: dict = Depends(require_lead_chitrakar)):
     """Update a membership plan"""
     supabase = get_supabase_client()
     
@@ -3541,7 +3541,7 @@ async def update_membership_plan(plan: MembershipPlanUpdate, admin: dict = Depen
     return {"success": True, "message": f"Plan {plan.name} updated successfully", "plan": result.data[0] if result.data else plan_data}
 
 @app.get("/api/admin/vouchers")
-async def get_vouchers(admin: dict = Depends(require_admin)):
+async def get_vouchers(admin: dict = Depends(require_lead_chitrakar)):
     """Get all vouchers"""
     supabase = get_supabase_client()
     
@@ -3552,7 +3552,7 @@ async def get_vouchers(admin: dict = Depends(require_admin)):
         return {"vouchers": []}
 
 @app.post("/api/admin/create-voucher")
-async def create_voucher(voucher: VoucherCreate, admin: dict = Depends(require_admin)):
+async def create_voucher(voucher: VoucherCreate, admin: dict = Depends(require_lead_chitrakar)):
     """Create a new voucher"""
     supabase = get_supabase_client()
     
@@ -3576,7 +3576,7 @@ async def create_voucher(voucher: VoucherCreate, admin: dict = Depends(require_a
     return {"success": True, "message": f"Voucher {voucher.code} created", "voucher": result.data[0] if result.data else voucher_data}
 
 @app.delete("/api/admin/voucher/{voucher_id}")
-async def delete_voucher(voucher_id: str, admin: dict = Depends(require_admin)):
+async def delete_voucher(voucher_id: str, admin: dict = Depends(require_lead_chitrakar)):
     """Delete a voucher"""
     supabase = get_supabase_client()
     
@@ -3585,7 +3585,7 @@ async def delete_voucher(voucher_id: str, admin: dict = Depends(require_admin)):
     return {"success": True, "message": "Voucher deleted"}
 
 @app.post("/api/admin/toggle-voucher/{voucher_id}")
-async def toggle_voucher(voucher_id: str, admin: dict = Depends(require_admin)):
+async def toggle_voucher(voucher_id: str, admin: dict = Depends(require_lead_chitrakar)):
     """Toggle voucher active status"""
     supabase = get_supabase_client()
     
@@ -4038,7 +4038,7 @@ async def respond_to_invite(invite_id: str, accept: bool, artist: dict = Depends
 
 # Admin Video Screenings
 @app.get("/api/admin/pending-video-screenings")
-async def get_pending_video_screenings(admin: dict = Depends(require_admin)):
+async def get_pending_video_screenings(admin: dict = Depends(require_lead_chitrakar)):
     """Get pending video screening requests"""
     supabase = get_supabase_client()
     
@@ -4047,7 +4047,7 @@ async def get_pending_video_screenings(admin: dict = Depends(require_admin)):
     return {"screenings": screenings.data or []}
 
 @app.post("/api/admin/accommodate-video-screening")
-async def accommodate_video_screening(screening_id: str, scheduled_date: str, admin: dict = Depends(require_admin)):
+async def accommodate_video_screening(screening_id: str, scheduled_date: str, admin: dict = Depends(require_lead_chitrakar)):
     """Accommodate a video screening request"""
     supabase = get_supabase_client()
     
@@ -4061,7 +4061,7 @@ async def accommodate_video_screening(screening_id: str, scheduled_date: str, ad
 
 # Admin Chat Messages
 @app.get("/api/admin/chat-messages")
-async def get_admin_chat_messages(admin: dict = Depends(require_admin)):
+async def get_admin_chat_messages(admin: dict = Depends(require_lead_chitrakar)):
     """Get chat messages needing admin response"""
     supabase = get_supabase_client()
     
@@ -4070,7 +4070,7 @@ async def get_admin_chat_messages(admin: dict = Depends(require_admin)):
     return {"messages": messages.data or []}
 
 @app.post("/api/admin/respond-to-chat")
-async def respond_to_chat(message_id: str, response: str, admin: dict = Depends(require_admin)):
+async def respond_to_chat(message_id: str, response: str, admin: dict = Depends(require_lead_chitrakar)):
     """Admin responds to a chat message"""
     supabase = get_supabase_client()
     
@@ -4579,7 +4579,7 @@ async def create_exhibition(exhibition: ExhibitionCreate, artist: dict = Depends
 
 
 @app.post("/api/admin/exhibitions/create")
-async def admin_create_exhibition(payload: ExhibitionAdminCreate, admin: dict = Depends(require_admin)):
+async def admin_create_exhibition(payload: ExhibitionAdminCreate, admin: dict = Depends(require_lead_chitrakar)):
     """Admin can directly create and publish exhibitions without payment."""
     supabase = get_supabase_client()
     if not supabase:
@@ -4643,7 +4643,7 @@ async def admin_create_exhibition(payload: ExhibitionAdminCreate, admin: dict = 
 
 
 @app.get("/api/admin/exhibitions/all")
-async def admin_get_all_exhibitions(admin: dict = Depends(require_admin)):
+async def admin_get_all_exhibitions(admin: dict = Depends(require_lead_chitrakar)):
     supabase = get_supabase_client()
     if not supabase:
         return {"exhibitions": []}
@@ -4674,7 +4674,7 @@ async def admin_get_all_exhibitions(admin: dict = Depends(require_admin)):
 
 
 @app.post("/api/admin/exhibitions/extend")
-async def admin_extend_exhibition(payload: AdminExhibitionExtendRequest, admin: dict = Depends(require_admin)):
+async def admin_extend_exhibition(payload: AdminExhibitionExtendRequest, admin: dict = Depends(require_lead_chitrakar)):
     supabase = get_supabase_client()
     if not supabase:
         raise HTTPException(status_code=503, detail="Database not configured")
@@ -4705,7 +4705,7 @@ async def admin_extend_exhibition(payload: AdminExhibitionExtendRequest, admin: 
 
 
 @app.delete("/api/admin/exhibitions/{exhibition_id}")
-async def admin_delete_exhibition(exhibition_id: str, admin: dict = Depends(require_admin)):
+async def admin_delete_exhibition(exhibition_id: str, admin: dict = Depends(require_lead_chitrakar)):
     supabase = get_supabase_client()
     if not supabase:
         raise HTTPException(status_code=503, detail="Database not configured")
@@ -4726,7 +4726,7 @@ async def admin_delete_exhibition(exhibition_id: str, admin: dict = Depends(requ
 
 
 @app.put("/api/admin/exhibitions/{exhibition_id}")
-async def admin_update_exhibition(exhibition_id: str, payload: AdminExhibitionUpdateRequest, admin: dict = Depends(require_admin)):
+async def admin_update_exhibition(exhibition_id: str, payload: AdminExhibitionUpdateRequest, admin: dict = Depends(require_lead_chitrakar)):
     """Admin can update exhibition details including name, description, end_date, and status"""
     supabase = get_supabase_client()
     if not supabase:
