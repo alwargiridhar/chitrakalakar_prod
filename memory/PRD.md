@@ -208,3 +208,42 @@ Adjust commission feature to existing framework without breaking existing Supaba
 - Added validation to require at least one exhibition image on artist/admin exhibition create APIs.
 - Updated active exhibition card rendering to use `primary_exhibition_image` -> `exhibition_images[0]` -> `exhibition_paintings[0].image_url` fallback chain and richer metadata display.
 - Added admin exhibition management APIs/UI for extend/delete and fixed timezone-aware status sync parsing.
+
+
+## Latest Change Set (December 2025 - Database Columns + Controls)
+### Fixes Applied
+- **Supabase Connection**: Added SUPABASE_URL and SUPABASE_SERVICE_KEY to backend/.env for preview environment
+- **Exhibition Data Columns**: Added missing columns to exhibitions table via SQL migration:
+  - `exhibition_images TEXT[]`
+  - `exhibition_paintings JSONB`
+  - `primary_exhibition_image TEXT`
+  - `payment_status TEXT`
+  - `payment_screenshot_url TEXT`
+- **Artists API**: Updated `/api/public/artists` to return ALL registered artists (not just those with active membership)
+- **Admin Exhibition Controls**: Added Pause/Resume buttons alongside existing Extend/Delete controls
+- **Backend Update API**: Added `PUT /api/admin/exhibitions/{id}` for updating exhibition details
+- **Community Creation**: Fixed schema compatibility to use only existing columns (removed creator_id, location, invite_criteria)
+
+### Database Migration (Run in Supabase SQL Editor)
+```sql
+ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS exhibition_images TEXT[] DEFAULT '{}';
+ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS exhibition_paintings JSONB DEFAULT '[]';
+ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS primary_exhibition_image TEXT;
+ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'pending';
+ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS payment_screenshot_url TEXT;
+```
+
+### Test Results
+- All 19 backend API tests passed (100%)
+- Frontend pages load correctly
+- Artists API: Returns 2 artists (1 member, 1 non-member)
+- Exhibitions API: Returns 9 exhibitions with proper columns
+- Admin/Artist exhibition controls verified working
+
+### Known Issues
+- Notifications table doesn't exist in Supabase (minor, not critical)
+- Existing 9 exhibitions show "No painting uploaded" because they were created before columns were added
+
+### Next Tasks
+1. Create new exhibitions via admin panel to verify painting storage works
+2. Build full community platform with posts, images, likes, comments, messaging
