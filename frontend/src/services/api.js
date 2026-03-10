@@ -3,6 +3,16 @@ import { supabase } from '../lib/supabase';
 // Strict env-only backend URL
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+const SAME_ORIGIN_API = '/api';
+
+const isCrossOriginApi = (() => {
+  try {
+    if (!BACKEND_URL) return false;
+    return new URL(BACKEND_URL).origin !== window.location.origin;
+  } catch {
+    return false;
+  }
+})();
 
 // Get auth token from Supabase session
 const getToken = async () => {
@@ -36,7 +46,19 @@ const apiCall = async (endpoint, options = {}) => {
       headers,
     });
   } catch (networkError) {
-    throw new Error('Unable to reach server. Please refresh and try again.');
+    // Fallback: if env API is cross-origin and blocked, retry same-origin proxy route
+    if (isCrossOriginApi) {
+      try {
+        response = await fetch(`${SAME_ORIGIN_API}${endpoint}`, {
+          ...options,
+          headers,
+        });
+      } catch {
+        throw new Error('Unable to reach server. Please refresh and try again.');
+      }
+    } else {
+      throw new Error('Unable to reach server. Please refresh and try again.');
+    }
   }
 
   let data = null;

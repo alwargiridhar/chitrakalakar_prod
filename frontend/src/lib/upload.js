@@ -5,25 +5,38 @@ export const uploadFile = async ({ file, folder, bucketKey, entityId = null }) =
   const token = data?.session?.access_token;
   if (!token) throw new Error('Not authenticated');
 
-  const res = await fetch(
-    `${process.env.REACT_APP_BACKEND_URL}/api/upload-url`,
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
+  const primaryApi = `${backendUrl}/api`;
+  const sameOriginApi = '/api';
+
+  const requestBody = JSON.stringify({
+    filename: file.name,
+    content_type: file.type,
+    folder,
+    bucket_key: bucketKey,
+    entity_id: entityId,
+  });
+
+  const requestUploadUrl = async (baseApi) => fetch(
+    `${baseApi}/upload-url`,
     {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        filename: file.name,
-        content_type: file.type,
-        folder,
-        bucket_key: bucketKey,
-        entity_id: entityId,
-      }),
+      body: requestBody,
     }
   );
 
-  const rawText = await res.text();
+  let res;
+  try {
+    res = await requestUploadUrl(primaryApi);
+  } catch {
+    res = await requestUploadUrl(sameOriginApi);
+  }
+
+  const rawText = res.bodyUsed ? '' : await res.text();
   let dataJson = null;
   try {
     dataJson = rawText ? JSON.parse(rawText) : null;
