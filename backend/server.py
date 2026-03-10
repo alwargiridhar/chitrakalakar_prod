@@ -3325,8 +3325,8 @@ async def get_pending_communities(admin: dict = Depends(require_lead_chitrakar))
     return {"communities": result}
 
 @app.post("/api/admin/approve-community")
-async def approve_community(community_id: str, approved: bool, admin: dict = Depends(require_admin)):
-    """Approve or reject a community"""
+async def approve_community(community_id: str, approved: bool, admin: dict = Depends(require_lead_chitrakar)):
+    """Approve or reject a community (admin or lead_chitrakar)"""
     supabase = get_supabase_client()
     
     if approved:
