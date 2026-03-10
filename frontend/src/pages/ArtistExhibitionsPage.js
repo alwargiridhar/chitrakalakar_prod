@@ -5,6 +5,7 @@ import { artistAPI } from '../services/api';
 import ImageUpload from '../components/ImageUpload';
 import AdaptiveArtworkImage from '../components/AdaptiveArtworkImage';
 import { BUCKETS } from '../lib/supabase';
+import { loadRazorpayScript } from '../lib/razorpay';
 
 const EXHIBITION_PLAN = {
   Kalakanksh: { days: 1, fee: 500, max_artworks: 10 },
@@ -120,7 +121,8 @@ function ArtistExhibitionsPage() {
   const handleRazorpayPay = async () => {
     try {
       const order = await artistAPI.createExhibitionPaymentOrder(form.exhibition_type);
-      if (!window.Razorpay || !order.razorpay_key) {
+      const razorpayLoaded = await loadRazorpayScript();
+      if (!razorpayLoaded || !window.Razorpay || !order.razorpay_key) {
         alert('Razorpay is currently unavailable. Please use Manual payment with screenshot.');
         return;
       }

@@ -7,6 +7,7 @@ import ImageUpload from '../components/ImageUpload';
 import LocationAutocomplete from '../components/LocationAutocomplete';
 import ArtworkForm from '../components/ArtworkForm';
 import { BUCKETS } from '../lib/supabase';
+import { loadRazorpayScript } from '../lib/razorpay';
 
 function ArtistDashboard() {
   const { profiles, isArtist } = useAuth();
@@ -238,7 +239,8 @@ const handleMembershipPayment = async (planType) => {
       return;
     }
 
-    if (!window.Razorpay) {
+    const razorpayLoaded = await loadRazorpayScript();
+    if (!razorpayLoaded || !window.Razorpay) {
       alert('Razorpay script is not available right now. Please try manual payment.');
       return;
     }

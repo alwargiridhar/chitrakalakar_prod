@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { membershipAPI } from '../services/api';
+import { loadRazorpayScript } from '../lib/razorpay';
 
 function SubscriptionPage() {
   const { profiles, refreshProfile } = useAuth();
@@ -135,7 +136,8 @@ function SubscriptionPage() {
           return;
         }
 
-        if (!window.Razorpay) {
+        const razorpayLoaded = await loadRazorpayScript();
+        if (!razorpayLoaded || !window.Razorpay) {
           alert('Razorpay is not available right now. Please try again later.');
           return;
         }

@@ -149,3 +149,15 @@ Adjust commission feature to existing framework without breaking existing Supaba
   - admin direct exhibition create (payment waived)
   - enhanced admin approve-exhibition status updates
 - Extended ImageUpload for projection editor + optional aspect-ratio enforcement + target output size compression; exhibition uploads now support 4:3/3:4 auto-crop and <=1MB output target.
+
+
+## Latest Change Set (Exhibition Lifecycle + Payment Flow)
+- Added active/archived exhibition public UX and data flow (`/exhibitions` + `/exhibitions/archived`) with active-first behavior.
+- Added backend exhibition lifecycle sync: approved exhibition transitions through `upcoming -> active -> archived -> expired` based on start date and paid days; archived retention equals paid duration.
+- Updated exhibition plans to fixed structure:
+  - Kalakanksh: 1 day, ₹500, max 10 artworks
+  - Kalahruday: 3 days, ₹1000, max 20 artworks
+  - KalaDeeksh: 10 days, ₹2500, max 25 artworks
+- Artist exhibition request now auto-computes end date from start date + plan days, auto-populates fee metadata, supports max 3 exhibition images with primary image selection.
+- Added payment flow fields for manual + Razorpay, including manual screenshot upload and admin review surface in pending exhibitions.
+- Added S3 bucket mapping for payment proofs: `exhibition-payment-proofs` via env `AWS_BUCKET_EXHIBITION_PAYMENT_PROOFS`.
