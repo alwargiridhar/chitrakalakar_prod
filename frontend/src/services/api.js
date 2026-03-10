@@ -307,6 +307,10 @@ export const adminAPI = {
     method: 'POST',
     body: JSON.stringify({ exhibition_id: exhibitionId, extra_days: extraDays }),
   }),
+  updateExhibition: (exhibitionId, data) => apiCall(`/admin/exhibitions/${exhibitionId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ exhibition_id: exhibitionId, ...data }),
+  }),
   deleteExhibition: (exhibitionId) => apiCall(`/admin/exhibitions/${exhibitionId}`, {
     method: 'DELETE',
   }),
