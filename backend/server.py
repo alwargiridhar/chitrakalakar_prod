@@ -3296,11 +3296,11 @@ async def get_sub_admins(admin: dict = Depends(require_admin)):
 
 # Admin Community Management
 @app.get("/api/admin/pending-communities")
-async def get_pending_communities(admin: dict = Depends(require_admin)):
-    """Get pending communities for approval"""
+async def get_pending_communities(admin: dict = Depends(require_lead_chitrakar)):
+    """Get pending communities for approval (admin or lead_chitrakar)"""
     supabase = get_supabase_client()
     
-    print(f"[DEBUG] Fetching pending communities for admin: {admin.get('id')}")
+    print(f"[DEBUG] Fetching pending communities for user: {admin.get('id')} role: {admin.get('role')}")
 
     communities = supabase.table('communities').select('*').eq('is_approved', False).order('created_at', desc=True).execute()
     
