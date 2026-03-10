@@ -137,3 +137,15 @@ Adjust commission feature to existing framework without breaking existing Supaba
 - Added insert fallback logic to automatically drop optional fields (`location`, `invite_criteria`, `updated_at`) if target columns are missing.
 - Added `community_members` insert fallback for schemas without `role` column.
 - Renamed duplicate python handler names for clarity and to avoid accidental override confusion.
+
+
+## Latest Change Set (Community + Exhibition Workflow)
+- Added cross-origin API fallback and upload-url fallback to same-origin `/api` to reduce network/CORS failure impact on frontend.
+- Fixed community creation schema compatibility and removed duplicate `CommunityCreate` model conflict.
+- Added artist exhibition management page (`/dashboard/exhibitions`) with request flow, artwork selection, exhibition image uploads, payment-reference field, and status visibility.
+- Added admin exhibition creator page (`/admin/exhibitions`) for direct no-payment exhibition creation.
+- Added backend endpoints/logic:
+  - artist exhibition request with manual payment-status path
+  - admin direct exhibition create (payment waived)
+  - enhanced admin approve-exhibition status updates
+- Extended ImageUpload for projection editor + optional aspect-ratio enforcement + target output size compression; exhibition uploads now support 4:3/3:4 auto-crop and <=1MB output target.
