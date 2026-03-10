@@ -1267,7 +1267,13 @@ async def get_archived_exhibitions():
     try:
         _sync_exhibition_statuses(supabase)
         exhibitions = supabase.table('exhibitions').select('*').eq('is_approved', True).eq('status', 'archived').execute()
-        return {"exhibitions": exhibitions.data or []}
+        
+        # Enrich each exhibition with artwork data
+        enriched_exhibitions = []
+        for ex in (exhibitions.data or []):
+            enriched_exhibitions.append(_enrich_exhibition_with_artworks(supabase, ex))
+        
+        return {"exhibitions": enriched_exhibitions}
     except Exception as e:
         print(f"Archived exhibitions error: {e}")
         return {"exhibitions": []}
