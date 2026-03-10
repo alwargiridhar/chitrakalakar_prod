@@ -1163,6 +1163,50 @@ async def get_featured_artist_detail(artist_id: str):
         print(f"Featured artist detail error: {e}")
         raise HTTPException(status_code=500, detail="Error fetching artist")
 
+def _enrich_exhibition_with_artworks(supabase, exhibition: dict) -> dict:
+    """Enrich exhibition with artwork data if artwork_ids exist but exhibition_paintings is empty"""
+    enriched = dict(exhibition)
+    
+    # If exhibition_paintings already has data, use it
+    if enriched.get('exhibition_paintings') and len(enriched.get('exhibition_paintings', [])) > 0:
+        return enriched
+    
+    # If exhibition_images already has data, use it as primary
+    if enriched.get('exhibition_images') and len(enriched.get('exhibition_images', [])) > 0:
+        if not enriched.get('primary_exhibition_image'):
+            enriched['primary_exhibition_image'] = enriched['exhibition_images'][0]
+        return enriched
+    
+    # Try to fetch artworks via artwork_ids
+    artwork_ids = enriched.get('artwork_ids', [])
+    if artwork_ids and len(artwork_ids) > 0:
+        try:
+            artworks_result = supabase.table('artworks').select('id, title, image, images, price, description').in_('id', artwork_ids).execute()
+            if artworks_result.data:
+                paintings = []
+                images = []
+                for artwork in artworks_result.data:
+                    img = artwork.get('images', [None])[0] if artwork.get('images') else artwork.get('image')
+                    if img:
+                        images.append(img)
+                        paintings.append({
+                            'image_url': img,
+                            'title': artwork.get('title', ''),
+                            'description': artwork.get('description', ''),
+                            'price': artwork.get('price'),
+                            'artwork_id': artwork.get('id'),
+                            'on_sale': True
+                        })
+                enriched['exhibition_paintings'] = paintings
+                enriched['exhibition_images'] = images
+                if images:
+                    enriched['primary_exhibition_image'] = images[0]
+        except Exception as e:
+            print(f"Error enriching exhibition with artworks: {e}")
+    
+    return enriched
+
+
 @app.get("/api/public/exhibitions")
 async def get_public_exhibitions():
     """Get all approved exhibitions"""
@@ -1174,7 +1218,13 @@ async def get_public_exhibitions():
     try:
         _sync_exhibition_statuses(supabase)
         exhibitions = supabase.table('exhibitions').select('*').eq('is_approved', True).order('created_at', desc=True).execute()
-        return {"exhibitions": exhibitions.data or []}
+        
+        # Enrich each exhibition with artwork data
+        enriched_exhibitions = []
+        for ex in (exhibitions.data or []):
+            enriched_exhibitions.append(_enrich_exhibition_with_artworks(supabase, ex))
+        
+        return {"exhibitions": enriched_exhibitions}
     except Exception as e:
         print(f"Exhibitions error: {e}")
         return {"exhibitions": []}
