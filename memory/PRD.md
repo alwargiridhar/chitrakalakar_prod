@@ -180,3 +180,11 @@ Adjust commission feature to existing framework without breaking existing Supaba
 ## Latest Micro-Update (Single S3 Bucket + Folder Mode)
 - Added backend compatibility for single-bucket setups: if per-feature bucket env is missing, upload routing now falls back to `AWS_BUCKET_NAME` / `AWS_S3_BUCKET`.
 - Updated S3 object key generation to always include folder prefixes (`artworks/`, `communities/`, `exhibitions/`, `commission-references/`, etc.), so data lands correctly in folder-based structure inside one bucket.
+
+
+## Latest Change Set (Community Approval + Admin Exhibition Builder)
+- Fixed community approval visibility for admin by adding pending communities fetch + approval UI tab in Admin Dashboard, and hardening backend pending-community retrieval for both `created_by` and `creator_id` schemas.
+- Enhanced community creation payload to write both creator references for compatibility.
+- Reworked admin exhibition creator to support multi-painting entries with `+ Add Painting` flow, per-painting image + optional short description + pricing + creation date + on-sale ribbon preview.
+- Added backend support for `exhibition_paintings` metadata in admin-created exhibitions (with schema-safe fallback if column missing).
+- Normalized menu visibility by making `Exhibitions` a regular top menu link via nav link configuration.

@@ -2,6 +2,7 @@
 
 ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS exhibition_images TEXT[] DEFAULT '{}';
 ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS primary_exhibition_image TEXT;
+ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS exhibition_paintings JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'manual';
 ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS payment_screenshot_url TEXT;
 ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS payment_reference TEXT;

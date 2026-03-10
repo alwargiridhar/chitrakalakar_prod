@@ -262,6 +262,7 @@ class ExhibitionAdminCreate(BaseModel):
     artwork_ids: List[str] = []
     exhibition_type: str = "Kalakanksh"
     exhibition_images: List[str] = []
+    exhibition_paintings: List[dict] = []
 
 class ExhibitionApprovalRequest(BaseModel):
     exhibition_id: str
@@ -1221,8 +1222,25 @@ async def get_public_communities():
         return {"communities": []}
     
     try:
-        communities = supabase.table('communities').select('*, profiles!creator_id(full_name, avatar)').eq('is_approved', True).order('created_at', desc=True).execute()
-        return {"communities": communities.data or []}
+        communities = supabase.table('communities').select('*').eq('is_approved', True).order('created_at', desc=True).execute()
+
+        enriched = []
+        for community in (communities.data or []):
+            creator_id = community.get('created_by') or community.get('creator_id')
+            creator_profile = None
+            if creator_id:
+                try:
+                    profile = supabase.table('profiles').select('full_name, avatar').eq('id', creator_id).single().execute()
+                    creator_profile = profile.data
+                except Exception:
+                    creator_profile = None
+
+            enriched.append({
+                **community,
+                "profiles": creator_profile,
+            })
+
+        return {"communities": enriched}
     except Exception as e:
         print(f"Communities error: {e}")
         return {"communities": []}
@@ -1271,6 +1289,7 @@ async def create_community_legacy(data: CommunityCreate, user: dict = Depends(re
         "location": data.location,
         "invite_criteria": data.invite_criteria,
         "created_by": user['id'],
+        "creator_id": user['id'],
         "member_count": 1,
         "is_approved": False,  # Requires admin approval
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -3205,10 +3224,26 @@ async def get_sub_admins(admin: dict = Depends(require_admin)):
 async def get_pending_communities(admin: dict = Depends(require_admin)):
     """Get pending communities for approval"""
     supabase = get_supabase_client()
-    
-    communities = supabase.table('communities').select('*, profiles!creator_id(full_name)').eq('is_approved', False).execute()
-    
-    return {"communities": communities.data or []}
+
+    communities = supabase.table('communities').select('*').eq('is_approved', False).order('created_at', desc=True).execute()
+
+    result = []
+    for community in (communities.data or []):
+        creator_id = community.get('created_by') or community.get('creator_id')
+        creator_name = None
+        if creator_id:
+            try:
+                profile = supabase.table('profiles').select('full_name').eq('id', creator_id).single().execute()
+                creator_name = (profile.data or {}).get('full_name')
+            except Exception:
+                creator_name = None
+
+        result.append({
+            **community,
+            "creator_name": creator_name,
+        })
+
+    return {"communities": result}
 
 @app.post("/api/admin/approve-community")
 async def approve_community(community_id: str, approved: bool, admin: dict = Depends(require_admin)):
@@ -3669,6 +3704,7 @@ async def create_community_managed(community: CommunityCreate, artist: dict = De
         "location": community.location,
         "invite_criteria": community.invite_criteria,
         "created_by": artist['id'],
+        "creator_id": artist['id'],
         "member_count": 1,
         "is_approved": False,  # Needs admin approval
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -4482,6 +4518,11 @@ async def admin_create_exhibition(payload: ExhibitionAdminCreate, admin: dict = 
     except Exception:
         computed_end_iso = payload.end_date
 
+    exhibition_images = payload.exhibition_images or []
+    painting_images = [p.get('image_url') for p in (payload.exhibition_paintings or []) if p.get('image_url')]
+    if painting_images:
+        exhibition_images = list(dict.fromkeys([*exhibition_images, *painting_images]))
+
     exhibition_data = {
         "artist_id": target_artist_id,
         "name": payload.name,
@@ -4489,7 +4530,9 @@ async def admin_create_exhibition(payload: ExhibitionAdminCreate, admin: dict = 
         "start_date": payload.start_date,
         "end_date": computed_end_iso,
         "artwork_ids": payload.artwork_ids,
-        "exhibition_images": payload.exhibition_images,
+        "exhibition_images": exhibition_images,
+        "exhibition_paintings": payload.exhibition_paintings,
+        "primary_exhibition_image": exhibition_images[0] if exhibition_images else None,
         "status": "active",
         "views": 0,
         "exhibition_type": exhibition_type,
@@ -4511,7 +4554,7 @@ async def admin_create_exhibition(payload: ExhibitionAdminCreate, admin: dict = 
     except Exception as e:
         msg = str(e)
         fallback = dict(exhibition_data)
-        for optional_field in ["exhibition_images", "payment_status", "request_status", "updated_at"]:
+        for optional_field in ["exhibition_images", "exhibition_paintings", "primary_exhibition_image", "payment_status", "request_status", "updated_at"]:
             if optional_field in fallback and (optional_field in msg or "column" in msg.lower()):
                 fallback.pop(optional_field, None)
         result = supabase.table('exhibitions').insert(fallback).execute()

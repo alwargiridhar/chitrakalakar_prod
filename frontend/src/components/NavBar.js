@@ -35,6 +35,7 @@ function NavBar() {
   ];
 
   const navLinksAfterExhibitions = [
+    { label: 'Exhibitions', href: '/exhibitions' },
     { label: 'Communities', href: '/communities' },
     { label: 'Contact', href: '/contact' },
     { label: 'Art Classes', href: '/art-classes' },
@@ -115,17 +116,9 @@ function NavBar() {
               </Link>
             ))}
             
-            <Link
-              to="/exhibitions"
-              className="text-sm font-medium text-gray-700 hover:text-orange-500 transition-colors"
-              data-testid="navbar-exhibitions-active-link"
-            >
-              Exhibitions
-            </Link>
-
             {/* Links after Exhibitions */}
             {navLinksAfterExhibitions.map((link) => (
-              <Link key={link.href} to={link.href} className="text-sm font-medium text-gray-700 hover:text-orange-500 transition-colors">
+              <Link key={link.href} to={link.href} className="text-sm font-medium text-gray-700 hover:text-orange-500 transition-colors" data-testid={link.href === '/exhibitions' ? 'navbar-exhibitions-active-link' : undefined}>
                 {link.label}
               </Link>
             ))}
@@ -238,9 +231,6 @@ function NavBar() {
                 {link.label}
               </Link>
             ))}
-            <Link to="/exhibitions" onClick={() => setIsOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">
-              Exhibitions
-            </Link>
             {navLinksAfterExhibitions.map((link) => (
               <Link key={link.href} to={link.href} onClick={() => setIsOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">
                 {link.label}
