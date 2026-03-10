@@ -167,6 +167,16 @@ function AdminExhibitionsPage() {
     }
   };
 
+  const handleStatusChange = async (exhibitionId, newStatus) => {
+    try {
+      await adminAPI.updateExhibition(exhibitionId, { status: newStatus });
+      const refreshed = await adminAPI.getAllExhibitions();
+      setExhibitions(refreshed.exhibitions || []);
+    } catch (error) {
+      alert(error.message || 'Failed to update exhibition status');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8 py-8" data-testid="admin-exhibitions-page">
       <div className="max-w-6xl mx-auto grid lg:grid-cols-5 gap-6">
