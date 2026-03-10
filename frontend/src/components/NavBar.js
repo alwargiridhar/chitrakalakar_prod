@@ -5,11 +5,9 @@ import { BRAND_NAME, BRAND_TAGLINE } from '../utils/branding';
 
 function NavBar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [showExhibitionDropdown, setShowExhibitionDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const { isAuthenticated, user, profiles, logout, isAdmin, isArtist } = useAuth();
   const navigate = useNavigate();
-  const exhibitionDropdownRef = useRef(null);
   const userDropdownRef = useRef(null);
 
   const handleLogout = () => {
@@ -22,9 +20,6 @@ function NavBar() {
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (exhibitionDropdownRef.current && !exhibitionDropdownRef.current.contains(event.target)) {
-        setShowExhibitionDropdown(false);
-      }
       if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
         setShowUserDropdown(false);
       }
@@ -120,46 +115,13 @@ function NavBar() {
               </Link>
             ))}
             
-            {/* Exhibitions: click label => active page, arrow => dropdown */}
-            <div className="relative flex items-center gap-1" ref={exhibitionDropdownRef}>
-              <Link
-                to="/exhibitions"
-                className="text-sm font-medium text-gray-700 hover:text-orange-500 transition-colors"
-                data-testid="navbar-exhibitions-active-link"
-              >
-                Exhibitions
-              </Link>
-              <button
-                onClick={() => setShowExhibitionDropdown(!showExhibitionDropdown)}
-                className="p-1 text-gray-600 hover:text-orange-500"
-                data-testid="navbar-exhibitions-dropdown-toggle"
-              >
-                <svg className={`w-4 h-4 transition-transform ${showExhibitionDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {showExhibitionDropdown && (
-                <div className="absolute top-full left-0 mt-2 w-52 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                  <Link
-                    to="/exhibitions"
-                    onClick={() => setShowExhibitionDropdown(false)}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-500"
-                    data-testid="navbar-exhibitions-dropdown-active"
-                  >
-                    🎨 Active Exhibitions
-                  </Link>
-                  <Link
-                    to="/exhibitions/archived"
-                    onClick={() => setShowExhibitionDropdown(false)}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-500"
-                    data-testid="navbar-exhibitions-dropdown-archived"
-                  >
-                    📁 Archived Exhibitions
-                  </Link>
-                </div>
-              )}
-            </div>
+            <Link
+              to="/exhibitions"
+              className="text-sm font-medium text-gray-700 hover:text-orange-500 transition-colors"
+              data-testid="navbar-exhibitions-active-link"
+            >
+              Exhibitions
+            </Link>
 
             {/* Links after Exhibitions */}
             {navLinksAfterExhibitions.map((link) => (
@@ -277,10 +239,7 @@ function NavBar() {
               </Link>
             ))}
             <Link to="/exhibitions" onClick={() => setIsOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">
-              🎨 Active Exhibitions
-            </Link>
-            <Link to="/exhibitions/archived" onClick={() => setIsOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">
-              📁 Archived Exhibitions
+              Exhibitions
             </Link>
             {navLinksAfterExhibitions.map((link) => (
               <Link key={link.href} to={link.href} onClick={() => setIsOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">

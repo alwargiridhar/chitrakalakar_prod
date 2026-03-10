@@ -169,3 +169,9 @@ Adjust commission feature to existing framework without breaking existing Supaba
 - Added artist exhibition action requests (`pause` / `delete`) requiring admin review before state change.
 - Added admin action-review endpoint and dashboard controls to approve/reject artist pause/delete requests.
 - Updated active exhibitions page to include both active and upcoming approved exhibitions, reducing false “not visible after approval” behavior.
+
+
+## Latest Micro-Update (Exhibitions Navbar Behavior)
+- Removed exhibitions dropdown from navbar.
+- `Exhibitions` is now a single direct nav link to active/upcoming exhibitions.
+- Archived navigation remains available from the exhibitions page (and back-link from archived page).
