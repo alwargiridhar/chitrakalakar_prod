@@ -1,154 +1,272 @@
-<analysis>**original_problem_statement:** The user requested to load an existing application, Chitrakalakar, from a public GitHub repository. The initial request involved fixing several bugs and implementing a range of new features.
+<analysis>**original_problem_statement:**
+The user wants to enhance their existing art platform, Chitrakalakar, by adding a comprehensive feature for commissioning artworks and overhauling the exhibition system.
 
-**Bugs:**
-1.  Analytics on the loading page load late.
-2.  Artworks are marked as pending for approval, but the admin page does not receive any approval requests.
-3.  Artists can be publicly seen without a membership. They should only be listed and allowed to sell on the marketplace after purchasing a membership.
+**PRODUCT REQUIREMENTS:**
 
-**Feature Requests:**
-1.  Implement a comprehensive, multi-section checklist and dropdown form for submitting new artworks.
-2.  Show key artwork information on thumbnails and a full detailed view on the painting's page.
-3.  Add a Virtual Room Preview feature for buyers.
-4.  Create a user profile icon/dropdown in the navbar with links to Profile, Dashboard, Account, Subscription, and Change Password pages.
-5.  Package the web app as a Progressive Web App (PWA) for mobile/desktop installation.
-6.  Implement a large set of new features including:
-    *   Admin ability to manage featured artists and delegate authority.
-    *   Fix sub-admin creation and add location autocomplete.
-    *   Admin management of pricing tiers, discounts, and vouchers.
-    *   A daily rotating Artist of the Day feature on the homepage.
-    *   A full Community feature where artists can create communities, invite others, and post content.
-    *   General mobile-friendliness improvements.
+1.  **Commissioning Artwork Feature:**
+    *   An interactive price calculator for users to estimate commission costs based on artwork size, medium, artist skill level, detail level, and number of subjects.
+    *   Detailed pricing tiers for various mediums (Pencil, Watercolor, Acrylic, Oil, etc.) and artist skill levels (Average, Advanced).
+    *   A workflow for users to submit a commission request with reference images, instructions, and budget.
+    *   The system should match the user's request with suitable artists based on budget and category.
+    *   Users can send requests to a maximum of 3 matched artists.
+    *   Artists can accept, reject, or negotiate offers. The first artist to accept gets the commission.
+    *   A user dashboard to track the status of commissioned work (Requested, Accepted, In Progress, WIP Shared, Completed, Delivered).
+    *   Artist and user contact information must remain private; all communication is platform-mediated.
+
+2.  **Exhibition Module Overhaul:**
+    *   Artists can request to host an exhibition by choosing from predefined paid tiers (, , ), which determine duration and artwork limits.
+    *   A manual payment flow where artists upload a screenshot of their payment for admin approval.
+    *   Admins can approve/reject exhibition requests and also create exhibitions directly on behalf of artists, with the ability to upload multiple artworks.
+    *   Exhibitions have a lifecycle: Upcoming -> Active -> Archived -> Expired. Archived exhibitions remain visible for a duration equal to their active period.
+    *   The public exhibition page should show Active exhibitions by default, with an option to view Archived ones.
+    *   Artists should be able to request to pause or delete their exhibitions, subject to admin approval.
+
+3.  **UI/UX and Image Handling:**
+    *   Improve the mobile/tablet responsiveness of the site, especially the landing page.
+    *   Redesign the Artists page to highlight a Featured Artist and list other registered artists below.
+    *   Implement an Image Focus Editor allowing artists to zoom, pan, and select the fit (cover/contain) for their uploaded images (artworks, avatars, exhibition images) to ensure high-quality, non-distorted thumbnails across the site.
+    *   Implement on sale / not for sale ribbons on artwork images.
+
+4.  **Backend and Storage:**
+    *   Adapt all database schemas and APIs to support these features without breaking existing functionality.
+    *   Configure AWS S3 storage to use a **single bucket** with distinct **folders** (e.g., , , ) for different types of uploads.
+    *   Create a new S3 folder () for payment screenshots.
+
+5.  **Bug Fixes:**
+    *   Fix the failing Add to cart functionality.
+    *   Fix the location autocomplete dropdown in the Art Classes enquiry form.
+    *   Resolve issues preventing the creation of Communities.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a React and FastAPI-based art marketplace. The initial bugs (late analytics, membership logic) have been addressed. Several new features have been implemented, including a detailed artwork submission form, a virtual room preview, enhanced admin/artist dashboards, a user profile dropdown with account pages, and PWA functionality. However, the application is currently in a broken state for any user-specific functionality because the necessary Supabase credentials have not been configured in the environment. A major new set of features (community, pricing management, artist of the day) is partially implemented.
+The application is a multi-faceted art platform named ChitraKalakar built on a React, FastAPI, and Supabase (PostgreSQL) stack, with AWS S3 for file storage. It features role-based access for Users, Artists, and Admins.
+
+Key implemented modules include:
+- A complete artwork commissioning system with a price calculator, artist matching, and status tracking.
+- A revamped exhibition system allowing artists to request paid exhibitions with a manual admin approval workflow.
+- A marketplace for paintings, an art class enquiry form, and a community feature.
+- An advanced Image Focus Editor for artists to control the presentation of their uploaded images.
+- The backend is configured to use a single S3 bucket with multiple folders for storing different file types.
 
 **Last working item**:
--   Last item agent was working: The agent was in the middle of a large feature implementation. Specifically, it had created the backend models and endpoints for pricing, vouchers, and community management. On the frontend, it created a new , an  component, and was modifying  to incorporate a new sidebar layout for the Artist of the Day feature.
--   Status: IN PROGRESS
--   Agent Testing Done: N
--   Which testing method agent to use? both
--   User Testing Done: N
+- **Last item agent was working:** The agent was debugging an issue where created exhibitions were appearing on the frontend but without any of their associated artworks or data. The investigation revealed that the backend API endpoint () was not fetching and returning the artwork details along with the exhibition data. The agent had identified the necessary backend files to modify to join the required tables and include the artwork data in the API response.
+- **Status:** 
+- **Agent Testing Done:** N
+- **Which testing method agent to use?** both
+- **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   Issue 1: Missing Supabase Credentials (P0)
+- **Issue 1: Exhibitions are visible but empty (no images/data). (P0)**
+- **Issue 2: Community approval requests not appearing in the admin dashboard. (P1)**
+- **Issue 3: Registered artists list is not visible on the Artists page. (P1)**
+- **Issue 4: Admin can only upload one image when creating an exhibition for an artist. (P2)**
+- **Issue 5: Add to cart functionality is failing. (P2)**
 
-Issues Detail:
--   Issue 1:
-    -   **Description**: The application cannot connect to the Supabase backend for authentication or data operations because the , , and  environment variables are missing. This blocks all user login, signup, and data-related features from working in the preview environment.
-    -   **Attempted fixes**: The agent has repeatedly identified the missing variables in both  and  files and has asked the user to provide them. The user has not yet provided the credentials.
-    -   **Next debug checklist**:
-        1.  Use the  tool to once again request the Supabase credentials from the user. Emphasize that this is a blocker for all subsequent work.
-        2.  Explain which variables are needed and where the user can find them in their Supabase project settings.
-    -   **Why fix this issue and what will be achieved with the fix?**: Fixing this will unblock the entire application, allowing for proper end-to-end testing of authentication, user roles, data submission, and all implemented features.
-    -   **Status**: BLOCKED
-    -   **Is recurring issue?**: Y
-    -   **Should Test frontend/backend/both after fix?**: both
-    -   **Blocked on other issue**: None. This is the primary blocker.
+**Issues Detail:**
+- **Issue 1: Exhibitions are visible but empty (no images/data).**
+    - **Attempted fixes:** None yet. The agent diagnosed the problem, identifying that the backend API  doesn't include artwork data.
+    - **Next debug checklist:**
+        1.  Modify the database query in  for the GET  endpoint.
+        2.  Implement a  between the , , and  tables to fetch all artworks associated with the exhibition ID.
+        3.  Update the Pydantic response model to include a list of artwork objects.
+        4.  Verify that the frontend component  correctly receives and renders the list of artworks.
+    - **Why fix this issue and what will be achieved with the fix?** This is critical. Without this fix, the entire Exhibition feature is unusable as no art can be viewed.
+    - **Status:** 
+    - **Is recurring issue?** N
+    - **Should Test frontend/backend/both after fix?** both
+    - **Blocked on other issue:** None
+
+- **Issue 2: Community approval requests not appearing in the admin dashboard.**
+    - **Attempted fixes:** The agent previously tried to fix community creation errors related to the database schema, but the approval flow itself was reported as broken later.
+    - **Next debug checklist:**
+        1.  Trace the  API call and ensure it correctly inserts a record into the database with a 'pending' status.
+        2.  Check the API endpoint that populates the admin dashboard to ensure it's querying for pending community requests.
+        3.  Inspect the relevant admin panel frontend component to confirm it's fetching and displaying these requests.
+    - **Why fix this issue and what will be achieved with the fix?** The community feature is blocked as admins cannot approve new communities.
+    - **Status:** 
+    - **Is recurring issue?** Y
+    - **Should Test frontend/backend/both after fix?** both
+    - **Blocked on other issue:** None
+
+- **Issue 3: Registered artists list is not visible on the Artists page.**
+    - **Attempted fixes:** None. The user reported this, and the agent fixed a related issue (a 0 count displaying incorrectly) but did not address the missing list.
+    - **Next debug checklist:**
+        1.  Examine .
+        2.  Verify the API call () is being made and returns the full list of artists.
+        3.  Implement the UI to render the list of Registered Artists below the Featured Artist section.
+    - **Why fix this issue and what will be achieved with the fix?** It will restore a core part of the artist discovery functionality.
+    - **Status:** 
+    - **Is recurring issue?** N
+    - **Should Test frontend/backend/both after fix?** frontend
+    - **Blocked on other issue:** None
+
+- **Issue 4: Admin can only upload one image when creating an exhibition for an artist.**
+    - **Attempted fixes:** The agent started creating a multi-upload component but it's not complete.
+    - **Next debug checklist:**
+        1.  Review and complete the UI in  to allow adding multiple paintings.
+        2.  Implement an + Add Paintings button that dynamically adds fields for an artwork file, description, price, and on-sale status.
+        3.  Ensure the frontend sends an array of artwork data to the backend when the form is submitted.
+        4.  Verify the backend endpoint correctly processes the array and creates all associated artwork records.
+    - **Why fix this issue and what will be achieved with the fix?** This is required for admins to efficiently manage exhibitions as requested by the user.
+    - **Status:** 
+    - **Is recurring issue?** N
+    - **Should Test frontend/backend/both after fix?** both
+    - **Blocked on other issue:** None
+
+- **Issue 5: Add to cart functionality is failing.**
+    - **Attempted fixes:** An earlier attempt was made, but the resolution is unconfirmed.
+    - **Next debug checklist:**
+        1.  Attempt to add an artwork to the cart to reproduce the failure.
+        2.  Inspect the browser's developer console for network or script errors.
+        3.  Review the  function in the frontend and the corresponding backend API endpoint.
+    - **Why fix this issue and what will be achieved with the fix?** This is a critical e-commerce function for the platform.
+    - **Status:** 
+    - **Is recurring issue?** Y
+    - **Should Test frontend/backend/both after fix?** both
+    - **Blocked on other issue:** None
 
 **In progress Task List**:
--   Task 1: Complete implementation of advanced features (P0)
-
-Task Detail:
--   Task 1:
-    -   **Description**: The user requested a large set of features in a single prompt. The implementation has been started but is incomplete.
-    -   **Where to resume**:
-        1.  **Community Feature**: The  is an empty shell. It needs to be built out to list communities, allow creation, joining, and viewing posts. The UI for posting images/text within a community needs to be created.
-        2.  **Pricing & Vouchers**: Backend endpoints exist. The Admin Dashboard needs a new section/UI to allow the admin to create/update pricing tiers and generate vouchers.
-        3.  **Artist of the Day**: The component () and backend logic are present. The integration into  needs to be finalized and tested for mobile responsiveness.
-        4.  **Admin Features**: Implement the remove featured artist functionality on the backend and connect it to the Admin Dashboard.
-        5.  **Sub-admin Creation**: Fix the  form on the Admin Dashboard by adding a location autocomplete feature.
-        6.  **Mobile Responsiveness**: Review all new components and pages ( with sidebar, , etc.) to ensure they are mobile-friendly.
-    -   **What will be achieved with this?**: This will complete the user's latest and most comprehensive feature request, significantly expanding the application's functionality.
-    -   **Status**: IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?**: both
-    -   **Blocked on something**: Issue 1: Missing Supabase Credentials.
+- **Task 1: Complete Exhibition Feature Implementation**
+    - **Where to resume:** Implementing the fix for displaying artworks within an exhibition (see Issue 1).
+    - **What will be achieved with this?** A fully functional exhibition module where users can view artworks in active and archived exhibitions.
+    - **Status:** 
+    - **Should Test frontend/backend/both after fix?** both
+    - **Blocked on something:** None
 
 **Upcoming and Future Tasks**
--   Provide S3 bucket creation and setup information for the Contemporary Artists and Community features, as requested by the user.
+- **Upcoming Tasks:**
+    - **(P0) Add Artist Controls for Exhibitions**: Implement frontend buttons for artists to Pause or Delete their exhibitions, which will send a request to the admin for approval.
+    - **(P1) Escrow Payment System**: Integrate a proper payment gateway (like Razorpay) with an escrow flow for commissions.
+    - **(P1) Artist Reputation Score**: Develop a scoring system for artists based on commission completion rate, delivery time, and user reviews.
+    - **(P2) Artist Availability Status**: Add a status (, ) for artists to manage their commission availability.
+
+- **Future Tasks:**
+    - **AI Artwork Complexity Estimation**: Explore and implement a feature to estimate artwork price/complexity using AI.
+    - **Map  and  S3 folders**: Add backend mapping for these unused S3 folders for future-proofing.
 
 **Completed work in this session**
--   Optimized the homepage analytics loading by parallelizing backend queries ().
--   Implemented a comprehensive artwork submission form with all user-specified fields ().
--   Revamped the  to display all new artwork details.
--   Added a Virtual Room Preview feature ().
--   Created DB migration guides and SQL scripts for new table structures (, , ).
--   Fixed artist visibility based on membership status ( endpoint ).
--   Enhanced the Admin Dashboard with tabs for Members and Non-Members and added role management capabilities ().
--   Added a user profile dropdown menu to the navbar with links to new account management pages (, , , etc.).
--   Converted the web app into a Progressive Web App (PWA) with a manifest and service worker ().
+- **Commissioning System Implemented**: A full-featured module with a price calculator, artist matching, private messaging, and status tracking is now live on the platform.
+- **Exhibition Module Created**: A new workflow for artists to request and pay for exhibitions with manual admin approval. Includes automated lifecycle management (upcoming -> active -> archived).
+- **Advanced Image Editor Created**: A reusable Image Focus Editor component () was built, allowing artists to control zoom, pan, and fit for their images. This has been integrated into artwork and exhibition upload flows.
+- **S3 Single-Bucket Architecture**: The backend was refactored to support the user's single S3 bucket with multiple folders, making the storage configuration robust.
+- **UI/UX Improvements**:
+    - The  was redesigned to showcase a Featured Artist.
+    - Global adaptive image components were added to prevent stretched or out-of-focus thumbnails.
+    - The landing page was made responsive for mobile and tablet devices.
+- **Bug Fixes**:
+    - Fixed the location autocomplete in the art classes form.
+    - Resolved schema-related errors that were blocking community creation.
+    - Addressed several React linting warnings about missing dependencies in hooks.
+- **Documentation**: Created a comprehensive FAQ page explaining the new commissioning process.
+
+**Earlier issues found/mentioned but not fixed**
+- **Issue 1: Registered artists list not visible on Artists page**
+    - **Debug checklist**: Check the API response and rendering logic in .
+    - **Why to solve this issue and what will be achieved with this?** To restore artist discovery functionality.
+    - **Should Test frontend/backend/both after fix:** frontend
+    - **Is recurring issue?** N
+- **Issue 2: Add to cart is failed to fetch**
+    - **Debug checklist**: Check browser console for errors on cart addition and inspect the frontend function and backend API endpoint.
+    - **Why to solve this issue and what will be achieved with this?** This is a critical e-commerce feature.
+    - **Should Test frontend/backend/both after fix:** both
+    - **Is recurring issue?** Y
+
+**Known issue recurrence from previous fork**
+- **Issue recurrence in previous fork:** None. This is the first summary.
+- **Recurrence count:** 0
+- **Status:** 
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Frontend**: React, Tailwind CSS
--   **Backend**: Python, FastAPI
--   **Database**: Supabase (PostgreSQL) - **Credentials are missing.**
--   **Architecture**: Standard full-stack monolith with a separate frontend and backend service.
+- **Frontend:** React.js
+- **Backend:** FastAPI (Python)
+- **Database:** Supabase (PostgreSQL)
+- **Storage:** AWS S3 (configured for a single bucket with multiple folder prefixes)
+- **Authentication:** JWT-based with Role-Based Access Control (RBAC) for Admin, Artist, and User roles.
 
 **key DB schema**
--   **artworks**: Extended with numerous new columns for detailed artwork information.
--   **profiles**: Used for user roles and membership status.
--   **pricing_tiers**: (new) uid=0(root) gid=0(root) groups=0(root), , , , .
--   **vouchers**: (new) uid=0(root) gid=0(root) groups=0(root), , , , .
--   **communities**: (new) uid=0(root) gid=0(root) groups=0(root), , ,  (user_id).
--   **community_members**: (new) , ,  ('admin', 'member').
--   **community_posts**: (new) uid=0(root) gid=0(root) groups=0(root), , , , .
+-   **exhibitions**: {uid=0(root) gid=0(root) groups=0(root), , , , , ,  ('upcoming', 'active', 'archived', 'expired', 'paused'), }
+-   **exhibition_artworks**: {uid=0(root) gid=0(root) groups=0(root), , , }
+-   **exhibition_requests**: {uid=0(root) gid=0(root) groups=0(root), , ,  ('pending', 'approved', 'rejected'), }
+-   **commission_requests**: {uid=0(root) gid=0(root) groups=0(root), , , , , }
+-   **commission_deals**: {uid=0(root) gid=0(root) groups=0(root), , , , }
+-   **communities**: {uid=0(root) gid=0(root) groups=0(root), , , , }
+
+**changes in tech stack**
+- No changes to the core tech stack.
+- The primary architectural adaptation was modifying the S3 integration from an assumed multi-bucket model to a concrete single-bucket, multi-folder/prefix model to match the user's existing infrastructure.
 
 **All files of reference**
--   : Heavily modified to add dozens of new endpoints for admin management, pricing, communities, and artist of the day.
--   : Significantly updated with new tabs, state, and modals for managing users, members, and roles.
--   : Modified to include a new sidebar layout for the Artist of the Day component.
--   : New file, currently a placeholder for the community feature.
--   : New component to display the daily featured artist.
--   : Updated with many new functions to call the new backend endpoints.
--   : Contains schema changes for the initial feature set.
--   : Contains schema for the latest features (pricing, communities, etc.).
--   : Documentation for applying the database changes.
--   : Enables PWA functionality.
+-   : Modified to support the single-bucket, multi-folder S3 architecture.
+-   : Contains all new backend logic for creating, managing, and viewing exhibitions.
+-   : Contains the logic for the artwork commissioning workflow.
+-   : Updated with endpoints for approving exhibition and community requests.
+-   : Component for viewing a single exhibition (currently bugged).
+-   : Lists active and archived exhibitions.
+-   : Artist's dashboard for managing their exhibition requests and uploads.
+-   : Admin's dashboard for approving requests and creating exhibitions.
+-   : New, reusable component for artists to control how their images are cropped and displayed.
+-   : Redesigned to showcase a featured artist.
+-   : New page for users to initiate an artwork commission.
+-   : New page with information on the commissioning process.
+
+**Areas that need refactoring**:
+- The S3 logic in  has been patched multiple times. It works, but it could be simplified and clarified to make the single-bucket-with-prefixes logic more explicit and less error-prone for future development.
+
+**key api endpoints**
+-   : GET list of exhibitions, POST to create one (admin).
+-   : GET details for a single exhibition.
+-   : GET pending requests, POST to approve/reject.
+-   : POST for an artist to request an exhibition.
+-   : POST to create a commission request.
+-   : GET a pre-signed S3 URL for file uploads. Expects  in the request.
+-   : GET pending community requests.
 
 **Critical Info for New Agent**
--   **Supabase Credentials Blocker**: You **MUST** acquire the Supabase credentials from the user before proceeding. The application is fundamentally broken without them. Do not attempt to work on user-specific features until this is resolved.
--   **Large In-Progress Task**: The last user request was massive. You need to systematically complete the implementation of the Community, Pricing, and Artist of the Day features. Refer to the In progress Task List for a detailed breakdown.
--   **Database Migrations**: The user will need to run the SQL scripts located in  against their Supabase database to support the new features. You should remind them of this.
+- **S3 Storage Model is CRITICAL**: The user has **one S3 bucket** and uses **folders** within it to separate file types. The code has been adapted for this. All upload logic must use the correct  (e.g., , ) which is passed to the backend  endpoint. Do not assume separate S3 buckets exist. The main bucket name should be configured in the backend .
+- **Manual Payment Flow**: All payment features (for exhibitions) are based on a manual approval process. The artist uploads a payment screenshot, and the admin approves it. There is no live payment gateway integration yet.
+- **RBAC is Enforced**: All features are role-dependent. Always consider the user's role (Admin, Artist, Buyer) when debugging or adding features to dashboards.
 
 **documents and test reports created in this job**
--   
--   
--   
--   
--   
--   
--   
--   
--   
+- None.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Asks for a large set of features: admin management, sub-admin fixes, pricing/voucher system, daily rotating artist, community feature, mobile-friendliness, and S3 bucket info. (IN PROGRESS)
-2.  **User**: Asks to package the web app for mobile installation (PWA). (Completed)
-3.  **User**: Requests a user profile dropdown with account management pages. (Completed)
-4.  **User**: Clarifies business logic: artists should not be public without membership, admin should see member lists, and admin should have role-assigning authority. (Completed)
-5.  **User**: Reports artist user creds are working, despite the agent's claim that creds are missing. (Agent concluded user is on a different environment). (Issue Pending)
-6.  **User**: States that the Supabase credentials are already in the environment variables. (Agent verified this is false). (Issue Pending)
-7.  **User**: Reports that their admin login is not working. (Root cause is missing Supabase credentials). (Issue Pending)
-8.  **User**: Asks for a detailed migration guide for the database changes. (Completed)
-9.  **User**: Requests a Virtual Room Preview feature. (Completed)
-10. **User**: Provides the initial comprehensive list of bugs and features for the artwork submission process. (Completed)
+1.  **Message 979:** User lists their S3 folder structure (, , etc.) and asks for a cross-check against the code. (COMPLETED)
+2.  **Message 983:** User asks why data isn't being loaded to the buckets even if the names match. (COMPLETED - Agent explained the difference between folders and buckets).
+3.  **Message 985:** User clarifies they have one bucket with folders, not multiple buckets. (COMPLETED - Agent understood and patched the code).
+4.  **Message 996:** User reports multiple issues: Community approval requests not arriving, admin can only upload one image for exhibitions, and exhibitions not visible on the menu. (IN PROGRESS)
+5.  **Message 1067:** User provides linting errors related to missing dependencies in React hooks. (COMPLETED - Agent fixed them).
+6.  **Message 1078:** User reports that admin-created exhibitions are not appearing on the exhibition tab and requests management features (extend/delete). (IN PROGRESS)
+7.  **Message 1107:** User reports seeing the created exhibitions but they are empty, with no images or data. This is the current P0 issue. (IN PROGRESS)
+8.  **Message 895:** User asks for a summary of the entire site and its functionalities. (COMPLETED - Agent provided a detailed summary).
+9.  **Message 897:** User reports several UI issues: featured artist count shows 0, registered artists list is missing, and exhibition navigation shows both active/archived instead of active-first. Also requests artist ability to pause/delete exhibitions. (PARTIALLY ADDRESSED)
+10. **Message 956:** User reports that the exhibition dropdown still shows both active and archived, despite a previous fix attempt. (ADDRESSED)
 
 **Project Health Check:**
--   **Broken**: Core user authentication and data interaction is broken due to missing Supabase credentials.
--   **Mocked**: All features requiring a logged-in user are effectively mocked and cannot be E2E tested.
+- **Broken:**
+    - Displaying artworks within an exhibition.
+    - The admin approval flow for new communities.
+    - Add to cart functionality.
+- **Mocked:**
+    - The entire payment system relies on manual uploads of payment screenshots and admin approval. It is not connected to a live payment gateway.
 
 **3rd Party Integrations**
--   **Supabase**: Used for authentication and as the primary PostgreSQL database. Requires user-provided , , and .
+- **Supabase (PostgreSQL)**: Primary database.
+- **AWS S3**: For all file storage (artworks, avatars, payment proofs, etc.).
+- **Razorpay**: Mentioned as a future integration for payments but not implemented.
 
 **Testing status**
--   **Testing agent used after significant changes**: YES
--   **Troubleshoot agent used after agent stuck in loop**: NO
--   **Test files created**: None.
--   **Known regressions**: User signup and login functionality is broken in the preview environment due to missing credentials. This was noted in the test report for iteration 4.
+- **Testing agent used after significant changes:** NO
+- **Troubleshoot agent used after agent stuck in loop:** NO
+- **Test files created:** []
+- **Known regressions:** The add to cart functionality was reported as failing, which might be a regression.
+
+**Credentials to test flow:**
+None provided. The agent will need to ask the user for test credentials for different roles (Admin, Artist, User) to verify the end-to-end flows.
 
 **What agent forgot to execute**
--   The agent has not yet provided the S3 bucket setup information requested by the user for the Contemporary Artists and Community features. This should be done as part of the implementation of those features.</analysis>
+- The request to display the list of Registered Artists below the Featured Artist on the  page.
+- Fully completing the multi-artwork upload functionality for admins creating exhibitions. The UI was started but not finished.</analysis>

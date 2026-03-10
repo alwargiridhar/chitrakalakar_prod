@@ -106,6 +106,11 @@ function AdminExhibitionsPage() {
           price: p.price ? Number(p.price) : null,
         }));
 
+      if (exhibition_paintings.length === 0) {
+        alert('Please upload at least one painting image for exhibition.');
+        return;
+      }
+
       await adminAPI.createExhibition({
         artist_id: form.artist_id || null,
         name: form.name,

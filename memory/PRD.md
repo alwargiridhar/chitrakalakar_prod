@@ -202,3 +202,9 @@ Adjust commission feature to existing framework without breaking existing Supaba
 - Added admin exhibition management UI panel (extend/delete controls) inside Admin Exhibition page.
 - Added pending communities review tab in Admin Dashboard with approve/reject actions.
 - Enhanced admin exhibition builder for multi-painting uploads with metadata and sale-ribbon preview.
+
+
+## Latest Micro-Update (Exhibition Data Quality Guards)
+- Added validation to require at least one exhibition image on artist/admin exhibition create APIs.
+- Updated active exhibition card rendering to use `primary_exhibition_image` -> `exhibition_images[0]` -> `exhibition_paintings[0].image_url` fallback chain and richer metadata display.
+- Added admin exhibition management APIs/UI for extend/delete and fixed timezone-aware status sync parsing.

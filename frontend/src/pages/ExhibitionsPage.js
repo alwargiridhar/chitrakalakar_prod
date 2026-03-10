@@ -41,26 +41,44 @@ function ExhibitionsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" data-testid="active-exhibitions-grid">
           {exhibitions.map((exhibition) => (
             <div key={exhibition.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden" data-testid={`active-exhibition-card-${exhibition.id}`}>
+              {(() => {
+                const paintings = Array.isArray(exhibition.exhibition_paintings) ? exhibition.exhibition_paintings : [];
+                const previewImage = exhibition.primary_exhibition_image || exhibition.exhibition_images?.[0] || paintings[0]?.image_url;
+                const artworkCount = (exhibition.artwork_ids || []).length > 0 ? (exhibition.artwork_ids || []).length : paintings.length;
+                const firstPainting = paintings[0] || null;
+                return (
+                  <>
               <div className="h-44 bg-gradient-to-br from-orange-100 to-yellow-100 overflow-hidden">
-                {exhibition.primary_exhibition_image || exhibition.exhibition_images?.[0] ? (
+                {previewImage ? (
                   <img
-                    src={exhibition.primary_exhibition_image || exhibition.exhibition_images?.[0]}
+                    src={previewImage}
                     alt={exhibition.name}
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-3xl text-orange-400">🎨</div>
+                  <div className="w-full h-full flex flex-col items-center justify-center text-orange-400">
+                    <span className="text-3xl">🎨</span>
+                    <span className="text-xs mt-1">No painting uploaded</span>
+                  </div>
                 )}
               </div>
               <div className="p-4">
                 <h3 className="font-bold text-gray-900 mb-1">{exhibition.name}</h3>
                 <p className="text-sm text-gray-500 mb-2">Type: {exhibition.exhibition_type}</p>
+                {exhibition.description && (
+                  <p className="text-xs text-gray-600 mb-2 line-clamp-2">{exhibition.description}</p>
+                )}
                 <div className="text-xs text-gray-500 space-y-1">
                   <p>Dates: {new Date(exhibition.start_date).toLocaleDateString()} - {new Date(exhibition.end_date).toLocaleDateString()}</p>
-                  <p>Artworks: {(exhibition.artwork_ids || []).length}</p>
+                  <p>Artworks: {artworkCount}</p>
                   <p>Status: {exhibition.status}</p>
+                  {firstPainting?.price ? <p>Starting Price: ₹{Number(firstPainting.price).toLocaleString('en-IN')}</p> : null}
+                  {typeof firstPainting?.on_sale === 'boolean' ? <p>{firstPainting.on_sale ? 'On Sale' : 'Not for Sale'}</p> : null}
                 </div>
               </div>
+                  </>
+                );
+              })()}
             </div>
           ))}
         </div>

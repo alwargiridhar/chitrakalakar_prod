@@ -4419,6 +4419,9 @@ async def create_exhibition(exhibition: ExhibitionCreate, artist: dict = Depends
     if len(exhibition.exhibition_images) > 3:
         raise HTTPException(status_code=400, detail="Maximum 3 exhibition images allowed")
 
+    if len(exhibition.exhibition_images) == 0:
+        raise HTTPException(status_code=400, detail="At least 1 exhibition image is required")
+
     primary_image = exhibition.primary_exhibition_image or (exhibition.exhibition_images[0] if exhibition.exhibition_images else None)
     if primary_image and primary_image not in exhibition.exhibition_images:
         raise HTTPException(status_code=400, detail="Primary exhibition image must be one of uploaded images")
@@ -4532,6 +4535,9 @@ async def admin_create_exhibition(payload: ExhibitionAdminCreate, admin: dict = 
     painting_images = [p.get('image_url') for p in (payload.exhibition_paintings or []) if p.get('image_url')]
     if painting_images:
         exhibition_images = list(dict.fromkeys([*exhibition_images, *painting_images]))
+
+    if len(exhibition_images) == 0:
+        raise HTTPException(status_code=400, detail="At least one exhibition painting image is required")
 
     exhibition_data = {
         "artist_id": target_artist_id,
