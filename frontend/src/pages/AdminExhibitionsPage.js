@@ -16,6 +16,8 @@ function AdminExhibitionsPage() {
   const { profiles } = useAuth();
   const navigate = useNavigate();
   const [artists, setArtists] = useState([]);
+  const [exhibitions, setExhibitions] = useState([]);
+  const [extendDaysById, setExtendDaysById] = useState({});
   const [form, setForm] = useState({
     artist_id: '',
     name: '',
@@ -39,8 +41,13 @@ function AdminExhibitionsPage() {
 
     const loadArtists = async () => {
       try {
-        const response = await adminAPI.getApprovedArtists();
+        const [artistsRes, exhibitionsRes] = await Promise.all([
+          adminAPI.getApprovedArtists(),
+          adminAPI.getAllExhibitions(),
+        ]);
+        const response = artistsRes;
         setArtists(response.artists || []);
+        setExhibitions(exhibitionsRes.exhibitions || []);
       } catch (error) {
         console.error(error);
       }
@@ -121,14 +128,44 @@ function AdminExhibitionsPage() {
         exhibition_paintings: [{ image_url: '', title: '', description: '', price: '', creation_date: '', on_sale: true }],
         artwork_ids_input: '',
       });
+      const refreshed = await adminAPI.getAllExhibitions();
+      setExhibitions(refreshed.exhibitions || []);
     } catch (error) {
       alert(error.message || 'Failed to create exhibition');
     }
   };
 
+  const handleExtend = async (exhibitionId) => {
+    const days = Number(extendDaysById[exhibitionId] || 1);
+    if (!days || days < 1) {
+      alert('Enter valid extension days.');
+      return;
+    }
+    try {
+      await adminAPI.extendExhibition(exhibitionId, days);
+      const refreshed = await adminAPI.getAllExhibitions();
+      setExhibitions(refreshed.exhibitions || []);
+    } catch (error) {
+      alert(error.message || 'Failed to extend exhibition');
+    }
+  };
+
+  const handleDelete = async (exhibitionId) => {
+    const yes = window.confirm('Delete this exhibition?');
+    if (!yes) return;
+    try {
+      await adminAPI.deleteExhibition(exhibitionId);
+      const refreshed = await adminAPI.getAllExhibitions();
+      setExhibitions(refreshed.exhibitions || []);
+    } catch (error) {
+      alert(error.message || 'Failed to delete exhibition');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8 py-8" data-testid="admin-exhibitions-page">
-      <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-2xl p-6">
+      <div className="max-w-6xl mx-auto grid lg:grid-cols-5 gap-6">
+        <div className="lg:col-span-3 bg-white border border-gray-200 rounded-2xl p-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2" data-testid="admin-exhibitions-title">Admin Exhibition Creator</h1>
         <p className="text-sm text-gray-600 mb-6" data-testid="admin-exhibitions-subtitle">Admin can directly create exhibitions without payment.</p>
 
@@ -219,6 +256,52 @@ function AdminExhibitionsPage() {
             Create Exhibition
           </button>
         </form>
+        </div>
+
+        <div className="lg:col-span-2 bg-white border border-gray-200 rounded-2xl p-6" data-testid="admin-exhibitions-manage-section">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Manage Exhibitions</h2>
+          <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+            {exhibitions.length === 0 ? (
+              <p className="text-sm text-gray-500">No exhibitions yet.</p>
+            ) : (
+              exhibitions.map((exhibition) => (
+                <div key={exhibition.id} className="border border-gray-200 rounded-lg p-3" data-testid={`admin-manage-exhibition-${exhibition.id}`}>
+                  <p className="font-semibold text-gray-900">{exhibition.name}</p>
+                  <p className="text-xs text-gray-600">{exhibition.artist_name || 'Unknown Artist'} • {exhibition.status}</p>
+                  <p className="text-xs text-gray-500">Days Paid: {exhibition.days_paid || 0}</p>
+
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      type="number"
+                      min="1"
+                      className="w-20 border border-gray-300 rounded px-2 py-1 text-xs"
+                      placeholder="days"
+                      value={extendDaysById[exhibition.id] || ''}
+                      onChange={(e) => setExtendDaysById((prev) => ({ ...prev, [exhibition.id]: e.target.value }))}
+                      data-testid={`admin-extend-days-input-${exhibition.id}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleExtend(exhibition.id)}
+                      className="px-2.5 py-1 text-xs rounded bg-amber-500 text-white hover:bg-amber-600"
+                      data-testid={`admin-extend-exhibition-${exhibition.id}`}
+                    >
+                      Extend
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(exhibition.id)}
+                      className="px-2.5 py-1 text-xs rounded bg-red-500 text-white hover:bg-red-600"
+                      data-testid={`admin-delete-exhibition-${exhibition.id}`}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

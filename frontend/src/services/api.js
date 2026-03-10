@@ -302,6 +302,14 @@ export const adminAPI = {
     method: 'POST',
     body: JSON.stringify(data),
   }),
+  getAllExhibitions: () => apiCall('/admin/exhibitions/all'),
+  extendExhibition: (exhibitionId, extraDays) => apiCall('/admin/exhibitions/extend', {
+    method: 'POST',
+    body: JSON.stringify({ exhibition_id: exhibitionId, extra_days: extraDays }),
+  }),
+  deleteExhibition: (exhibitionId) => apiCall(`/admin/exhibitions/${exhibitionId}`, {
+    method: 'DELETE',
+  }),
   archiveExhibition: (exhibitionId) => apiCall(`/admin/archive-exhibition/${exhibitionId}`, {
     method: 'POST',
   }),

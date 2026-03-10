@@ -9,7 +9,7 @@ function ExhibitionsPage() {
   useEffect(() => {
     publicAPI.getExhibitions()
       .then((data) => {
-        const list = (data.exhibitions || []).filter((item) => !['archived', 'expired', 'deleted'].includes((item.status || '').toLowerCase()));
+        const list = (data.exhibitions || []).filter((item) => ['active', 'upcoming'].includes((item.status || '').toLowerCase()));
         setExhibitions(list);
       })
       .catch(console.error)

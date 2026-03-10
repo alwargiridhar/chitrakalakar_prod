@@ -279,6 +279,11 @@ class AdminExhibitionActionReviewRequest(BaseModel):
     approved: bool
     admin_note: Optional[str] = None
 
+
+class AdminExhibitionExtendRequest(BaseModel):
+    exhibition_id: str
+    extra_days: int = Field(gt=0, le=30)
+
 class FeaturedArtistCreate(BaseModel):
     name: str
     bio: str
@@ -640,7 +645,10 @@ def _get_exhibition_plan(exhibition_type: str):
 
 
 def _parse_iso_date(value: str):
-    return datetime.fromisoformat(value.replace('Z', '+00:00'))
+    parsed = datetime.fromisoformat(value.replace('Z', '+00:00'))
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 
 def _sync_exhibition_statuses(supabase):
@@ -648,6 +656,8 @@ def _sync_exhibition_statuses(supabase):
     rows = supabase.table('exhibitions').select('id, start_date, days_paid, exhibition_type, status, is_approved').eq('is_approved', True).execute()
     for exhibition in (rows.data or []):
         try:
+            if (exhibition.get('status') or '').lower() in ['paused', 'deleted']:
+                continue
             start = _parse_iso_date(exhibition['start_date'])
         except Exception:
             continue
@@ -4560,6 +4570,89 @@ async def admin_create_exhibition(payload: ExhibitionAdminCreate, admin: dict = 
         result = supabase.table('exhibitions').insert(fallback).execute()
 
     return {"success": True, "exhibition": result.data[0] if result.data else None, "message": "Exhibition created by admin"}
+
+
+@app.get("/api/admin/exhibitions/all")
+async def admin_get_all_exhibitions(admin: dict = Depends(require_admin)):
+    supabase = get_supabase_client()
+    if not supabase:
+        return {"exhibitions": []}
+
+    try:
+        _sync_exhibition_statuses(supabase)
+    except Exception:
+        pass
+
+    exhibitions = supabase.table('exhibitions').select('*').order('created_at', desc=True).execute()
+
+    result = []
+    for exhibition in (exhibitions.data or []):
+        artist_name = None
+        artist_id = exhibition.get('artist_id')
+        if artist_id:
+            try:
+                profile = supabase.table('profiles').select('full_name').eq('id', artist_id).single().execute()
+                artist_name = (profile.data or {}).get('full_name')
+            except Exception:
+                artist_name = None
+        result.append({
+            **exhibition,
+            "artist_name": artist_name,
+        })
+
+    return {"exhibitions": result}
+
+
+@app.post("/api/admin/exhibitions/extend")
+async def admin_extend_exhibition(payload: AdminExhibitionExtendRequest, admin: dict = Depends(require_admin)):
+    supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
+
+    exhibition = supabase.table('exhibitions').select('*').eq('id', payload.exhibition_id).single().execute()
+    if not exhibition.data:
+        raise HTTPException(status_code=404, detail="Exhibition not found")
+
+    current_days = int(exhibition.data.get('days_paid') or 0)
+    update_payload = {
+        'days_paid': current_days + payload.extra_days,
+        'status': 'active' if exhibition.data.get('status') == 'expired' else exhibition.data.get('status'),
+        'updated_at': datetime.now(timezone.utc).isoformat(),
+    }
+
+    try:
+        supabase.table('exhibitions').update(update_payload).eq('id', payload.exhibition_id).execute()
+    except Exception:
+        fallback = {k: v for k, v in update_payload.items() if k in ['days_paid', 'status']}
+        supabase.table('exhibitions').update(fallback).eq('id', payload.exhibition_id).execute()
+
+    try:
+        _sync_exhibition_statuses(supabase)
+    except Exception:
+        pass
+
+    return {"success": True, "message": f"Exhibition extended by {payload.extra_days} day(s)"}
+
+
+@app.delete("/api/admin/exhibitions/{exhibition_id}")
+async def admin_delete_exhibition(exhibition_id: str, admin: dict = Depends(require_admin)):
+    supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured")
+
+    try:
+        supabase.table('exhibitions').update({
+            'status': 'deleted',
+            'is_approved': False,
+            'updated_at': datetime.now(timezone.utc).isoformat(),
+        }).eq('id', exhibition_id).execute()
+    except Exception:
+        supabase.table('exhibitions').update({
+            'status': 'deleted',
+            'is_approved': False,
+        }).eq('id', exhibition_id).execute()
+
+    return {"success": True, "message": "Exhibition deleted"}
 
 @app.post("/api/upload-url")
 async def get_upload_url(

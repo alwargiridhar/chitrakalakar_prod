@@ -194,3 +194,11 @@ Adjust commission feature to existing framework without breaking existing Supaba
 - Fixed React hook dependency warnings:
   - `ArtistExhibitionsPage`: removed implicit `form.end_date` dependency by computing end-date deterministically.
   - `ArtistsPage`: wrapped sort and fetch callbacks with `useCallback` and updated `useEffect` dependencies.
+
+
+## Latest Change Set (Admin Exhibition Visibility + Management)
+- Fixed exhibition visibility logic by hardening datetime parsing to timezone-aware values, preventing status-sync failures that could hide approved exhibitions from active listings.
+- Added admin exhibition management APIs: list all, extend duration, soft-delete exhibition.
+- Added admin exhibition management UI panel (extend/delete controls) inside Admin Exhibition page.
+- Added pending communities review tab in Admin Dashboard with approve/reject actions.
+- Enhanced admin exhibition builder for multi-painting uploads with metadata and sale-ribbon preview.
