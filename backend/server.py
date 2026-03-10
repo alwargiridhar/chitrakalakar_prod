@@ -1353,19 +1353,15 @@ async def create_community_legacy(data: CommunityCreate, user: dict = Depends(re
     if not supabase:
         raise HTTPException(status_code=503, detail="Database not configured")
     
+    # Use only columns that exist in the DB schema
     community_data = {
         "name": data.name,
         "description": data.description,
         "image": data.image,
         "category": data.category,
-        "location": data.location,
-        "invite_criteria": data.invite_criteria,
         "created_by": user['id'],
-        "creator_id": user['id'],
         "member_count": 1,
         "is_approved": False,  # Requires admin approval
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
     try:
@@ -1373,8 +1369,8 @@ async def create_community_legacy(data: CommunityCreate, user: dict = Depends(re
     except Exception as e:
         msg = str(e)
         fallback = dict(community_data)
-        for optional_field in ["location", "invite_criteria", "updated_at"]:
-            if optional_field in fallback and (optional_field in msg or "column" in msg.lower()):
+        for optional_field in ["category", "image"]:
+            if optional_field in fallback:
                 fallback.pop(optional_field, None)
         result = supabase.table('communities').insert(fallback).execute()
     
