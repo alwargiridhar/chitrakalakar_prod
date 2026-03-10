@@ -311,11 +311,6 @@ class AWBUpdateRequest(BaseModel):
     courier_partner: str
     tracking_url: Optional[str] = None
 
-class CommunityCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-    location: Optional[str] = None
-
 class VideoScreeningRequest(BaseModel):
     painting_id: str
     preferred_date: Optional[str] = None

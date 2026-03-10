@@ -1,0 +1,44 @@
+{
+  "summary": "Completed targeted regression verification for previous blockers and exhibition/community contracts on public preview URL. CommunityCreate model shadowing issue is resolved, artistAPI.getArtworks now exists, unauth create endpoints return auth errors (not 500), and /dashboard/exhibitions + /admin/exhibitions routes redirect to login without crash.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Public page third-party script loading",
+        "issue": "Browser console shows repeated failed request to https://checkout-static-next.razorpay.com/build/undefined (ERR_BLOCKED_BY_ORB). App still loads, but payment script config/path appears partially invalid.",
+        "affected_selectors": []
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_exhibitions_community_regression.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Run authenticated artist/admin retest for full submit workflows on /dashboard/exhibitions and /admin/exhibitions (not executable in this run due no credentials).",
+    "Validate Razorpay checkout script configuration to prevent checkout-static-next /build/undefined console request failures."
+  ],
+  "critical_code_review_comments": [
+    "backend/server.py currently has a single CommunityCreate model and includes image/category/location/invite_criteria fields used by /api/community/create.",
+    "frontend/src/services/api.js now defines artistAPI.getArtworks(), matching ArtistExhibitionsPage fetchData usage.",
+    "Auth-protected exhibition routes are stable under unauth access and redirect to /login without runtime crash."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_exhibitions_community_regression.py",
+    "/app/test_reports/iteration_9.json"
+  ],
+  "success_rate": {
+    "backend": "100% (5/5 passed)",
+    "frontend": "100% for requested smoke checks (2/2 routes no-crash with auth redirect)"
+  },
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "If credentials are available, execute authenticated create submissions for community and exhibition flows to validate end-to-end persistence, not just auth/error contracts.",
+  "rca of the issue": "Prior failure likely came from model shadowing and missing API method alias. Current codebase removes duplicate CommunityCreate and adds artistAPI.getArtworks, which resolves those two blockers at code and contract level in this environment."
+}

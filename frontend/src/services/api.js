@@ -429,6 +429,7 @@ export const adminAPI = {
 export const artistAPI = {
   getDashboard: () => apiCall('/artist/dashboard'),
   getPortfolio: () => apiCall('/artist/artworks'),
+  getArtworks: () => apiCall('/artist/artworks'),
   
   addArtwork: (artwork) => apiCall('/artist/artworks', {
     method: 'POST',
