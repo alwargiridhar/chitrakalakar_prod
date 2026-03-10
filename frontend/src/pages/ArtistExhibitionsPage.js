@@ -201,6 +201,17 @@ function ArtistExhibitionsPage() {
     }
   };
 
+  const requestAction = async (exhibitionId, action) => {
+    const reason = window.prompt(`Optional note for ${action} request:`) || '';
+    try {
+      await artistAPI.requestExhibitionAction(exhibitionId, { action, reason });
+      alert(`${action} request sent to admin for review.`);
+      fetchData();
+    } catch (error) {
+      alert(error.message || 'Failed to submit action request');
+    }
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center" data-testid="artist-exhibitions-loading">Loading...</div>;
   }
@@ -335,6 +346,9 @@ function ArtistExhibitionsPage() {
                   <p className="font-semibold text-gray-900">{exhibition.name}</p>
                   <p className="text-xs text-gray-600">Status: {exhibition.status} {exhibition.is_approved ? '• Approved' : '• Pending'}</p>
                   <p className="text-xs text-gray-600">Payment: {exhibition.payment_status || 'manual review'}</p>
+                  {exhibition.artist_action_request && (
+                    <p className="text-xs text-indigo-600">Action Request: {exhibition.artist_action_request} ({exhibition.artist_action_status || 'pending'})</p>
+                  )}
                   <p className="text-xs text-gray-500">Artworks: {(exhibition.artwork_ids || []).length}</p>
                   <div className="grid grid-cols-3 gap-1 mt-2">
                     {(exhibition.artwork_ids || []).slice(0, 3).map((id) => {
@@ -346,6 +360,27 @@ function ArtistExhibitionsPage() {
                       );
                     })}
                   </div>
+
+                  {exhibition.is_approved && exhibition.status !== 'deleted' && exhibition.artist_action_status !== 'pending' && (
+                    <div className="flex gap-2 mt-3" data-testid={`artist-exhibition-actions-${exhibition.id}`}>
+                      <button
+                        type="button"
+                        onClick={() => requestAction(exhibition.id, 'pause')}
+                        className="px-2.5 py-1.5 text-xs rounded bg-amber-100 text-amber-700 hover:bg-amber-200"
+                        data-testid={`artist-exhibition-pause-${exhibition.id}`}
+                      >
+                        Request Pause
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => requestAction(exhibition.id, 'delete')}
+                        className="px-2.5 py-1.5 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200"
+                        data-testid={`artist-exhibition-delete-${exhibition.id}`}
+                      >
+                        Request Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))
             )}

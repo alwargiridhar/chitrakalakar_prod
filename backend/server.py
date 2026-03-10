@@ -267,6 +267,17 @@ class ExhibitionApprovalRequest(BaseModel):
     exhibition_id: str
     approved: bool
 
+
+class ArtistExhibitionActionRequest(BaseModel):
+    action: str  # pause | delete
+    reason: Optional[str] = None
+
+
+class AdminExhibitionActionReviewRequest(BaseModel):
+    exhibition_id: str
+    approved: bool
+    admin_note: Optional[str] = None
+
 class FeaturedArtistCreate(BaseModel):
     name: str
     bio: str
@@ -2778,10 +2789,17 @@ async def approve_artwork(request: ArtworkApprovalRequest, admin: dict = Depends
 async def get_pending_exhibitions(admin: dict = Depends(require_admin)):
     """Get exhibitions awaiting approval"""
     supabase = get_supabase_client()
-    
-    exhibitions = supabase.table('exhibitions').select('*, profiles!artist_id(full_name)').eq('is_approved', False).execute()
-    
-    return {"exhibitions": exhibitions.data or []}
+
+    pending_approval = supabase.table('exhibitions').select('*, profiles!artist_id(full_name)').eq('is_approved', False).execute()
+    pending_actions = supabase.table('exhibitions').select('*, profiles!artist_id(full_name)').eq('artist_action_status', 'pending').execute()
+
+    merged = {}
+    for row in (pending_approval.data or []):
+        merged[row['id']] = row
+    for row in (pending_actions.data or []):
+        merged[row['id']] = row
+
+    return {"exhibitions": list(merged.values())}
 
 @app.post("/api/admin/approve-exhibition")
 async def approve_exhibition(request: ExhibitionApprovalRequest, admin: dict = Depends(require_admin)):
@@ -2791,7 +2809,7 @@ async def approve_exhibition(request: ExhibitionApprovalRequest, admin: dict = D
     if request.approved:
         update_payload = {
             "is_approved": True,
-            "status": "active",
+            "status": "upcoming",
             "payment_status": "approved_manual",
             "request_status": "approved",
             "updated_at": datetime.now(timezone.utc).isoformat(),
@@ -2805,6 +2823,11 @@ async def approve_exhibition(request: ExhibitionApprovalRequest, admin: dict = D
                 if optional_field in fallback and (optional_field in msg or "column" in msg.lower()):
                     fallback.pop(optional_field, None)
             result = supabase.table('exhibitions').update(fallback).eq('id', request.exhibition_id).execute()
+
+        try:
+            _sync_exhibition_statuses(supabase)
+        except Exception:
+            pass
     else:
         reject_payload = {
             "is_approved": False,
@@ -2822,6 +2845,43 @@ async def approve_exhibition(request: ExhibitionApprovalRequest, admin: dict = D
             result = supabase.table('exhibitions').update(fallback).eq('id', request.exhibition_id).execute()
     
     return {"success": True, "message": f"Exhibition {'approved' if request.approved else 'rejected'}"}
+
+
+@app.post("/api/admin/exhibitions/review-action")
+async def review_exhibition_action(request: AdminExhibitionActionReviewRequest, admin: dict = Depends(require_admin)):
+    """Admin reviews artist pause/delete request for exhibitions."""
+    supabase = get_supabase_client()
+
+    exhibition = supabase.table('exhibitions').select('*').eq('id', request.exhibition_id).single().execute()
+    if not exhibition.data:
+        raise HTTPException(status_code=404, detail="Exhibition not found")
+
+    action = exhibition.data.get('artist_action_request')
+    if action not in ['pause', 'delete']:
+        raise HTTPException(status_code=400, detail="No pending artist action request")
+
+    if request.approved:
+        next_status = 'paused' if action == 'pause' else 'deleted'
+        update_payload = {
+            "status": next_status,
+            "artist_action_status": "approved",
+            "artist_action_admin_note": request.admin_note,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+    else:
+        update_payload = {
+            "artist_action_status": "rejected",
+            "artist_action_admin_note": request.admin_note,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+    try:
+        supabase.table('exhibitions').update(update_payload).eq('id', request.exhibition_id).execute()
+    except Exception:
+        fallback = {k: v for k, v in update_payload.items() if k in ['status', 'artist_action_status']}
+        supabase.table('exhibitions').update(fallback).eq('id', request.exhibition_id).execute()
+
+    return {"success": True, "message": "Exhibition action reviewed"}
 
 @app.get("/api/admin/all-users")
 async def get_all_users(admin: dict = Depends(require_admin)):
@@ -4223,6 +4283,42 @@ async def get_artist_exhibitions(artist: dict = Depends(require_artist)):
     exhibitions = supabase.table('exhibitions').select('*').eq('artist_id', artist['id']).execute()
     
     return {"exhibitions": exhibitions.data or []}
+
+
+@app.post("/api/artist/exhibitions/{exhibition_id}/request-action")
+async def request_exhibition_action(
+    exhibition_id: str,
+    payload: ArtistExhibitionActionRequest,
+    artist: dict = Depends(require_artist),
+):
+    """Artist can request pause/delete; admin must review."""
+    supabase = get_supabase_client()
+
+    if payload.action not in ["pause", "delete"]:
+        raise HTTPException(status_code=400, detail="action must be pause or delete")
+
+    exhibition = supabase.table('exhibitions').select('*').eq('id', exhibition_id).eq('artist_id', artist['id']).single().execute()
+    if not exhibition.data:
+        raise HTTPException(status_code=404, detail="Exhibition not found")
+
+    update_payload = {
+        "artist_action_request": payload.action,
+        "artist_action_reason": payload.reason,
+        "artist_action_status": "pending",
+        "artist_action_requested_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    try:
+        supabase.table('exhibitions').update(update_payload).eq('id', exhibition_id).execute()
+    except Exception as e:
+        msg = str(e)
+        fallback = {k: v for k, v in update_payload.items() if k not in ["artist_action_reason", "artist_action_requested_at", "updated_at"]}
+        if "artist_action_request" in msg.lower() or "artist_action_status" in msg.lower() or "column" in msg.lower():
+            raise HTTPException(status_code=500, detail="Exhibition action columns missing. Please run exhibition workflow migration.")
+        supabase.table('exhibitions').update(fallback).eq('id', exhibition_id).execute()
+
+    return {"success": True, "message": f"{payload.action.title()} request submitted for admin review"}
 
 
 @app.get("/api/artist/exhibitions/pricing")

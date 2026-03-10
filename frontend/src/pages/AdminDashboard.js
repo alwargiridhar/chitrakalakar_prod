@@ -165,6 +165,11 @@ function AdminDashboard() {
     fetchData();
   };
 
+  const handleReviewExhibitionAction = async (id, approved) => {
+    await adminAPI.reviewExhibitionAction(id, approved);
+    fetchData();
+  };
+
   const handleToggleUserStatus = async (id) => {
     await adminAPI.toggleUserStatus(id);
     fetchData();
@@ -617,6 +622,9 @@ function AdminDashboard() {
                         <p className="text-sm text-gray-500">by {exhibition.artist_name}</p>
                         <p className="text-sm text-orange-500">{exhibition.start_date} - {exhibition.end_date}</p>
                         <p className="text-xs text-gray-600 mt-1">Payment: {exhibition.payment_status || 'pending manual review'} • Method: {exhibition.payment_method || 'manual'}</p>
+                        {exhibition.artist_action_request && (
+                          <p className="text-xs text-indigo-600">Artist action request: {exhibition.artist_action_request} ({exhibition.artist_action_status || 'pending'})</p>
+                        )}
                         {exhibition.payment_reference && (
                           <p className="text-xs text-blue-600">Payment Ref: {exhibition.payment_reference}</p>
                         )}
@@ -627,8 +635,17 @@ function AdminDashboard() {
                         )}
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={() => handleApproveExhibition(exhibition.id, true)} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Approve</button>
-                        <button onClick={() => handleApproveExhibition(exhibition.id, false)} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Reject</button>
+                        {exhibition.artist_action_status === 'pending' ? (
+                          <>
+                            <button onClick={() => handleReviewExhibitionAction(exhibition.id, true)} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Approve Action</button>
+                            <button onClick={() => handleReviewExhibitionAction(exhibition.id, false)} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Reject Action</button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => handleApproveExhibition(exhibition.id, true)} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Approve</button>
+                            <button onClick={() => handleApproveExhibition(exhibition.id, false)} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Reject</button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}

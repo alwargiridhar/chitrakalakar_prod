@@ -22,6 +22,8 @@ function ArtistsPage() {
     [featuredArtists]
   );
 
+  const featuredCountToShow = allFeatured.length > 0 ? allFeatured.length : (spotlightArtist ? 1 : 0);
+
   const getArtworkImage = (artwork) => artwork?.images?.[0] || artwork?.image || '';
 
   const sortMostViewed = (items = []) => {
@@ -111,7 +113,7 @@ function ArtistsPage() {
         <div className="mb-6" data-testid="featured-artists-count">
           <h2 className="text-2xl font-semibold text-gray-900">Featured Artist Spotlight</h2>
           <p className="text-sm text-gray-600 mt-1">
-            Featured Artists ({allFeatured.length})
+            Featured Artists ({featuredCountToShow})
           </p>
         </div>
 
@@ -224,7 +226,7 @@ function ArtistsPage() {
         </div>
 
         {/* Registered Artists below featured section */}
-        <div className="mt-10" data-testid="registered-artists-section">
+        <div className="mt-6" data-testid="registered-artists-section">
           <div className="flex items-end justify-between mb-5 gap-4">
             <div>
               <h2 className="text-2xl font-semibold text-gray-900" data-testid="registered-artists-title">Registered Artists</h2>

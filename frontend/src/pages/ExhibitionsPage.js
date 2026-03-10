@@ -7,8 +7,11 @@ function ExhibitionsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    publicAPI.getActiveExhibitions()
-      .then((data) => setExhibitions(data.exhibitions || []))
+    publicAPI.getExhibitions()
+      .then((data) => {
+        const list = (data.exhibitions || []).filter((item) => !['archived', 'expired', 'deleted'].includes((item.status || '').toLowerCase()));
+        setExhibitions(list);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -18,7 +21,7 @@ function ExhibitionsPage() {
       <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>
           <h1 className="text-4xl font-bold text-gray-900 mb-2" data-testid="active-exhibitions-title">Active Exhibitions</h1>
-          <p className="text-base text-gray-600" data-testid="active-exhibitions-subtitle">Live and upcoming approved exhibitions</p>
+          <p className="text-base text-gray-600" data-testid="active-exhibitions-subtitle">Active and upcoming approved exhibitions</p>
         </div>
         <div>
           <Link to="/exhibitions/archived" className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 inline-flex items-center gap-2" data-testid="go-to-archived-exhibitions-link">

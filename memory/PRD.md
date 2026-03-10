@@ -161,3 +161,11 @@ Adjust commission feature to existing framework without breaking existing Supaba
 - Artist exhibition request now auto-computes end date from start date + plan days, auto-populates fee metadata, supports max 3 exhibition images with primary image selection.
 - Added payment flow fields for manual + Razorpay, including manual screenshot upload and admin review surface in pending exhibitions.
 - Added S3 bucket mapping for payment proofs: `exhibition-payment-proofs` via env `AWS_BUCKET_EXHIBITION_PAYMENT_PROOFS`.
+
+
+## Latest Change Set (Artists + Exhibition Navigation + Action Review)
+- Fixed featured-count inconsistency logic and tightened Artists page layout spacing so registered artists section appears immediately below featured block.
+- Updated navbar exhibitions behavior: clicking “Exhibitions” opens active/upcoming page by default; dropdown still provides archived navigation.
+- Added artist exhibition action requests (`pause` / `delete`) requiring admin review before state change.
+- Added admin action-review endpoint and dashboard controls to approve/reject artist pause/delete requests.
+- Updated active exhibitions page to include both active and upcoming approved exhibitions, reducing false “not visible after approval” behavior.

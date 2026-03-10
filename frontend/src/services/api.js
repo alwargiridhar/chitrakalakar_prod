@@ -294,6 +294,10 @@ export const adminAPI = {
     method: 'POST',
     body: JSON.stringify({ exhibition_id: exhibitionId, approved }),
   }),
+  reviewExhibitionAction: (exhibitionId, approved, admin_note = '') => apiCall('/admin/exhibitions/review-action', {
+    method: 'POST',
+    body: JSON.stringify({ exhibition_id: exhibitionId, approved, admin_note }),
+  }),
   createExhibition: (data) => apiCall('/admin/exhibitions/create', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -463,6 +467,12 @@ export const artistAPI = {
 
   createExhibition: (data) =>
     apiCall('/artist/exhibitions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  requestExhibitionAction: (exhibitionId, data) =>
+    apiCall(`/artist/exhibitions/${exhibitionId}/request-action`, {
       method: 'POST',
       body: JSON.stringify(data),
     }),
