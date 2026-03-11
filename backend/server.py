@@ -4386,6 +4386,155 @@ async def push_to_marketplace(data: PushToMarketplaceRequest, artist: dict = Dep
     
     return {"success": True, "message": f"Pushed {len(data.artwork_ids)} artworks to marketplace"}
 
+
+# AI Pricing Engine
+@app.post("/api/artwork/pricing-analysis")
+async def analyze_artwork_pricing(request: ArtworkPricingRequest):
+    """
+    AI-powered artwork pricing analysis.
+    Analyzes artwork attributes and provides fair market price estimate.
+    """
+    import os
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    
+    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="AI pricing service not configured")
+    
+    # System prompt for the AI pricing advisor
+    system_prompt = """You are an art pricing advisor for an online art marketplace in India.
+
+Your role is to estimate a fair price range for a painting based on its attributes and help maintain transparency between artists and buyers.
+
+Pricing considerations:
+1. Larger artworks typically justify higher prices. Base rate: ₹50-150 per square inch depending on medium and skill.
+2. Oil paintings command highest prices, followed by acrylic, then watercolor, then charcoal.
+3. Hyperrealism or extremely detailed works should increase the price range by 50-100%.
+4. Completely original works with no copies should increase value by 20-30%.
+5. Professional artists can command 2-3x higher prices than beginners.
+6. Material costs and time investment should be factored in.
+7. Indian art market prices are typically lower than Western markets.
+
+Output ONLY valid JSON with this exact structure:
+{
+  "suggested_price_range": {
+    "min": number,
+    "max": number
+  },
+  "pricing_evaluation": "fair" | "slightly_high" | "overpriced" | "underpriced",
+  "buyer_message": "short explanation for buyers",
+  "artist_suggestion": "if price is high, ask artist to justify the premium, otherwise null"
+}"""
+    
+    # Build the analysis prompt
+    analysis_prompt = f"""Analyze this artwork and provide pricing:
+
+ARTWORK DETAILS:
+- Size: {request.width}" x {request.height}" ({request.width * request.height} sq inches)
+- Medium: {request.medium}
+- Realism Level: {request.realism_level}
+- Detailing Level: {request.detailing_level}
+- Uniqueness: {request.uniqueness}
+- Artist Experience: {request.artist_experience}
+- Hours Spent: {request.hours_spent or 'Not specified'}
+- Material Cost: ₹{request.material_cost or 'Not specified'}
+- Artist's Quoted Price: ₹{request.artist_price}
+
+Provide your analysis as JSON only."""
+
+    try:
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"pricing-{uuid.uuid4()}",
+            system_message=system_prompt
+        ).with_model("openai", "gpt-4o")
+        
+        user_message = UserMessage(text=analysis_prompt)
+        response = await chat.send_message(user_message)
+        
+        # Parse the JSON response
+        # Clean up response if needed
+        response_text = response.strip()
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        if response_text.startswith("```"):
+            response_text = response_text[3:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+        
+        pricing_data = json.loads(response_text.strip())
+        
+        # Determine badge color
+        evaluation = pricing_data.get("pricing_evaluation", "fair")
+        if evaluation == "fair" or evaluation == "underpriced":
+            badge = "green"
+        elif evaluation == "slightly_high":
+            badge = "yellow"
+        else:  # overpriced
+            badge = "red"
+        
+        return {
+            "suggested_price_range": pricing_data.get("suggested_price_range", {"min": 0, "max": 0}),
+            "pricing_evaluation": evaluation,
+            "pricing_badge": badge,
+            "buyer_message": pricing_data.get("buyer_message", ""),
+            "artist_suggestion": pricing_data.get("artist_suggestion")
+        }
+        
+    except json.JSONDecodeError as e:
+        print(f"AI Pricing JSON error: {e}, Response: {response}")
+        # Fallback calculation based on size and medium
+        base_rate = {"oil": 120, "acrylic": 80, "watercolor": 60, "charcoal": 40, "mixed media": 70}.get(request.medium.lower(), 60)
+        sq_inches = request.width * request.height
+        min_price = int(sq_inches * base_rate * 0.8)
+        max_price = int(sq_inches * base_rate * 1.5)
+        
+        if request.artist_price < min_price:
+            evaluation = "underpriced"
+            badge = "green"
+        elif request.artist_price <= max_price:
+            evaluation = "fair"
+            badge = "green"
+        elif request.artist_price <= max_price * 1.3:
+            evaluation = "slightly_high"
+            badge = "yellow"
+        else:
+            evaluation = "overpriced"
+            badge = "red"
+        
+        return {
+            "suggested_price_range": {"min": min_price, "max": max_price},
+            "pricing_evaluation": evaluation,
+            "pricing_badge": badge,
+            "buyer_message": f"Based on size and medium, this artwork is {evaluation}.",
+            "artist_suggestion": "Consider providing details about materials, time invested, or unique aspects." if badge != "green" else None
+        }
+    except Exception as e:
+        print(f"AI Pricing error: {e}")
+        raise HTTPException(status_code=500, detail="Pricing analysis failed")
+
+
+@app.get("/api/artwork/{artwork_id}/pricing-badge")
+async def get_artwork_pricing_badge(artwork_id: str):
+    """Get the pricing transparency badge for a specific artwork"""
+    supabase = get_supabase_client()
+    
+    artwork = supabase.table('artworks').select('*').eq('id', artwork_id).single().execute()
+    if not artwork.data:
+        raise HTTPException(status_code=404, detail="Artwork not found")
+    
+    # Check if pricing analysis exists
+    if artwork.data.get('pricing_badge'):
+        return {
+            "pricing_badge": artwork.data.get('pricing_badge'),
+            "pricing_evaluation": artwork.data.get('pricing_evaluation'),
+            "buyer_message": artwork.data.get('pricing_buyer_message'),
+            "suggested_range": artwork.data.get('pricing_suggested_range')
+        }
+    
+    return {"pricing_badge": None, "message": "Pricing analysis not available for this artwork"}
+
+
 @app.get("/api/artist/dashboard")
 async def get_artist_dashboard(artist: dict = Depends(require_artist)):
     supabase = get_supabase_client()
