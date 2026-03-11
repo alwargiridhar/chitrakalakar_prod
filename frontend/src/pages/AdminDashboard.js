@@ -741,29 +741,64 @@ function AdminDashboard() {
         {activeTab === 'communities' && (
           <div className="bg-white rounded-xl shadow-sm">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Pending Community Approvals</h2>
+              <h2 className="text-xl font-bold text-gray-900">Community Management</h2>
+              <p className="text-sm text-gray-500">Review and approve community requests</p>
             </div>
             <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Pending Approvals ({pendingCommunities.length})</h3>
               {pendingCommunities.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No pending communities to review</p>
+                <p className="text-gray-500 text-center py-8 bg-gray-50 rounded-lg">No pending communities to review</p>
               ) : (
                 <div className="space-y-4">
                   {pendingCommunities.map((community) => (
-                    <div key={community.id} className="border border-gray-200 rounded-lg p-4 flex items-start justify-between gap-4" data-testid={`pending-community-${community.id}`}>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{community.name}</h3>
-                        <p className="text-sm text-gray-500">by {community.creator_name || 'Artist'}</p>
-                        {community.category && <p className="text-xs text-orange-500">{community.category}</p>}
-                        {community.description && <p className="text-xs text-gray-600 mt-1 line-clamp-2">{community.description}</p>}
+                    <div key={community.id} className="border border-gray-200 rounded-lg overflow-hidden" data-testid={`pending-community-${community.id}`}>
+                      {/* Header - Clickable to expand */}
+                      <div 
+                        className="p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 flex justify-between items-center"
+                        onClick={() => setExpandedCommunity(expandedCommunity === community.id ? null : community.id)}
+                      >
+                        <div className="flex items-center gap-4">
+                          {community.image ? (
+                            <img src={community.image} alt={community.name} className="w-12 h-12 rounded-lg object-cover" />
+                          ) : (
+                            <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center text-2xl">👥</div>
+                          )}
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{community.name}</h3>
+                            <p className="text-sm text-gray-500">by {community.creator_name || 'Artist'}</p>
+                            {community.category && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">{community.category}</span>}
+                          </div>
+                        </div>
+                        <span className="text-gray-400">{expandedCommunity === community.id ? '▼' : '▶'}</span>
                       </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => handleApproveCommunity(community.id, true)} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600" data-testid={`approve-community-${community.id}`}>
-                          Approve
-                        </button>
-                        <button onClick={() => handleApproveCommunity(community.id, false)} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600" data-testid={`reject-community-${community.id}`}>
-                          Reject
-                        </button>
-                      </div>
+                      
+                      {/* Expanded Details */}
+                      {expandedCommunity === community.id && (
+                        <div className="p-4 border-t border-gray-200">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Description</p>
+                              <p className="text-sm text-gray-700">{community.description || 'No description provided'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Details</p>
+                              <p className="text-sm text-gray-600">Members: {community.member_count || 1}</p>
+                              <p className="text-sm text-gray-600">Created: {new Date(community.created_at).toLocaleDateString()}</p>
+                              {community.location && <p className="text-sm text-gray-600">Location: {community.location}</p>}
+                            </div>
+                          </div>
+                          
+                          {/* Action Buttons */}
+                          <div className="flex gap-2 pt-3 border-t border-gray-100">
+                            <button onClick={() => handleApproveCommunity(community.id, true)} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm">
+                              Approve Community
+                            </button>
+                            <button onClick={() => handleApproveCommunity(community.id, false)} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm">
+                              Reject Community
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
