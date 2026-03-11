@@ -141,7 +141,7 @@ export const communityAPI = {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-  getAll: () => apiCall('/communities'),
+  getAll: () => apiCall('/public/communities'),
   getDetails: (communityId) => apiCall(`/community/${communityId}`),
   join: (communityId) => apiCall(`/community/${communityId}/join`, {
     method: 'POST',
