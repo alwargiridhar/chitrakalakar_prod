@@ -161,7 +161,7 @@ export const communityAPI = {
     method: 'POST',
     body: JSON.stringify({ community_id: communityId, content, images, post_type: postType }),
   }),
-  getMyCommunities: () => apiCall('/community/my-communities'),
+  getMyCommunities: () => apiCall('/artist/my-communities'),
   getMyInvites: () => apiCall('/community/invites'),
   respondToInvite: (inviteId, accept) => apiCall(`/community/respond-invite/${inviteId}?accept=${accept}`, {
     method: 'POST',
