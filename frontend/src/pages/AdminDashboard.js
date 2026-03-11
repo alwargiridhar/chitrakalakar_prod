@@ -622,45 +622,111 @@ function AdminDashboard() {
         {activeTab === 'exhibitions' && (
           <div className="bg-white rounded-xl shadow-sm">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Pending Exhibition Approvals</h2>
+              <h2 className="text-xl font-bold text-gray-900">Exhibition Management</h2>
+              <p className="text-sm text-gray-500">Review pending exhibitions and manage approved ones</p>
             </div>
             <div className="p-6">
+              {/* Pending Exhibitions Section */}
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Pending Approvals ({pendingExhibitions.length})</h3>
               {pendingExhibitions.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No pending exhibitions to review</p>
+                <p className="text-gray-500 text-center py-4 bg-gray-50 rounded-lg mb-6">No pending exhibitions to review</p>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 mb-8">
                   {pendingExhibitions.map((exhibition) => (
-                    <div key={exhibition.id} className="border border-gray-200 rounded-lg p-4 flex items-start justify-between gap-4">
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{exhibition.name}</h3>
-                        <p className="text-sm text-gray-500">by {exhibition.artist_name}</p>
-                        <p className="text-sm text-orange-500">{exhibition.start_date} - {exhibition.end_date}</p>
-                        <p className="text-xs text-gray-600 mt-1">Payment: {exhibition.payment_status || 'pending manual review'} • Method: {exhibition.payment_method || 'manual'}</p>
-                        {exhibition.artist_action_request && (
-                          <p className="text-xs text-indigo-600">Artist action request: {exhibition.artist_action_request} ({exhibition.artist_action_status || 'pending'})</p>
-                        )}
-                        {exhibition.payment_reference && (
-                          <p className="text-xs text-blue-600">Payment Ref: {exhibition.payment_reference}</p>
-                        )}
-                        {exhibition.payment_screenshot_url && (
-                          <a href={exhibition.payment_screenshot_url} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:text-indigo-700" data-testid={`admin-exhibition-payment-proof-${exhibition.id}`}>
-                            View Payment Screenshot
-                          </a>
-                        )}
+                    <div key={exhibition.id} className="border border-gray-200 rounded-lg overflow-hidden" data-testid={`pending-exhibition-${exhibition.id}`}>
+                      {/* Header */}
+                      <div 
+                        className="p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 flex justify-between items-center"
+                        onClick={() => setExpandedExhibition(expandedExhibition === exhibition.id ? null : exhibition.id)}
+                      >
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{exhibition.name}</h3>
+                          <p className="text-sm text-gray-500">by {exhibition.profiles?.full_name || exhibition.artist_name || 'Unknown Artist'}</p>
+                          <p className="text-sm text-orange-500">{exhibition.start_date} - {exhibition.end_date}</p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            exhibition.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {exhibition.payment_status || 'Pending Payment'}
+                          </span>
+                          <span className="text-gray-400">{expandedExhibition === exhibition.id ? '▼' : '▶'}</span>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        {exhibition.artist_action_status === 'pending' ? (
-                          <>
-                            <button onClick={() => handleReviewExhibitionAction(exhibition.id, true)} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Approve Action</button>
-                            <button onClick={() => handleReviewExhibitionAction(exhibition.id, false)} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Reject Action</button>
-                          </>
-                        ) : (
-                          <>
-                            <button onClick={() => handleApproveExhibition(exhibition.id, true)} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Approve</button>
-                            <button onClick={() => handleApproveExhibition(exhibition.id, false)} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Reject</button>
-                          </>
-                        )}
-                      </div>
+                      
+                      {/* Expanded Details */}
+                      {expandedExhibition === exhibition.id && (
+                        <div className="p-4 border-t border-gray-200">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Description</p>
+                              <p className="text-sm text-gray-700">{exhibition.description || 'No description provided'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Details</p>
+                              <p className="text-sm text-gray-600">Days Paid: {exhibition.days_paid || 0}</p>
+                              <p className="text-sm text-gray-600">Payment Method: {exhibition.payment_method || 'manual'}</p>
+                              {exhibition.payment_reference && <p className="text-sm text-blue-600">Ref: {exhibition.payment_reference}</p>}
+                            </div>
+                          </div>
+                          
+                          {/* Exhibition Paintings Preview */}
+                          {(exhibition.exhibition_paintings?.length > 0 || exhibition.exhibition_images?.length > 0) && (
+                            <div className="mb-4">
+                              <p className="text-xs text-gray-500 mb-2">Exhibition Artworks ({exhibition.exhibition_paintings?.length || exhibition.exhibition_images?.length || 0})</p>
+                              <div className="flex gap-2 overflow-x-auto pb-2">
+                                {(exhibition.exhibition_paintings || []).map((painting, idx) => (
+                                  <div key={idx} className="flex-shrink-0 w-24 h-24 bg-gray-100 rounded overflow-hidden">
+                                    <img src={painting.image_url || painting} alt={painting.title || `Artwork ${idx + 1}`} className="w-full h-full object-cover" />
+                                  </div>
+                                ))}
+                                {(!exhibition.exhibition_paintings?.length && exhibition.exhibition_images || []).map((img, idx) => (
+                                  <div key={idx} className="flex-shrink-0 w-24 h-24 bg-gray-100 rounded overflow-hidden">
+                                    <img src={img} alt={`Image ${idx + 1}`} className="w-full h-full object-cover" />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Payment Screenshot */}
+                          {exhibition.payment_screenshot_url && (
+                            <div className="mb-4">
+                              <p className="text-xs text-gray-500 mb-2">Payment Proof</p>
+                              <a href={exhibition.payment_screenshot_url} target="_blank" rel="noreferrer" className="text-indigo-600 hover:text-indigo-700 text-sm">
+                                📄 View Payment Screenshot
+                              </a>
+                            </div>
+                          )}
+                          
+                          {/* Artist Action Request */}
+                          {exhibition.artist_action_request && (
+                            <div className="mb-4 p-3 bg-indigo-50 rounded">
+                              <p className="text-sm text-indigo-700">
+                                Artist requested: <strong>{exhibition.artist_action_request}</strong> ({exhibition.artist_action_status || 'pending'})
+                              </p>
+                              {exhibition.artist_action_reason && (
+                                <p className="text-xs text-indigo-600 mt-1">Reason: {exhibition.artist_action_reason}</p>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Action Buttons */}
+                          <div className="flex gap-2 pt-3 border-t border-gray-100">
+                            {exhibition.artist_action_status === 'pending' ? (
+                              <>
+                                <button onClick={() => handleReviewExhibitionAction(exhibition.id, true)} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm">Approve Action</button>
+                                <button onClick={() => handleReviewExhibitionAction(exhibition.id, false)} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm">Reject Action</button>
+                              </>
+                            ) : (
+                              <>
+                                <button onClick={() => handleApproveExhibition(exhibition.id, true)} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm">Approve Exhibition</button>
+                                <button onClick={() => handleApproveExhibition(exhibition.id, false)} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm">Reject Exhibition</button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
