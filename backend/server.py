@@ -2891,12 +2891,20 @@ async def get_pending_exhibitions(admin: dict = Depends(require_lead_chitrakar))
     supabase = get_supabase_client()
 
     pending_approval = supabase.table('exhibitions').select('*, profiles!artist_id(full_name)').eq('is_approved', False).execute()
-    pending_actions = supabase.table('exhibitions').select('*, profiles!artist_id(full_name)').eq('artist_action_status', 'pending').execute()
+    
+    # Try to get pending artist actions, but handle missing column gracefully
+    pending_actions_data = []
+    try:
+        pending_actions = supabase.table('exhibitions').select('*, profiles!artist_id(full_name)').eq('artist_action_status', 'pending').execute()
+        pending_actions_data = pending_actions.data or []
+    except Exception as e:
+        # Column might not exist - skip this query
+        print(f"artist_action_status query skipped: {e}")
 
     merged = {}
     for row in (pending_approval.data or []):
         merged[row['id']] = row
-    for row in (pending_actions.data or []):
+    for row in pending_actions_data:
         merged[row['id']] = row
 
     return {"exhibitions": list(merged.values())}
