@@ -3875,6 +3875,31 @@ async def create_community_managed(community: CommunityCreate, artist: dict = De
     
     return {"success": True, "message": "Community created and pending approval", "community": result.data[0] if result and result.data else None}
 
+
+@app.get("/api/artist/my-communities")
+async def get_my_communities(artist: dict = Depends(require_artist)):
+    """Get communities created by or joined by the artist"""
+    supabase = get_supabase_client()
+    
+    # Get communities created by the artist
+    created = supabase.table('communities').select('*').eq('created_by', artist['id']).order('created_at', desc=True).execute()
+    
+    # Get communities the artist is a member of
+    memberships = supabase.table('community_members').select('community_id').eq('user_id', artist['id']).execute()
+    joined_ids = [m['community_id'] for m in (memberships.data or [])]
+    
+    joined = []
+    if joined_ids:
+        joined_result = supabase.table('communities').select('*').in_('id', joined_ids).eq('is_approved', True).execute()
+        # Exclude communities the artist created
+        created_ids = [c['id'] for c in (created.data or [])]
+        joined = [c for c in (joined_result.data or []) if c['id'] not in created_ids]
+    
+    return {
+        "created_communities": created.data or [],
+        "joined_communities": joined
+    }
+
 @app.get("/api/communities")
 async def get_communities():
     """Get all approved communities"""
