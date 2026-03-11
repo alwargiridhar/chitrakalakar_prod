@@ -443,7 +443,6 @@ export const adminAPI = {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
-  }),
 };
 
 // Artist APIs
