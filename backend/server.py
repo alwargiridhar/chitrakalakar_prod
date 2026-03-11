@@ -3902,8 +3902,16 @@ async def get_community_details(community_id: str):
 
 @app.post("/api/community/{community_id}/join")
 async def request_to_join_community(community_id: str, artist: dict = Depends(require_artist)):
-    """Request to join a community"""
+    """Request to join a community - direct join for approved communities"""
     supabase = get_supabase_client()
+    
+    # Check if community exists and is approved
+    community = supabase.table('communities').select('id, name, is_approved').eq('id', community_id).single().execute()
+    if not community.data:
+        raise HTTPException(status_code=404, detail="Community not found")
+    
+    if not community.data.get('is_approved'):
+        raise HTTPException(status_code=400, detail="Community is not yet approved")
     
     # Check if already a member
     existing = supabase.table('community_members').select('id').eq('community_id', community_id).eq('user_id', artist['id']).execute()
@@ -3911,23 +3919,31 @@ async def request_to_join_community(community_id: str, artist: dict = Depends(re
     if existing.data:
         raise HTTPException(status_code=400, detail="Already a member of this community")
     
-    # Check pending request
-    pending = supabase.table('community_join_requests').select('id').eq('community_id', community_id).eq('user_id', artist['id']).eq('status', 'pending').execute()
-    
-    if pending.data:
-        raise HTTPException(status_code=400, detail="Join request already pending")
-    
-    # Create join request
-    request_data = {
+    # Direct join (no approval needed for approved communities)
+    member_data = {
         "community_id": community_id,
         "user_id": artist['id'],
-        "status": "pending",
-        "requested_at": datetime.now(timezone.utc).isoformat()
+        "joined_at": datetime.now(timezone.utc).isoformat()
     }
     
-    supabase.table('community_join_requests').insert(request_data).execute()
+    # Try to add role column if it exists
+    try:
+        member_data["role"] = "member"
+        supabase.table('community_members').insert(member_data).execute()
+    except Exception:
+        # Fallback without role
+        member_data.pop("role", None)
+        supabase.table('community_members').insert(member_data).execute()
     
-    return {"success": True, "message": "Join request submitted"}
+    # Update member count
+    try:
+        current = supabase.table('communities').select('member_count').eq('id', community_id).single().execute()
+        new_count = (current.data.get('member_count') or 0) + 1
+        supabase.table('communities').update({'member_count': new_count}).eq('id', community_id).execute()
+    except:
+        pass
+    
+    return {"success": True, "message": f"Successfully joined {community.data.get('name')}"}
 
 @app.get("/api/community/{community_id}/join-requests")
 async def get_join_requests(community_id: str, artist: dict = Depends(require_artist)):
