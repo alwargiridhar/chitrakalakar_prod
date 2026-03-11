@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 
 class ArtistMembershipTester:
-    def __init__(self, base_url="https://kalakanksh-gallery.preview.emergentagent.com"):
+    def __init__(self, base_url="https://chitrakalakar-art.preview.emergentagent.com"):
         self.base_url = base_url
         self.admin_token = None
         self.artist_token = None
