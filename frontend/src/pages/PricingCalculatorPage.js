@@ -321,7 +321,7 @@ function PricingCalculatorPage() {
                 <div className="text-5xl mb-4">🎨</div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Get Your Price Analysis</h3>
                 <p className="text-gray-600 text-sm">
-                  Fill in your artwork details and we'll provide a fair market price estimate based on:
+                  Fill in your artwork details and Chitrakalakar will provide a fair market price estimate based on:
                 </p>
                 <ul className="mt-4 text-sm text-gray-600 space-y-2 text-left max-w-xs mx-auto">
                   <li className="flex items-center gap-2">
