@@ -287,3 +287,44 @@ ALTER TABLE featured_artists ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT 
 ALTER TABLE artworks ADD COLUMN IF NOT EXISTS suitable_rooms TEXT[] DEFAULT '{}';
 CREATE INDEX IF NOT EXISTS idx_artworks_suitable_rooms ON artworks USING GIN(suitable_rooms);
 ```
+
+
+
+## Session Update - March 2026: Critical Bug Fixes
+
+### Bugs Fixed
+1. **Add to Cart Bug (P0)** - FIXED
+   - Issue: Cart add was failing with "Could not find the added_at column of cart_items in the schema cache"
+   - Root Cause: Supabase `cart_items` table doesn't have `added_at` column, but backend was trying to insert it
+   - Fix: Made `added_at` column optional with try/except fallback in `/app/backend/server.py` (lines 1778-1790)
+
+2. **Community Features** - VERIFIED WORKING
+   - Community list endpoint `/api/public/communities` returns communities correctly
+   - Community detail endpoint `/api/community/{id}` returns community with members
+   - Join community endpoint `/api/community/{id}/join` works for authenticated users
+   - Created comprehensive tests in `/app/backend/tests/test_critical_bugs.py`
+
+3. **Art Class Enquiry** - VERIFIED WORKING
+   - Endpoint `/api/public/art-class-enquiry` works correctly for authenticated users
+   - Limit of one enquiry per month is enforced
+
+4. **Admin Dashboard** - VERIFIED WORKING
+   - Dashboard loads correctly for `lead_chitrakar` role
+   - All admin API endpoints returning proper data
+
+### Test Results
+- All 17 backend tests passed (100% success rate)
+- Test file: `/app/backend/tests/test_critical_bugs.py`
+- Test report: `/app/test_reports/iteration_13.json`
+
+### Remaining Issues (P1/P2)
+1. **Admin Featured Artists Management (P1)** - Build UI in Admin Dashboard
+2. **Artist Portfolio Editing (P1)** - Create profile editing form
+3. **Artist Exhibition Request Management (P1)** - Add cancel/delete button
+4. **Invalid UUID Handling (P2)** - Community endpoint returns 500 instead of 404 for invalid UUIDs
+
+### Next Tasks
+1. Build full community features (posts, images, likes, comments, messaging)
+2. Add Featured Artist timeline/expiry management UI
+3. Create Artist Portfolio editing UI
+4. Add Artist Exhibition request cancel/delete UI
