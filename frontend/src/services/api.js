@@ -507,6 +507,18 @@ export const artistAPI = {
     body: JSON.stringify({ payment_reference: paymentReference, duration_days: durationDays }),
   }),
   getFeaturedRequestStatus: () => apiCall('/artist/featured-request-status'),
+  
+  // Community management
+  getMyCommunities: () => apiCall('/artist/my-communities'),
+  
+  // Exhibition management
+  deleteExhibition: (exhibitionId) => apiCall(`/artist/exhibitions/${exhibitionId}`, {
+    method: 'DELETE',
+  }),
+  updateExhibition: (exhibitionId, data) => apiCall(`/artist/exhibitions/${exhibitionId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
 };
 
 export async function getImageUrl(key, token) {
