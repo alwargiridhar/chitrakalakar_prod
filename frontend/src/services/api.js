@@ -436,8 +436,13 @@ export const adminAPI = {
     method: 'POST',
     body: JSON.stringify({ request_id: requestId, approved, rejection_reason: rejectionReason }),
   }),
-  removeFeaturedArtist: (artistId) => apiCall(`/admin/remove-featured/${artistId}`, {
+  removeFeaturedArtist: (artistId) => apiCall(`/admin/featured-artist/${artistId}`, {
     method: 'DELETE',
+  }),
+  updateFeaturedArtist: (artistId, data) => apiCall(`/admin/featured-artist/${artistId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
   }),
 };
 
