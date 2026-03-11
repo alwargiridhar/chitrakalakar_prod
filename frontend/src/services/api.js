@@ -523,3 +523,16 @@ export async function getImageUrl(key, token) {
 
   return res.json();
 }
+
+// AI Pricing Engine API
+export const pricingAPI = {
+  // Analyze artwork pricing
+  analyzePrice: (data) => apiCall('/artwork/pricing-analysis', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+
+  // Get pricing badge for an artwork
+  getPricingBadge: (artworkId) => apiCall(`/artwork/${artworkId}/pricing-badge`),
+};
+
