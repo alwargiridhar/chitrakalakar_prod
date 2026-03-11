@@ -3099,6 +3099,26 @@ async def delete_contemporary_artist(artist_id: str, admin: dict = Depends(requi
     
     return {"success": True, "message": "Featured artist removed"}
 
+
+@app.put("/api/admin/featured-artist/{artist_id}")
+async def update_featured_artist(artist_id: str, updates: dict, admin: dict = Depends(require_lead_chitrakar)):
+    """Update featured artist settings (timeline, active status)"""
+    supabase = get_supabase_client()
+    
+    allowed_fields = ['is_featured', 'is_active', 'featured_until', 'bio', 'artworks']
+    update_data = {k: v for k, v in updates.items() if k in allowed_fields}
+    
+    if not update_data:
+        return {"success": False, "message": "No valid fields to update"}
+    
+    try:
+        supabase.table('featured_artists').update(update_data).eq('id', artist_id).execute()
+    except Exception as e:
+        print(f"Featured artist update error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update featured artist")
+    
+    return {"success": True, "message": "Featured artist updated"}
+
 @app.post("/api/admin/feature-registered-artist")
 async def feature_registered_artist(request: FeatureRegisteredArtistRequest, admin: dict = Depends(require_lead_chitrakar)):
     """Feature or unfeature a registered artist"""
