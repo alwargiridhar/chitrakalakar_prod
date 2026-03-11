@@ -158,7 +158,50 @@ function PaintingsPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* Filters */}
+        {/* Quick Price Filters */}
+        <div className="mb-6">
+          <h3 className="text-sm font-medium text-gray-700 mb-3">Browse by Price</h3>
+          <div className="flex flex-wrap gap-2">
+            {PRICE_RANGES.map(range => (
+              <button
+                key={range.id}
+                onClick={() => setPriceRange(range.id)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  priceRange === range.id 
+                    ? 'bg-orange-500 text-white shadow-md' 
+                    : `${range.color} hover:shadow-md`
+                }`}
+                data-testid={`price-quick-filter-${range.id}`}
+              >
+                {range.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Room-based Filters */}
+        <div className="mb-6">
+          <h3 className="text-sm font-medium text-gray-700 mb-3">Browse by Room/Space</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+            {ROOM_TYPES.map(room => (
+              <button
+                key={room.id}
+                onClick={() => setSelectedRoom(room.id)}
+                className={`flex flex-col items-center p-3 rounded-xl transition-all ${
+                  selectedRoom === room.id 
+                    ? 'bg-orange-500 text-white shadow-lg scale-105' 
+                    : 'bg-white text-gray-700 hover:shadow-md hover:scale-102 border border-gray-200'
+                }`}
+                data-testid={`room-filter-${room.id}`}
+              >
+                <span className="text-2xl mb-1">{room.icon}</span>
+                <span className="text-xs font-medium text-center">{room.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Advanced Filters */}
         <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6 sm:mb-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Category Filter */}
