@@ -4683,6 +4683,62 @@ async def request_exhibition_action(
     return {"success": True, "message": f"{payload.action.title()} request submitted for admin review"}
 
 
+@app.delete("/api/artist/exhibitions/{exhibition_id}")
+async def delete_artist_exhibition(exhibition_id: str, artist: dict = Depends(require_artist)):
+    """Artist can delete their own exhibition if it's not yet approved or active"""
+    supabase = get_supabase_client()
+    
+    # Get the exhibition
+    exhibition = supabase.table('exhibitions').select('*').eq('id', exhibition_id).eq('artist_id', artist['id']).single().execute()
+    
+    if not exhibition.data:
+        raise HTTPException(status_code=404, detail="Exhibition not found")
+    
+    # Only allow deletion if not yet active
+    status = exhibition.data.get('status', '').lower()
+    if status == 'active':
+        raise HTTPException(status_code=400, detail="Cannot delete an active exhibition. Please request to pause/delete instead.")
+    
+    # Delete the exhibition
+    supabase.table('exhibitions').delete().eq('id', exhibition_id).execute()
+    
+    return {"success": True, "message": "Exhibition deleted successfully"}
+
+
+@app.put("/api/artist/exhibitions/{exhibition_id}")
+async def update_artist_exhibition(exhibition_id: str, updates: dict, artist: dict = Depends(require_artist)):
+    """Artist can update their exhibition details (name, description) before approval"""
+    supabase = get_supabase_client()
+    
+    # Get the exhibition
+    exhibition = supabase.table('exhibitions').select('*').eq('id', exhibition_id).eq('artist_id', artist['id']).single().execute()
+    
+    if not exhibition.data:
+        raise HTTPException(status_code=404, detail="Exhibition not found")
+    
+    # Only allow updates if not yet approved
+    if exhibition.data.get('is_approved'):
+        raise HTTPException(status_code=400, detail="Cannot update an approved exhibition")
+    
+    # Only allow certain fields to be updated
+    allowed_fields = ['name', 'description', 'exhibition_images', 'exhibition_paintings', 'primary_exhibition_image']
+    update_data = {k: v for k, v in updates.items() if k in allowed_fields}
+    
+    if not update_data:
+        return {"success": False, "message": "No valid fields to update"}
+    
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    try:
+        supabase.table('exhibitions').update(update_data).eq('id', exhibition_id).execute()
+    except Exception as e:
+        update_data.pop('updated_at', None)
+        if update_data:
+            supabase.table('exhibitions').update(update_data).eq('id', exhibition_id).execute()
+    
+    return {"success": True, "message": "Exhibition updated successfully"}
+
+
 @app.get("/api/artist/exhibitions/pricing")
 async def get_exhibition_pricing_config(artist: dict = Depends(require_artist)):
     return {"config": EXHIBITION_PLAN_CONFIG}
