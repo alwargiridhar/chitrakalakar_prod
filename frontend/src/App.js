@@ -45,6 +45,7 @@ import ArtistCommissionsPage from './pages/ArtistCommissionsPage';
 import AdminCommissionsPage from './pages/AdminCommissionsPage';
 import ArtistExhibitionsPage from './pages/ArtistExhibitionsPage';
 import AdminExhibitionsPage from './pages/AdminExhibitionsPage';
+import PricingCalculatorPage from './pages/PricingCalculatorPage';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 import './App.css';
