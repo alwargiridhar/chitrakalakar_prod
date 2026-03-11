@@ -292,6 +292,29 @@ class AdminExhibitionUpdateRequest(BaseModel):
     end_date: Optional[str] = None
     status: Optional[str] = None  # active, paused, archived
 
+
+# AI Pricing Engine Models
+class ArtworkPricingRequest(BaseModel):
+    width: float  # in inches
+    height: float  # in inches
+    medium: str  # oil, acrylic, watercolor, charcoal, mixed media, etc.
+    realism_level: str  # abstract, impressionistic, realism, hyperrealism
+    detailing_level: str  # average, high_accuracy, excellent
+    uniqueness: str  # original, limited_edition, multiple_copies
+    artist_experience: str  # beginner, intermediate, professional
+    hours_spent: Optional[int] = None
+    material_cost: Optional[float] = None
+    artist_price: float  # The price the artist is quoting
+
+
+class ArtworkPricingResponse(BaseModel):
+    suggested_price_range: dict  # {"min": value, "max": value}
+    pricing_evaluation: str  # fair, slightly_high, overpriced, underpriced
+    pricing_badge: str  # green, yellow, red
+    buyer_message: str
+    artist_suggestion: Optional[str] = None
+
+
 class FeaturedArtistCreate(BaseModel):
     name: str
     bio: str
