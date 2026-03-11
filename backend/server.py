@@ -99,6 +99,9 @@ class ProfileUpdateRequest(BaseModel):
     teaches_online: Optional[bool] = None
     teaches_offline: Optional[bool] = None
     country: Optional[str] = None
+    portfolio_images: Optional[List[str]] = None  # Up to 5 portfolio showcase images
+    about_me: Optional[str] = None  # Extended bio/description
+    social_links: Optional[dict] = None  # {"instagram": "", "facebook": "", "website": ""}
 
 class UploadUrlRequest(BaseModel):
     filename: str
