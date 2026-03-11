@@ -258,7 +258,39 @@ function PaintingsPage() {
               </select>
             </div>
           </div>
+          </details>
         </div>
+
+        {/* Active Filters Display */}
+        {(selectedCategory !== 'all' || priceRange !== 'all' || selectedRoom !== 'all') && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            <span className="text-sm text-gray-500">Active filters:</span>
+            {selectedCategory !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
+                {selectedCategory}
+                <button onClick={() => setSelectedCategory('all')} className="hover:text-orange-900">×</button>
+              </span>
+            )}
+            {priceRange !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                {PRICE_RANGES.find(p => p.id === priceRange)?.name}
+                <button onClick={() => setPriceRange('all')} className="hover:text-blue-900">×</button>
+              </span>
+            )}
+            {selectedRoom !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
+                {ROOM_TYPES.find(r => r.id === selectedRoom)?.name}
+                <button onClick={() => setSelectedRoom('all')} className="hover:text-purple-900">×</button>
+              </span>
+            )}
+            <button 
+              onClick={() => { setSelectedCategory('all'); setPriceRange('all'); setSelectedRoom('all'); }}
+              className="text-sm text-gray-500 hover:text-gray-700 underline"
+            >
+              Clear all
+            </button>
+          </div>
+        )}
 
         {/* Results Count */}
         <p className="text-gray-600 mb-6">
