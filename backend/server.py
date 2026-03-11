@@ -3952,21 +3952,36 @@ async def get_community_details(community_id: str):
     """Get community details with recent posts"""
     supabase = get_supabase_client()
     
-    community = supabase.table('communities').select('*, profiles!created_by(full_name, avatar)').eq('id', community_id).single().execute()
+    # Get community with creator info
+    try:
+        community = supabase.table('communities').select('*, profiles!created_by(full_name, avatar)').eq('id', community_id).single().execute()
+    except Exception:
+        # Fallback without join
+        community = supabase.table('communities').select('*').eq('id', community_id).single().execute()
     
     if not community.data:
         raise HTTPException(status_code=404, detail="Community not found")
     
     # Get members
-    members = supabase.table('community_members').select('*, profiles!user_id(full_name, avatar, location)').eq('community_id', community_id).order('joined_at').execute()
+    try:
+        members = supabase.table('community_members').select('*, profiles!user_id(full_name, avatar, location)').eq('community_id', community_id).order('joined_at').execute()
+    except Exception:
+        # Fallback without join
+        members = supabase.table('community_members').select('*').eq('community_id', community_id).execute()
     
-    # Get recent posts
-    posts = supabase.table('community_posts').select('*, profiles!user_id(full_name, avatar)').eq('community_id', community_id).order('created_at', desc=True).limit(20).execute()
+    # Get recent posts (table may not exist)
+    posts_data = []
+    try:
+        posts = supabase.table('community_posts').select('*, profiles!author_id(full_name, avatar)').eq('community_id', community_id).order('created_at', desc=True).limit(20).execute()
+        posts_data = posts.data or []
+    except Exception as e:
+        # community_posts table doesn't exist - that's okay
+        print(f"community_posts query failed (table may not exist): {e}")
     
     return {
         "community": community.data,
         "members": members.data or [],
-        "posts": posts.data or []
+        "posts": posts_data
     }
 
 @app.post("/api/community/{community_id}/join")
