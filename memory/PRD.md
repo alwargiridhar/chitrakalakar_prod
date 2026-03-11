@@ -213,6 +213,7 @@ Adjust commission feature to existing framework without breaking existing Supaba
 ## Latest Change Set (December 2025 - Database Columns + Controls)
 ### Fixes Applied
 - **Supabase Connection**: Added SUPABASE_URL and SUPABASE_SERVICE_KEY to backend/.env for preview environment
+- **Frontend Supabase**: Added REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY to frontend/.env
 - **Exhibition Data Columns**: Added missing columns to exhibitions table via SQL migration:
   - `exhibition_images TEXT[]`
   - `exhibition_paintings JSONB`
@@ -223,27 +224,52 @@ Adjust commission feature to existing framework without breaking existing Supaba
 - **Admin Exhibition Controls**: Added Pause/Resume buttons alongside existing Extend/Delete controls
 - **Backend Update API**: Added `PUT /api/admin/exhibitions/{id}` for updating exhibition details
 - **Community Creation**: Fixed schema compatibility to use only existing columns (removed creator_id, location, invite_criteria)
+- **Admin Role Access**: Updated `require_admin` to `require_lead_chitrakar` allowing both admin and lead_chitrakar roles
+- **Frontend isAdmin**: Updated AuthContext to allow lead_chitrakar role access to admin dashboard
+- **Admin API Error Handling**: Added .catch() handlers to all admin API calls to prevent dashboard from breaking
+- **Pending Exhibitions API**: Fixed resilient artist_action_status query with fallback
+- **Featured Requests API**: Added fallback for missing foreign key relationship
 
-### Database Migration (Run in Supabase SQL Editor)
+### Admin Dashboard Improvements (Latest)
+- **Expandable Exhibition Details**: Click on pending exhibitions to see:
+  - Description and payment details
+  - Exhibition artwork previews (thumbnails)
+  - Payment screenshot link
+  - Artist action requests (pause/delete)
+  - Approve/Reject buttons
+- **Expandable Community Details**: Click on pending communities to see:
+  - Full description
+  - Member count and creation date
+  - Category badge
+  - Approve/Reject buttons
+- **Overview Card**: Added "Pending Communities" count card (clickable to navigate to Communities tab)
+
+### Database Migration Required
 ```sql
+-- Run in Supabase SQL Editor
 ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS exhibition_images TEXT[] DEFAULT '{}';
 ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS exhibition_paintings JSONB DEFAULT '[]';
 ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS primary_exhibition_image TEXT;
 ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'pending';
 ALTER TABLE exhibitions ADD COLUMN IF NOT EXISTS payment_screenshot_url TEXT;
+
+-- For featured artist timeline support (optional)
+ALTER TABLE featured_artists ADD COLUMN IF NOT EXISTS featured_until TIMESTAMPTZ;
+ALTER TABLE featured_artists ADD COLUMN IF NOT EXISTS featured_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE featured_artists ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
 ```
 
 ### Test Results
-- All 19 backend API tests passed (100%)
-- Frontend pages load correctly
-- Artists API: Returns 2 artists (1 member, 1 non-member)
-- Exhibitions API: Returns 9 exhibitions with proper columns
-- Admin/Artist exhibition controls verified working
+- All admin API tests passed (200 responses)
+- Frontend admin dashboard loads correctly with data
+- Expandable exhibition and community details working
+- Pending items count: Exhibitions (9), Communities (2)
 
 ### Known Issues
-- Notifications table doesn't exist in Supabase (minor, not critical)
-- Existing 9 exhibitions show "No painting uploaded" because they were created before columns were added
+- Existing exhibitions show "No painting uploaded" - created before columns were added
+- Featured artist timeline feature needs migration to be run
 
 ### Next Tasks
-1. Create new exhibitions via admin panel to verify painting storage works
-2. Build full community platform with posts, images, likes, comments, messaging
+1. Build full community platform (posts, images, likes, comments, messaging)
+2. Add featured artist timeline/expiry functionality after migration
+3. Price filtering and room-based artwork filtering (inspired by gallerist.in)
