@@ -14,7 +14,29 @@ function PaintingsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('latest');
   const [priceRange, setPriceRange] = useState('all');
+  const [selectedRoom, setSelectedRoom] = useState('all');
   const [previewPainting, setPreviewPainting] = useState(null);
+
+  // Room types for filtering
+  const ROOM_TYPES = [
+    { id: 'all', name: 'All Spaces', icon: '🏠' },
+    { id: 'living_room', name: 'Living Room', icon: '🛋️' },
+    { id: 'bedroom', name: 'Bedroom', icon: '🛏️' },
+    { id: 'office', name: 'Office', icon: '💼' },
+    { id: 'dining_room', name: 'Dining Room', icon: '🍽️' },
+    { id: 'hotel', name: 'Hotel & Lobby', icon: '🏨' },
+    { id: 'hospital', name: 'Hospital', icon: '🏥' },
+    { id: 'school', name: 'School', icon: '🏫' },
+  ];
+
+  // Price range quick filters
+  const PRICE_RANGES = [
+    { id: 'all', name: 'All Prices', color: 'bg-gray-100 text-gray-700' },
+    { id: 'under-5000', name: 'Under ₹5,000', color: 'bg-green-100 text-green-700' },
+    { id: '5000-15000', name: '₹5K - ₹15K', color: 'bg-blue-100 text-blue-700' },
+    { id: '15000-50000', name: '₹15K - ₹50K', color: 'bg-purple-100 text-purple-700' },
+    { id: 'above-50000', name: 'Above ₹50K', color: 'bg-orange-100 text-orange-700' },
+  ];
 
   const fetchPaintings = useCallback(async () => {
     try {
