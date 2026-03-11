@@ -1364,13 +1364,20 @@ async def get_community_detail(community_id: str):
         if not community.data:
             raise HTTPException(status_code=404, detail="Community not found")
         
-        # Get members
-        members = supabase.table('community_members').select('*, profiles!user_id(id, full_name, avatar, location)').eq('community_id', community_id).execute()
+        # Get members with fallback
+        members_data = []
+        try:
+            members = supabase.table('community_members').select('*, profiles!user_id(id, full_name, avatar, location)').eq('community_id', community_id).execute()
+            members_data = members.data or []
+        except Exception:
+            # Fallback without join
+            members = supabase.table('community_members').select('*').eq('community_id', community_id).execute()
+            members_data = members.data or []
         
         return {
             "community": community.data,
-            "members": members.data or [],
-            "member_count": len(members.data or [])
+            "members": members_data,
+            "member_count": len(members_data)
         }
     except HTTPException:
         raise
