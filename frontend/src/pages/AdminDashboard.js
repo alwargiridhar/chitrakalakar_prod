@@ -30,6 +30,8 @@ function AdminDashboard() {
   ]);
   const [editingPlan, setEditingPlan] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [expandedExhibition, setExpandedExhibition] = useState(null);
+  const [expandedCommunity, setExpandedCommunity] = useState(null);
 
   // Forms
   const [showAddContemporary, setShowAddContemporary] = useState(false);
