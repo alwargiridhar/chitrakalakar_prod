@@ -203,7 +203,12 @@ function PaintingsPage() {
 
         {/* Advanced Filters */}
         <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6 sm:mb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <details className="group">
+            <summary className="flex items-center justify-between cursor-pointer list-none">
+              <span className="text-sm font-medium text-gray-700">Advanced Filters</span>
+              <span className="text-gray-400 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
             {/* Category Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
