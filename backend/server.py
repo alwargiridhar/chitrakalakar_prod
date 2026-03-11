@@ -3855,17 +3855,23 @@ async def create_community_managed(community: CommunityCreate, artist: dict = De
             raise HTTPException(status_code=500, detail="Community table schema mismatch. Please sync columns and retry.")
     
     if result and result.data:
-        # Add creator as admin member
+        # Add creator as owner/admin member
         member_payload = {
             "community_id": result.data[0]['id'],
             "user_id": artist['id'],
             "joined_at": datetime.now(timezone.utc).isoformat()
         }
         try:
+            # Try with role column
+            member_payload["role"] = "owner"
             supabase.table('community_members').insert(member_payload).execute()
         except Exception as member_error:
-            print(f"Failed to add creator as member: {member_error}")
-            # Continue anyway - community was created
+            # Fallback without role column
+            member_payload.pop("role", None)
+            try:
+                supabase.table('community_members').insert(member_payload).execute()
+            except Exception as e:
+                print(f"Failed to add creator as member: {e}")
     
     return {"success": True, "message": "Community created and pending approval", "community": result.data[0] if result and result.data else None}
 
