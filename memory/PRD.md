@@ -272,4 +272,18 @@ ALTER TABLE featured_artists ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT 
 ### Next Tasks
 1. Build full community platform (posts, images, likes, comments, messaging)
 2. Add featured artist timeline/expiry functionality after migration
-3. Price filtering and room-based artwork filtering (inspired by gallerist.in)
+3. Run room-based filtering migration in Supabase
+
+### New Features Added (Price & Room Filtering)
+- **Quick Price Filters**: Visual pill buttons for Under ₹5,000, ₹5K-₹15K, ₹15K-₹50K, Above ₹50K
+- **Room-Based Browsing**: Icon-based filters for Living Room, Bedroom, Office, Dining Room, Hotel & Lobby, Hospital, School
+- **Active Filters Display**: Shows currently selected filters with clear buttons
+- **Collapsible Advanced Filters**: Category and Sort options in a collapsible section
+- **Smart Category Mapping**: Auto-suggests artworks for rooms based on category (e.g., Landscape → Living Room)
+
+### Database Migration Required for Room Filtering
+```sql
+-- Run in Supabase SQL Editor
+ALTER TABLE artworks ADD COLUMN IF NOT EXISTS suitable_rooms TEXT[] DEFAULT '{}';
+CREATE INDEX IF NOT EXISTS idx_artworks_suitable_rooms ON artworks USING GIN(suitable_rooms);
+```
