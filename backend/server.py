@@ -1775,14 +1775,19 @@ async def add_to_cart(data: CartItemRequest, user: dict = Depends(require_user))
             new_quantity = existing.data[0]['quantity'] + data.quantity
             supabase.table('cart_items').update({"quantity": new_quantity}).eq('id', existing.data[0]['id']).execute()
         else:
-            # Add new item
+            # Add new item - try with added_at first, fallback without it
             cart_data = {
                 "user_id": user['id'],
                 "artwork_id": data.artwork_id,
-                "quantity": data.quantity,
-                "added_at": datetime.now(timezone.utc).isoformat()
+                "quantity": data.quantity
             }
-            supabase.table('cart_items').insert(cart_data).execute()
+            try:
+                cart_data["added_at"] = datetime.now(timezone.utc).isoformat()
+                supabase.table('cart_items').insert(cart_data).execute()
+            except Exception:
+                # Fallback without added_at column
+                cart_data.pop("added_at", None)
+                supabase.table('cart_items').insert(cart_data).execute()
 
         return {"success": True, "message": "Added to cart"}
     except HTTPException:
