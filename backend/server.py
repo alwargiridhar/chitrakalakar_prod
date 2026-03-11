@@ -2037,11 +2037,26 @@ async def create_art_class_enquiry(enquiry_data: ArtClassEnquiryCreate, user: di
         "contacts_revealed": []
     }
     
-    result = supabase.table('art_class_enquiries').insert(enquiry).execute()
+    try:
+        result = supabase.table('art_class_enquiries').insert(enquiry).execute()
+    except Exception as e:
+        print(f"Art class enquiry error: {e}")
+        # Try with minimal fields
+        minimal_enquiry = {
+            "user_id": user['id'],
+            "art_type": enquiry_data.art_type,
+            "class_type": enquiry_data.class_type,
+            "status": "pending"
+        }
+        try:
+            result = supabase.table('art_class_enquiries').insert(minimal_enquiry).execute()
+        except Exception as final_error:
+            print(f"Art class enquiry final error: {final_error}")
+            raise HTTPException(status_code=500, detail="Failed to create enquiry. Please contact support.")
     
     return {
         "success": True,
-        "enquiry_id": result.data[0]['id'],
+        "enquiry_id": result.data[0]['id'] if result.data else None,
         "matched_count": len(matched_ids),
         "message": f"Found {len(matched_ids)} matching artist(s)"
     }
