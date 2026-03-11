@@ -67,6 +67,31 @@ function PaintingsPage() {
       filtered = filtered.filter(p => p.price >= min && p.price < max);
     }
 
+    // Room-based filtering
+    if (selectedRoom !== 'all') {
+      filtered = filtered.filter(p => {
+        // Check if artwork has suitable_rooms array
+        if (p.suitable_rooms && Array.isArray(p.suitable_rooms)) {
+          return p.suitable_rooms.includes(selectedRoom);
+        }
+        // Fallback: Use category-based room suggestions if suitable_rooms not set
+        const categoryRoomMap = {
+          'living_room': ['Landscape', 'Abstract', 'Nature', 'Scenery', 'Contemporary'],
+          'bedroom': ['Nature', 'Floral', 'Abstract', 'Minimalist'],
+          'office': ['Abstract', 'Modern', 'Motivational', 'Cityscape'],
+          'dining_room': ['Still Life', 'Floral', 'Nature', 'Food'],
+          'hotel': ['Landscape', 'Abstract', 'Contemporary', 'Modern'],
+          'hospital': ['Nature', 'Floral', 'Calming', 'Abstract'],
+          'school': ['Educational', 'Nature', 'Inspirational', 'Portrait'],
+        };
+        const suggestedCategories = categoryRoomMap[selectedRoom] || [];
+        return suggestedCategories.some(cat => 
+          p.category?.toLowerCase().includes(cat.toLowerCase()) ||
+          p.style?.toLowerCase().includes(cat.toLowerCase())
+        );
+      });
+    }
+
     switch (sortBy) {
       case 'price-low':
         filtered.sort((a, b) => a.price - b.price);
@@ -84,7 +109,7 @@ function PaintingsPage() {
     }
 
     setFilteredPaintings(filtered);
-  }, [paintings, selectedCategory, priceRange, sortBy]);
+  }, [paintings, selectedCategory, priceRange, selectedRoom, sortBy]);
 
   useEffect(() => {
     fetchPaintings();
