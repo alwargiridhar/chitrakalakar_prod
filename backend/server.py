@@ -4159,9 +4159,13 @@ async def get_my_invites(artist: dict = Depends(require_artist)):
     """Get pending community invites"""
     supabase = get_supabase_client()
     
-    invites = supabase.table('community_invites').select('*, communities!community_id(name, image, description)').eq('user_id', artist['id']).eq('status', 'pending').execute()
-    
-    return {"invites": invites.data or []}
+    try:
+        invites = supabase.table('community_invites').select('*, communities!community_id(name, image, description)').eq('invitee_id', artist['id']).eq('status', 'pending').execute()
+        return {"invites": invites.data or []}
+    except Exception as e:
+        # Table might not exist
+        print(f"community_invites query failed: {e}")
+        return {"invites": []}
 
 @app.post("/api/community/respond-invite/{invite_id}")
 async def respond_to_invite(invite_id: str, accept: bool, artist: dict = Depends(require_artist)):
