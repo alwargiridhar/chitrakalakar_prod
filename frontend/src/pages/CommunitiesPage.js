@@ -44,7 +44,11 @@ function CommunitiesPage() {
   const fetchMyCommunities = async () => {
     try {
       const response = await communityAPI.getMyCommunities();
-      setMyCommunities(response.communities || []);
+      // Handle both old and new response formats
+      const created = response.created_communities || [];
+      const joined = response.joined_communities || [];
+      const all = response.communities || [...created, ...joined];
+      setMyCommunities(all);
     } catch (error) {
       console.error('Error fetching my communities:', error);
     }
