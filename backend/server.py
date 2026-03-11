@@ -3151,9 +3151,28 @@ async def get_featured_requests(admin: dict = Depends(require_lead_chitrakar)):
     """Admin gets all pending featured requests"""
     supabase = get_supabase_client()
     
-    requests = supabase.table('featured_requests').select('*, profiles(full_name, avatar, email)').eq('status', 'pending').order('created_at', desc=True).execute()
-    
-    return {"requests": requests.data or []}
+    try:
+        # Try with foreign key join first
+        requests = supabase.table('featured_requests').select('*, profiles(full_name, avatar, email)').eq('status', 'pending').order('created_at', desc=True).execute()
+        return {"requests": requests.data or []}
+    except Exception as e:
+        # Fallback: fetch without join, then manually add profile data
+        print(f"featured_requests join failed, using fallback: {e}")
+        requests = supabase.table('featured_requests').select('*').eq('status', 'pending').order('created_at', desc=True).execute()
+        
+        result = []
+        for req in (requests.data or []):
+            artist_id = req.get('artist_id')
+            profile_data = None
+            if artist_id:
+                try:
+                    profile = supabase.table('profiles').select('full_name, avatar, email').eq('id', artist_id).single().execute()
+                    profile_data = profile.data
+                except:
+                    pass
+            result.append({**req, "profiles": profile_data})
+        
+        return {"requests": result}
 
 @app.post("/api/admin/approve-featured-request")
 async def approve_featured_request(request: FeaturedRequestApproval, admin: dict = Depends(require_lead_chitrakar)):
