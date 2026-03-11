@@ -92,6 +92,7 @@ function App() {
           <Route path="/dashboard/exhibitions" element={<><NavBar /><ArtistExhibitionsPage /></>} />
           <Route path="/admin/commissions" element={<><NavBar /><AdminCommissionsPage /></>} />
           <Route path="/admin/exhibitions" element={<><NavBar /><AdminExhibitionsPage /></>} />
+          <Route path="/pricing-calculator" element={<Layout><PricingCalculatorPage /></Layout>} />
           <Route path="*" element={<Layout><NotFoundPage /></Layout>} />
         </Routes>
         <Chatbot />
